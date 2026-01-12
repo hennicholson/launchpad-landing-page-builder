@@ -1,0 +1,18 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Background functions for long-running tasks
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Background function for deploy (can run up to 15 minutes)
+[functions."deploy-background"]
+  external_node_modules = ["@neondatabase/serverless"]
