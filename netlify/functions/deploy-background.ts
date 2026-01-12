@@ -401,8 +401,45 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
 
     // Add custom domain if configured
     const domainBase = process.env.CUSTOM_DOMAIN_BASE;
+    const dnsZoneId = process.env.NETLIFY_DNS_ZONE_ID;
+
     if (domainBase) {
       const domain = `${siteSlug}.${domainBase}`;
+
+      // Step 1: Create DNS CNAME record in Netlify DNS
+      if (dnsZoneId) {
+        try {
+          const dnsResponse = await fetch(`${NETLIFY_API_BASE}/dns_zones/${dnsZoneId}/dns_records`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${getAccessToken()}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              type: "CNAME",
+              hostname: siteSlug,  // Just the subdomain part (e.g., "examplecourse")
+              value: `${site.name}.netlify.app`,  // Target (e.g., "lp-examplecourse-xxx.netlify.app")
+              ttl: 3600,
+            }),
+          });
+
+          if (dnsResponse.ok) {
+            console.log(`DNS record created: ${domain} → ${site.name}.netlify.app`);
+          } else {
+            const errorText = await dnsResponse.text();
+            // Don't fail if record already exists
+            if (!errorText.includes("already exists")) {
+              console.warn(`Failed to create DNS record: ${errorText}`);
+            } else {
+              console.log(`DNS record already exists for ${domain}`);
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to create DNS record:", e);
+        }
+      }
+
+      // Step 2: Add domain alias to the Netlify site
       try {
         await fetch(`${NETLIFY_API_BASE}/sites/${site.id}/domain_aliases`, {
           method: "POST",
@@ -412,8 +449,9 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
           },
           body: JSON.stringify({ domain }),
         });
+        console.log(`Domain alias added: ${domain}`);
       } catch (e) {
-        console.warn("Failed to add custom domain:", e);
+        console.warn("Failed to add domain alias:", e);
       }
     }
 
