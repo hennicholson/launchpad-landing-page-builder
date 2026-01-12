@@ -439,19 +439,25 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
         }
       }
 
-      // Step 2: Add domain alias to the Netlify site
+      // Step 2: Set custom domain on the Netlify site
       try {
-        await fetch(`${NETLIFY_API_BASE}/sites/${site.id}/domain_aliases`, {
-          method: "POST",
+        const domainResponse = await fetch(`${NETLIFY_API_BASE}/sites/${site.id}`, {
+          method: "PATCH",
           headers: {
             Authorization: `Bearer ${getAccessToken()}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ domain }),
+          body: JSON.stringify({ custom_domain: domain }),
         });
-        console.log(`Domain alias added: ${domain}`);
+
+        if (domainResponse.ok) {
+          console.log(`Custom domain set: ${domain}`);
+        } else {
+          const errorText = await domainResponse.text();
+          console.warn(`Failed to set custom domain: ${errorText}`);
+        }
       } catch (e) {
-        console.warn("Failed to add domain alias:", e);
+        console.warn("Failed to set custom domain:", e);
       }
     }
 
