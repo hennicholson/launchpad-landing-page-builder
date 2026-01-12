@@ -96,6 +96,32 @@ import os from "os";
 
 const execAsync = promisify(exec);
 
+// Clean up old build directories to prevent disk space issues
+async function cleanOldBuilds(): Promise<void> {
+  const tempBase = path.join(os.tmpdir(), "launchpad-builds");
+  try {
+    const entries = await fs.readdir(tempBase, { withFileTypes: true });
+    const now = Date.now();
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const dirPath = path.join(tempBase, entry.name);
+        try {
+          const stat = await fs.stat(dirPath);
+          // Remove directories older than 5 minutes
+          if (now - stat.mtimeMs > 5 * 60 * 1000) {
+            console.log(`Cleaning old build directory: ${entry.name}`);
+            await fs.rm(dirPath, { recursive: true, force: true });
+          }
+        } catch {
+          // Failed to stat or remove, skip
+        }
+      }
+    }
+  } catch {
+    // tempBase doesn't exist yet, that's fine
+  }
+}
+
 async function createTempDir(slug: string): Promise<string> {
   const tempBase = path.join(os.tmpdir(), "launchpad-builds");
   await fs.mkdir(tempBase, { recursive: true });
@@ -142,6 +168,12 @@ async function runNpmInstall(tempDir: string): Promise<{ success: boolean; logs:
     );
     if (stdout) logs.push(stdout);
     if (stderr) logs.push(stderr);
+
+    // Clean up npm cache after successful install to save disk space
+    try {
+      await fs.rm(path.join(tempDir, ".npm-cache"), { recursive: true, force: true });
+    } catch {}
+
     return { success: true, logs };
   } catch (error: unknown) {
     const execError = error as { stderr?: string; stdout?: string; message?: string };
@@ -286,6 +318,11 @@ async function createOrGetSite(siteName: string, existingId: string | null) {
 export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
   console.log("Background deploy function started");
 
+  // Clean up old build directories first to free disk space
+  await cleanOldBuilds();
+
+  let tempDir: string | null = null;
+
   try {
     const body = JSON.parse(event.body || "{}");
     const { projectId, deploymentId, customSubdomain, userId, projectFiles, slug, netlifyId } = body;
@@ -311,7 +348,7 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
 
     // Create temp directory and write files
     const siteSlug = customSubdomain || slug;
-    const tempDir = await createTempDir(siteSlug);
+    tempDir = await createTempDir(siteSlug);
     await writeProjectFiles(tempDir, projectFiles);
     console.log("Project files written to", tempDir);
 
@@ -385,11 +422,6 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
       ? `https://${siteSlug}.${domainBase}`
       : deploy.ssl_url;
 
-    // Cleanup temp directory
-    try {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    } catch {}
-
     // Update deployment as ready
     await db.update(deployments).set({
       status: "ready",
@@ -434,6 +466,16 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     } catch {}
 
     return { statusCode: 500, body: "Deploy failed" };
+  } finally {
+    // Always clean up temp directory to prevent disk space issues
+    if (tempDir) {
+      console.log("Cleaning up temp directory:", tempDir);
+      try {
+        await fs.rm(tempDir, { recursive: true, force: true });
+      } catch (cleanupError) {
+        console.warn("Failed to clean up temp directory:", cleanupError);
+      }
+    }
   }
 };
 
