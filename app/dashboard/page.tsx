@@ -1,79 +1,96 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import NewProjectModal from "@/components/dashboard/NewProjectModal";
 import { useUser } from "@/lib/context/user-context";
-
-type Project = {
-  id: string;
-  name: string;
-  slug: string;
-  liveUrl: string | null;
-  isPublished: string;
-  updatedAt: string;
-  pageData: {
-    title: string;
-    colorScheme: {
-      primary: string;
-      background: string;
-    };
-  };
-};
+import { deleteProject, type Project } from "@/lib/actions/projects";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { whop, user, isLoading: userLoading, isAuthenticated } = useUser();
+  const { whop, user, isLoading: userLoading, isAuthenticated, getHeaders } = useUser();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
+    // Wait for user context to be ready before loading projects
+    // This prevents 500 errors when auth headers aren't available yet
+    if (!userLoading && isAuthenticated) {
+      loadProjects();
+    } else if (!userLoading && !isAuthenticated) {
+      // Not authenticated - stop loading state
+      setLoading(false);
+    }
+  }, [userLoading, isAuthenticated]);
 
-  const fetchProjects = async () => {
+  const loadProjects = async () => {
+    setLoading(true);
     try {
-      const res = await fetch("/api/projects");
+      // Use API route with explicit auth headers (cookies may be blocked in iframe)
+      const headers = getHeaders();
+      console.log('[loadProjects] Headers being sent:', {
+        hasToken: !!headers['x-whop-user-token'],
+        tokenLength: headers['x-whop-user-token']?.length || 0,
+        hasUserId: !!headers['x-whop-user-id'],
+      });
+
+      const res = await fetch('/api/users/projects', {
+        headers,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch projects: ${res.status}`);
+      }
+
       const data = await res.json();
       setProjects(data.projects || []);
     } catch (error) {
       console.error("Failed to fetch projects:", error);
+      setProjects([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      const res = await fetch(`/api/projects/${id}`, { method: "DELETE" });
-      const data = await res.json();
+  const handleDelete = (id: string) => {
+    startTransition(async () => {
+      try {
+        const result = await deleteProject(id);
 
-      if (!res.ok || !data.success) {
-        const errorMsg = data.details || data.error || "Unknown error";
-        console.error("Delete failed:", errorMsg);
-        alert(`Failed to delete project: ${errorMsg}`);
+        if (!result.success) {
+          const errorMsg = result.error || "Unknown error";
+          console.error("Delete failed:", errorMsg);
+          alert(`Failed to delete project: ${errorMsg}`);
+          setDeleteConfirm(null);
+          return;
+        }
+
+        setProjects(projects.filter((p) => p.id !== id));
         setDeleteConfirm(null);
-        return;
+      } catch (error) {
+        console.error("Failed to delete project:", error);
+        alert("Failed to delete project. Please try again.");
+        setDeleteConfirm(null);
       }
-
-      setProjects(projects.filter((p) => p.id !== id));
-      setDeleteConfirm(null);
-    } catch (error) {
-      console.error("Failed to delete project:", error);
-      alert("Failed to delete project. Please try again.");
-      setDeleteConfirm(null);
-    }
+    });
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-US", {
+  const formatDate = (date: Date | string | null) => {
+    if (!date) return "Unknown";
+    const d = typeof date === "string" ? new Date(date) : date;
+    return d.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
     });
+  };
+
+  const handleProjectCreated = () => {
+    loadProjects();
   };
 
   return (
@@ -97,7 +114,7 @@ export default function DashboardPage() {
         <div className="fixed bottom-[-30%] left-[-10%] w-[500px] h-[500px] bg-violet-500/5 rounded-full blur-[100px] pointer-events-none" />
 
         {/* Header */}
-        <header className="relative z-10 border-b border-white/5">
+        <header className="relative z-20 border-b border-white/5">
           <div className="max-w-7xl mx-auto px-6 lg:px-8 py-5 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <img
@@ -196,7 +213,10 @@ export default function DashboardPage() {
                           </svg>
                           Settings
                         </button>
-                        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors">
+                        <button
+                          onClick={() => router.push('/pricing')}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                        >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                           </svg>
@@ -357,6 +377,7 @@ export default function DashboardPage() {
         <NewProjectModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
+          onSuccess={handleProjectCreated}
         />
 
         {/* Delete Confirmation Modal */}

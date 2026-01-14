@@ -3,6 +3,7 @@
 import { useEffect, useState, use, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useEditorStore } from "@/lib/store";
+import { useUser } from "@/lib/context/user-context";
 import SectionList from "@/components/editor/SectionList";
 import Canvas from "@/components/editor/Canvas";
 import PropertyPanel from "@/components/editor/PropertyPanel";
@@ -14,6 +15,7 @@ type Params = { id: string };
 export default function EditorPage({ params }: { params: Promise<Params> }) {
   const { id } = use(params);
   const router = useRouter();
+  const { getHeaders } = useUser();
   const [projectName, setProjectName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,9 +52,9 @@ export default function EditorPage({ params }: { params: Promise<Params> }) {
     saveDraftToLocalStorage();
 
     try {
-      const res = await fetch(`/api/projects/${id}`, {
+      const res = await fetch(`/api/users/projects/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders(),
         body: JSON.stringify({ pageData: page }),
       });
       if (res.ok) {
@@ -181,7 +183,9 @@ export default function EditorPage({ params }: { params: Promise<Params> }) {
 
   const fetchProject = async () => {
     try {
-      const res = await fetch(`/api/projects/${id}`);
+      const res = await fetch(`/api/users/projects/${id}`, {
+        headers: getHeaders(),
+      });
       if (!res.ok) {
         router.push("/dashboard");
         return;
@@ -201,9 +205,9 @@ export default function EditorPage({ params }: { params: Promise<Params> }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await fetch(`/api/projects/${id}`, {
+      await fetch(`/api/users/projects/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getHeaders(),
         body: JSON.stringify({ pageData: page }),
       });
       markSaved();
@@ -225,7 +229,10 @@ export default function EditorPage({ params }: { params: Promise<Params> }) {
     setDeploySuccess(false);
 
     try {
-      const res = await fetch(`/api/deploy/${id}`, { method: "POST" });
+      const res = await fetch(`/api/users/deploy/${id}`, {
+        method: "POST",
+        headers: getHeaders(),
+      });
       const data = await res.json();
 
       if (!res.ok) {

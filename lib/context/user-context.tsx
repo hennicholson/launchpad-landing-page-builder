@@ -45,6 +45,7 @@ interface UserContextType {
   isAdmin: boolean
   refreshUser: () => Promise<void>
   syncUser: () => Promise<void>
+  getHeaders: () => Record<string, string>
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
@@ -59,21 +60,34 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const isAdmin = user?.isAdmin ?? false
 
   // Build headers for API requests
+  // NOTE: Don't include Content-Type for GET requests - it triggers CORS preflight
   const getHeaders = useCallback(() => {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    }
+    const headers: Record<string, string> = {}
 
     if (typeof window !== 'undefined') {
-      // Check for dev mode tokens in localStorage
-      const devToken = localStorage.getItem('whop-dev-token')
-      const devUserId = localStorage.getItem('whop-dev-user-id')
+      // Check if we're in Whop's production iframe
+      // Whop's proxy will inject x-whop-* headers automatically - we should NOT send them ourselves
+      const hostname = window.location.hostname
+      const isWhopProduction = hostname.includes('.apps.whop.com') ||
+                               hostname === 'onwhop.com' ||
+                               hostname.endsWith('.netlify.app') ||
+                               (!hostname.includes('localhost') && !hostname.includes('127.0.0.1'))
 
-      if (devToken) {
-        headers['x-whop-user-token'] = devToken
+      if (isWhopProduction) {
+        // In production: Send NO custom headers - Whop's proxy handles everything
+        console.log('[getHeaders] Production mode - no custom headers')
+        return headers
       }
-      if (devUserId) {
-        headers['x-whop-user-id'] = devUserId
+
+      // In dev mode only: Send headers from localStorage
+      const storedToken = localStorage.getItem('whop-dev-token')
+      if (storedToken) {
+        headers['x-whop-user-token'] = storedToken
+        const storedUserId = localStorage.getItem('whop-dev-user-id')
+        if (storedUserId) {
+          headers['x-whop-user-id'] = storedUserId
+        }
+        console.log('[getHeaders] Dev mode - sending localStorage token')
       }
     }
 
@@ -86,7 +100,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       const response = await fetch('/api/users/sync', {
         method: 'POST',
         headers: getHeaders(),
-        credentials: 'include', // Forward cookies for Whop auth
       })
 
       const data = await response.json()
@@ -110,7 +123,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch('/api/users/me', {
         headers: getHeaders(),
-        credentials: 'include', // Forward cookies for Whop auth
       })
 
       const data = await response.json()
@@ -149,6 +161,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         isAdmin,
         refreshUser,
         syncUser,
+        getHeaders,
       }}
     >
       {children}

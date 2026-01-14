@@ -93,7 +93,7 @@ export default function DeployModal({
 
     try {
       // Start the deployment - returns immediately with deploymentId
-      const startResponse = await fetch(`/api/deploy/${projectId}`, {
+      const startResponse = await fetch(`/api/users/deploy/${projectId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -121,7 +121,7 @@ export default function DeployModal({
         pollCount++;
 
         try {
-          const statusResponse = await fetch(`/api/deploy/${projectId}`);
+          const statusResponse = await fetch(`/api/users/deploy/${projectId}`);
           const statusData = await statusResponse.json();
 
           if (!statusResponse.ok) {
