@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { startDeploy, getDeployStatus } from "@/lib/actions/projects";
 
 type DeployStep = {
   name: string;
@@ -92,26 +93,21 @@ export default function DeployModal({
     setProgress(5);
 
     try {
-      // Start the deployment - returns immediately with deploymentId
-      const startResponse = await fetch(`/api/users/deploy/${projectId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          subdomain: useExisting ? null : subdomain,
-        }),
-      });
+      // Start the deployment using server action - avoids Whop iframe proxy issues
+      const startResult = await startDeploy(
+        projectId,
+        useExisting ? null : subdomain
+      );
 
-      const startData = await startResponse.json();
-
-      if (!startResponse.ok) {
-        throw new Error(startData.message || startData.error || "Failed to start deployment");
+      if (!startResult.success) {
+        throw new Error(startResult.message || startResult.error || "Failed to start deployment");
       }
 
       updateStepStatus(0, "complete");
       addTerminalLine("  Build queued successfully");
       setProgress(10);
 
-      // Now poll for status updates
+      // Now poll for status updates using server action
       let lastStatus = "pending";
       let pollCount = 0;
       const maxPolls = 300; // 15 minutes max (3s intervals)
@@ -121,14 +117,13 @@ export default function DeployModal({
         pollCount++;
 
         try {
-          const statusResponse = await fetch(`/api/users/deploy/${projectId}`);
-          const statusData = await statusResponse.json();
+          const statusResult = await getDeployStatus(projectId);
 
-          if (!statusResponse.ok) {
+          if (!statusResult.success || !statusResult.data) {
             throw new Error("Failed to check deployment status");
           }
 
-          const deployment = statusData.deployments?.[0];
+          const deployment = statusResult.data.deployments?.[0];
           if (!deployment) continue;
 
           const newStatus = deployment.status;
@@ -178,7 +173,7 @@ export default function DeployModal({
               addTerminalLine("  Deployment verified");
               addTerminalLine("");
 
-              const finalUrl = deployment.url || statusData.liveUrl;
+              const finalUrl = deployment.url || statusResult.data.liveUrl;
               addTerminalLine(`Deployed to: ${finalUrl}`);
 
               setDeployUrl(finalUrl);

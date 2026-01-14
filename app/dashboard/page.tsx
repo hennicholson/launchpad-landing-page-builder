@@ -4,11 +4,11 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import NewProjectModal from "@/components/dashboard/NewProjectModal";
 import { useUser } from "@/lib/context/user-context";
-import { deleteProject, type Project } from "@/lib/actions/projects";
+import { deleteProject, getProjects, type Project } from "@/lib/actions/projects";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { whop, user, isLoading: userLoading, isAuthenticated, getHeaders } = useUser();
+  const { whop, user, isLoading: userLoading, isAuthenticated } = useUser();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,24 +30,11 @@ export default function DashboardPage() {
   const loadProjects = async () => {
     setLoading(true);
     try {
-      // Use API route with explicit auth headers (cookies may be blocked in iframe)
-      const headers = getHeaders();
-      console.log('[loadProjects] Headers being sent:', {
-        hasToken: !!headers['x-whop-user-token'],
-        tokenLength: headers['x-whop-user-token']?.length || 0,
-        hasUserId: !!headers['x-whop-user-id'],
-      });
-
-      const res = await fetch('/api/users/projects', {
-        headers,
-      });
-
-      if (!res.ok) {
-        throw new Error(`Failed to fetch projects: ${res.status}`);
-      }
-
-      const data = await res.json();
-      setProjects(data.projects || []);
+      // Use server action instead of API route to avoid Whop iframe proxy issues
+      // Server actions run on the server in the same request context, preserving auth
+      const projectsData = await getProjects();
+      console.log('[loadProjects] Loaded projects via server action:', projectsData.length);
+      setProjects(projectsData);
     } catch (error) {
       console.error("Failed to fetch projects:", error);
       setProjects([]);

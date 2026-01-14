@@ -3,11 +3,11 @@
 import { useEffect, useState, use, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useEditorStore } from "@/lib/store";
-import { useUser } from "@/lib/context/user-context";
 import SectionList from "@/components/editor/SectionList";
 import Canvas from "@/components/editor/Canvas";
 import PropertyPanel from "@/components/editor/PropertyPanel";
 import DeployModal from "@/components/editor/DeployModal";
+import { getProject, updateProject } from "@/lib/actions/projects";
 import type { LandingPage } from "@/lib/page-schema";
 
 type Params = { id: string };
@@ -15,7 +15,6 @@ type Params = { id: string };
 export default function EditorPage({ params }: { params: Promise<Params> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { getHeaders } = useUser();
   const [projectName, setProjectName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,19 +51,16 @@ export default function EditorPage({ params }: { params: Promise<Params> }) {
     saveDraftToLocalStorage();
 
     try {
-      const res = await fetch(`/api/users/projects/${id}`, {
-        method: "PUT",
-        headers: getHeaders(),
-        body: JSON.stringify({ pageData: page }),
-      });
-      if (res.ok) {
+      // Use server action instead of API route to avoid Whop iframe proxy issues
+      const result = await updateProject(id, { pageData: page as LandingPage });
+      if (result.success) {
         markSaved();
         setLastSaved(new Date());
         saveRetryCount.current = 0;
         // Clear localStorage draft on successful save
         localStorage.removeItem(`draft-${id}`);
       } else {
-        throw new Error("Save failed");
+        throw new Error(result.error || "Save failed");
       }
     } catch (error) {
       console.error("Auto-save failed:", error);
@@ -183,17 +179,16 @@ export default function EditorPage({ params }: { params: Promise<Params> }) {
 
   const fetchProject = async () => {
     try {
-      const res = await fetch(`/api/users/projects/${id}`, {
-        headers: getHeaders(),
-      });
-      if (!res.ok) {
+      // Use server action instead of API route to avoid Whop iframe proxy issues
+      const result = await getProject(id);
+      if (!result.success || !result.project) {
+        console.error("Failed to fetch project:", result.error);
         router.push("/dashboard");
         return;
       }
-      const data = await res.json();
-      setProjectName(data.project.name);
-      setPage(data.project.pageData);
-      setLiveUrl(data.project.liveUrl);
+      setProjectName(result.project.name);
+      setPage(result.project.pageData as LandingPage);
+      setLiveUrl(result.project.liveUrl);
     } catch (error) {
       console.error("Failed to fetch project:", error);
       router.push("/dashboard");
@@ -205,54 +200,18 @@ export default function EditorPage({ params }: { params: Promise<Params> }) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await fetch(`/api/users/projects/${id}`, {
-        method: "PUT",
-        headers: getHeaders(),
-        body: JSON.stringify({ pageData: page }),
-      });
-      markSaved();
+      // Use server action instead of API route to avoid Whop iframe proxy issues
+      const result = await updateProject(id, { pageData: page as LandingPage });
+      if (result.success) {
+        markSaved();
+        setLastSaved(new Date());
+      } else {
+        console.error("Failed to save:", result.error);
+      }
     } catch (error) {
       console.error("Failed to save:", error);
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleDeploy = async () => {
-    // Save first if there are changes
-    if (isDirty) {
-      await handleSave();
-    }
-
-    setDeploying(true);
-    setDeployError(null);
-    setDeploySuccess(false);
-
-    try {
-      const res = await fetch(`/api/users/deploy/${id}`, {
-        method: "POST",
-        headers: getHeaders(),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setDeployError(data.message || data.error || "Deployment failed");
-        return;
-      }
-
-      if (data.url) {
-        setLiveUrl(data.url);
-        setDeploySuccess(true);
-        // Open the deployed site in a new tab
-        window.open(data.url, "_blank");
-        // Clear success message after 5 seconds
-        setTimeout(() => setDeploySuccess(false), 5000);
-      }
-    } catch (error) {
-      console.error("Failed to deploy:", error);
-      setDeployError("Network error. Please try again.");
-    } finally {
-      setDeploying(false);
     }
   };
 
