@@ -1,7 +1,7 @@
 "use client";
 
 import type { PageSection } from "@/lib/page-schema";
-import { useEditorStore } from "@/lib/store";
+import { useEditorStoreOrPublished } from "@/lib/store";
 import GallerySectionBase from "@/components/shared/sections/GallerySectionBase";
 import EditableText from "../EditableText";
 import EditableImage from "../EditableImage";
@@ -11,7 +11,7 @@ type Props = {
 };
 
 export default function GallerySection({ section }: Props) {
-  const { page } = useEditorStore();
+  const { page } = useEditorStoreOrPublished();
 
   return (
     <GallerySectionBase

@@ -141,10 +141,16 @@ export default function AdminDeploysPage() {
           </div>
           <div className="flex items-center gap-3">
             <Link
+              href="/admin/subscribers"
+              className="px-4 py-2 text-sm bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/30 transition-colors"
+            >
+              Subscribers
+            </Link>
+            <Link
               href="/dashboard"
               className="px-4 py-2 text-sm bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
             >
-              Back to Dashboard
+              Dashboard
             </Link>
             <button
               onClick={handleLogout}

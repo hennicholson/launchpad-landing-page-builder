@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { headers, cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { projects, users, PLAN_LIMITS } from "@/lib/schema";
 import { requireWhopUser } from "@/lib/whop";
@@ -7,10 +8,29 @@ import { generateId, defaultPage } from "@/lib/page-schema";
 import { getTemplateByIdOrDefault } from "@/lib/templates";
 import { generateLandingPage } from "@/lib/claude";
 
+export const runtime = "nodejs";
+
 // GET /api/projects - List all projects for the current user
 export async function GET() {
   try {
+    // Detailed auth logging
+    const headersList = await headers();
+    const cookieStore = await cookies();
+
+    // Log ALL headers to see what Whop proxy is forwarding
+    const allHeadersObj = Object.fromEntries([...headersList.entries()]);
+    console.log("[Projects API GET] ALL HEADERS:", JSON.stringify(allHeadersObj, null, 2));
+
+    console.log("[Projects API GET] Auth debug:", {
+      hasWhopToken: !!headersList.get("x-whop-user-token"),
+      hasWhopUserId: !!headersList.get("x-whop-user-id"),
+      hasCookieToken: !!cookieStore.get("whop_user_token")?.value,
+      hasCookieUserId: !!cookieStore.get("whop_user_id")?.value,
+      tokenLength: headersList.get("x-whop-user-token")?.length || 0,
+    });
+
     const user = await requireWhopUser();
+    console.log("[Projects API GET] Got user:", user?.username, user?.id);
 
     // Get user from DB to get the correct UUID
     const [userData] = await db
@@ -32,8 +52,11 @@ export async function GET() {
     return NextResponse.json({ projects: userProjects });
   } catch (error) {
     console.error("Error fetching projects:", error);
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (error instanceof Error) {
+      // Handle auth errors
+      if (error.message === "Unauthorized" || error.message.includes("Missing x-whop-user-token")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
     }
     return NextResponse.json(
       { error: "Failed to fetch projects" },
@@ -45,7 +68,19 @@ export async function GET() {
 // POST /api/projects - Create a new project
 export async function POST(request: NextRequest) {
   try {
+    // Detailed auth logging
+    const headersList = await headers();
+    const cookieStore = await cookies();
+    console.log("[Projects API POST] Auth debug:", {
+      hasWhopToken: !!headersList.get("x-whop-user-token"),
+      hasWhopUserId: !!headersList.get("x-whop-user-id"),
+      hasCookieToken: !!cookieStore.get("whop_user_token")?.value,
+      hasCookieUserId: !!cookieStore.get("whop_user_id")?.value,
+    });
+
     const user = await requireWhopUser();
+    console.log("[Projects API POST] Got user:", user?.username, user?.id);
+
     const body = await request.json();
     const { name, templateId, aiPrompt } = body;
 

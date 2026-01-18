@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useEditorStore } from "@/lib/store";
+import { useEditorStoreOrPublished } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Props = {
@@ -26,7 +26,7 @@ export default function EditableImage({
   style,
 }: Props) {
   const { editingField, setEditingField, updateFieldValue, isPreviewMode, selectSection } =
-    useEditorStore();
+    useEditorStoreOrPublished();
   const [localValue, setLocalValue] = useState(value);
   const [isHovering, setIsHovering] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);

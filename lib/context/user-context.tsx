@@ -30,6 +30,7 @@ interface InternalUser {
   plan: string
   projectCount: number
   deployCount: number
+  balanceCents: number
   isAdmin: boolean
   isSuspended: boolean
   lastLoginAt: string | null
@@ -60,26 +61,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const isAdmin = user?.isAdmin ?? false
 
   // Build headers for API requests
-  // NOTE: Don't include Content-Type for GET requests - it triggers CORS preflight
+  // IMPORTANT: When running inside Whop's iframe (*.apps.whop.com), do NOT send custom auth headers.
+  // Whop's proxy automatically injects x-whop-user-token for same-origin requests.
+  // Sending custom auth headers from client-side JS causes the proxy to REJECT the request with 401.
+  // Only send custom headers in local development when not inside the iframe.
   const getHeaders = useCallback(() => {
     const headers: Record<string, string> = {}
 
     if (typeof window !== 'undefined') {
-      // Check if we're in Whop's production iframe
-      // Whop's proxy will inject x-whop-* headers automatically - we should NOT send them ourselves
-      const hostname = window.location.hostname
-      const isWhopProduction = hostname.includes('.apps.whop.com') ||
-                               hostname === 'onwhop.com' ||
-                               hostname.endsWith('.netlify.app') ||
-                               (!hostname.includes('localhost') && !hostname.includes('127.0.0.1'))
+      // Check if we're running inside Whop's iframe (production)
+      const isWhopIframe = window.location.hostname.includes('.apps.whop.com') ||
+                          window.location.hostname.includes('whop.com')
 
-      if (isWhopProduction) {
-        // In production: Send NO custom headers - Whop's proxy handles everything
-        console.log('[getHeaders] Production mode - no custom headers')
+      if (isWhopIframe) {
+        // In Whop iframe: DON'T send custom headers - proxy handles auth automatically
+        console.log('[getHeaders] Inside Whop iframe - letting proxy handle auth')
         return headers
       }
 
-      // In dev mode only: Send headers from localStorage
+      // Local development: send headers from localStorage
       const storedToken = localStorage.getItem('whop-dev-token')
       if (storedToken) {
         headers['x-whop-user-token'] = storedToken
@@ -87,7 +87,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (storedUserId) {
           headers['x-whop-user-id'] = storedUserId
         }
-        console.log('[getHeaders] Dev mode - sending localStorage token')
+        console.log('[getHeaders] Dev mode - sending localStorage token, length:', storedToken.length)
+      } else {
+        console.log('[getHeaders] Dev mode - no token in localStorage')
       }
     }
 

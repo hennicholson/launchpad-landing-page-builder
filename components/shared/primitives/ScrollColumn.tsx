@@ -148,7 +148,7 @@ export function ScrollColumn({
   }, [items]);
 
   return (
-    <div className="relative h-[600px] overflow-hidden">
+    <div className="relative h-[400px] sm:h-[500px] lg:h-[600px] overflow-hidden">
       {/* Mask gradient top */}
       <div
         className="absolute top-0 left-0 right-0 h-24 z-10 pointer-events-none"

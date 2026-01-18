@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import type { SectionItem } from "@/lib/page-schema";
+import SectionButton, { getButtonPropsFromContent } from "./SectionButton";
+import { SectionBackground } from "../SectionBackground";
 
 // Simple icon component for step numbers
 function StepIcon({ icon, accentColor }: { icon?: string; accentColor: string }) {
@@ -61,11 +63,18 @@ export default function ProcessSectionBase({
   const headingFont = typography.headingFont;
   const bodyFont = typography.bodyFont;
 
+  const DEFAULT_PADDING = { top: 80, bottom: 128 };
+
   return (
     <section
-      className="py-20 lg:py-32 relative overflow-hidden"
-      style={{ backgroundColor: bgColor }}
+      className="relative overflow-hidden"
+      style={{
+        backgroundColor: bgColor,
+        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
+        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+      }}
     >
+      <SectionBackground effect={content.backgroundEffect} />
       {/* Background decoration */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-[200px] opacity-10"
@@ -81,7 +90,7 @@ export default function ProcessSectionBase({
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          {content.badge && (
+          {content.showBadge !== false && content.badge && (
             <span
               className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider mb-6"
               style={{
@@ -92,15 +101,15 @@ export default function ProcessSectionBase({
               {renderText ? renderText({ value: content.badge, sectionId: section.id, field: "badge", className: "" }) : content.badge}
             </span>
           )}
-          {content.heading && (
+          {content.showHeading !== false && content.heading && (
             <h2
-              className="text-4xl sm:text-5xl uppercase leading-[0.95]"
+              className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95]"
               style={{ color: textColor, fontFamily: headingFont }}
             >
               {renderText ? renderText({ value: content.heading, sectionId: section.id, field: "heading", className: "" }) : content.heading}
             </h2>
           )}
-          {content.subheading && (
+          {content.showSubheading !== false && content.subheading && (
             <span
               className="block mt-4 text-lg max-w-2xl mx-auto"
               style={{ color: `${textColor}70`, fontFamily: bodyFont }}
@@ -111,7 +120,7 @@ export default function ProcessSectionBase({
         </motion.div>
 
         {/* Process Steps */}
-        {items && items.length > 0 ? (
+        {content.showItems !== false && items && items.length > 0 ? (
           <div className="relative">
             {/* Connecting line */}
             <div
@@ -220,31 +229,17 @@ export default function ProcessSectionBase({
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <motion.a
-              href={content.buttonLink || "#"}
-              className="inline-flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-sm uppercase tracking-wider"
-              style={{
-                backgroundColor: primaryColor,
-                color: bgColor,
-                fontFamily: bodyFont,
-              }}
-              whileHover={{
-                scale: 1.02,
-                boxShadow: `0 0 40px ${primaryColor}40`,
-              }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {content.buttonText}
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-            </motion.a>
+            <SectionButton
+              text={content.buttonText || ""}
+              link={content.buttonLink || "#"}
+              sectionId={section.id}
+              {...getButtonPropsFromContent(content)}
+              sectionBgColor={bgColor}
+              primaryColor={primaryColor}
+              accentColor={accentColor}
+              schemeTextColor={textColor}
+              bodyFont={bodyFont}
+            />
           </motion.div>
         )}
       </div>

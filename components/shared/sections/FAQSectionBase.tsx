@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import type { SectionItem } from "@/lib/page-schema";
+import { SectionBackground } from "../SectionBackground";
 
 export default function FAQSectionBase({
   section,
@@ -23,11 +24,18 @@ export default function FAQSectionBase({
   const headingFont = typography.headingFont;
   const bodyFont = typography.bodyFont;
 
+  const DEFAULT_PADDING = { top: 80, bottom: 128 };
+
   return (
     <section
-      className="py-20 lg:py-32 relative overflow-hidden"
-      style={{ backgroundColor: bgColor }}
+      className="relative overflow-hidden"
+      style={{
+        backgroundColor: bgColor,
+        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
+        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+      }}
     >
+      <SectionBackground effect={content.backgroundEffect} />
       {/* Subtle background pattern */}
       <div
         className="absolute inset-0 opacity-[0.02]"
@@ -46,7 +54,7 @@ export default function FAQSectionBase({
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          {content.badge && (
+          {content.showBadge !== false && content.badge && (
             <span
               className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider mb-6"
               style={{
@@ -66,9 +74,9 @@ export default function FAQSectionBase({
               )}
             </span>
           )}
-          {content.heading && (
+          {content.showHeading !== false && content.heading && (
             <h2
-              className="text-4xl sm:text-5xl uppercase leading-[0.95]"
+              className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95]"
               style={{ color: textColor, fontFamily: headingFont }}
             >
               {renderText ? (
@@ -83,7 +91,7 @@ export default function FAQSectionBase({
               )}
             </h2>
           )}
-          {content.subheading && (
+          {content.showSubheading !== false && content.subheading && (
             <span
               className="block mt-4 text-lg"
               style={{ color: `${textColor}70`, fontFamily: bodyFont }}
@@ -103,7 +111,7 @@ export default function FAQSectionBase({
         </motion.div>
 
         {/* FAQ Items */}
-        {items && items.length > 0 ? (
+        {content.showItems !== false && items && items.length > 0 ? (
           <div className="space-y-3">
             {items.map((item: SectionItem, index: number) => (
               <motion.div
@@ -182,22 +190,20 @@ export default function FAQSectionBase({
                         }}
                       >
                         <div
-                          className="px-6 pb-5"
+                          className="px-6 pb-5 text-base leading-relaxed"
                           style={{ color: `${textColor}80`, fontFamily: bodyFont }}
                         >
-                          <p className="text-base leading-relaxed">
-                            {renderText ? (
-                              renderText({
-                                value: item.description || "",
-                                sectionId: section.id,
-                                field: "description",
-                                itemId: item.id,
-                                className: "",
-                              })
-                            ) : (
-                              item.description
-                            )}
-                          </p>
+                          {renderText ? (
+                            renderText({
+                              value: item.description || "",
+                              sectionId: section.id,
+                              field: "description",
+                              itemId: item.id,
+                              className: "",
+                            })
+                          ) : (
+                            item.description
+                          )}
                         </div>
                       </motion.div>
                     )}

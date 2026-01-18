@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import { SectionBackground } from "../SectionBackground";
 
 export default function ComparisonSectionBase({
   section,
@@ -25,11 +26,18 @@ export default function ComparisonSectionBase({
   const yourProduct = items?.find(item => item.title?.toLowerCase().includes("you") || item.title?.toLowerCase().includes("us")) || items?.[0];
   const competitor = items?.find(item => item.title?.toLowerCase().includes("other") || item.title?.toLowerCase().includes("them")) || items?.[1];
 
+  const DEFAULT_PADDING = { top: 80, bottom: 128 };
+
   return (
     <section
-      className="py-20 lg:py-32 relative overflow-hidden"
-      style={{ backgroundColor: bgColor }}
+      className="relative overflow-hidden"
+      style={{
+        backgroundColor: bgColor,
+        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
+        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+      }}
     >
+      <SectionBackground effect={content.backgroundEffect} />
       <div className="max-w-4xl mx-auto px-6 lg:px-8">
         {/* Header */}
         <motion.div
@@ -39,7 +47,7 @@ export default function ComparisonSectionBase({
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          {content.badge && (
+          {content.showBadge !== false && content.badge && (
             <span
               className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider mb-6"
               style={{
@@ -59,9 +67,9 @@ export default function ComparisonSectionBase({
               )}
             </span>
           )}
-          {content.heading && (
+          {content.showHeading !== false && content.heading && (
             <h2
-              className="text-4xl sm:text-5xl uppercase leading-[0.95]"
+              className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95]"
               style={{ color: textColor, fontFamily: headingFont }}
             >
               {renderText ? (
@@ -76,7 +84,7 @@ export default function ComparisonSectionBase({
               )}
             </h2>
           )}
-          {content.subheading && (
+          {content.showSubheading !== false && content.subheading && (
             <p
               className="mt-4 text-lg max-w-2xl mx-auto"
               style={{ color: `${textColor}70`, fontFamily: bodyFont }}
@@ -96,7 +104,7 @@ export default function ComparisonSectionBase({
         </motion.div>
 
         {/* Comparison Table */}
-        {items && items.length >= 2 ? (
+        {content.showItems !== false && items && items.length >= 2 ? (
           <motion.div
             className="rounded-3xl overflow-hidden"
             style={{
@@ -109,7 +117,7 @@ export default function ComparisonSectionBase({
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             {/* Table Header */}
-            <div className="grid grid-cols-3 gap-4 p-6 border-b" style={{ borderColor: "rgba(255,255,255,0.05)" }}>
+            <div className="hidden sm:grid grid-cols-3 gap-4 p-6 border-b" style={{ borderColor: "rgba(255,255,255,0.05)" }}>
               <div className="text-sm uppercase tracking-wider" style={{ color: `${textColor}50` }}>
                 Features
               </div>
@@ -139,50 +147,59 @@ export default function ComparisonSectionBase({
               </div>
             </div>
 
+            {/* Mobile Header */}
+            <div className="sm:hidden p-6 border-b flex justify-center gap-4" style={{ borderColor: "rgba(255,255,255,0.05)" }}>
+              <span
+                className="inline-block px-4 py-2 rounded-xl text-sm font-semibold"
+                style={{
+                  backgroundColor: primaryColor,
+                  color: bgColor,
+                  fontFamily: headingFont,
+                }}
+              >
+                {yourProduct?.title || "Us"}
+              </span>
+              <span className="text-sm self-center" style={{ color: `${textColor}40` }}>vs</span>
+              <span
+                className="inline-block px-4 py-2 rounded-xl text-sm font-semibold"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.05)",
+                  color: `${textColor}60`,
+                  fontFamily: headingFont,
+                }}
+              >
+                {competitor?.title || "Others"}
+              </span>
+            </div>
+
             {/* Feature Rows */}
             {yourProduct?.features?.map((feature: string, index: number) => (
               <motion.div
                 key={index}
-                className="grid grid-cols-3 gap-4 p-6 items-center border-b last:border-b-0"
+                className="p-4 sm:p-6 border-b last:border-b-0"
                 style={{ borderColor: "rgba(255,255,255,0.03)" }}
                 initial={{ opacity: 0, x: -20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: 0.1 + index * 0.05 }}
               >
-                <div
-                  className="text-sm"
-                  style={{ color: `${textColor}80`, fontFamily: bodyFont }}
-                >
-                  {feature}
-                </div>
-                <div className="flex justify-center">
-                  <motion.div
-                    className="w-8 h-8 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: `${accentColor}20` }}
-                    whileHover={{ scale: 1.1 }}
+                {/* Desktop Layout */}
+                <div className="hidden sm:grid grid-cols-3 gap-4 items-center">
+                  <div
+                    className="text-sm"
+                    style={{ color: `${textColor}80`, fontFamily: bodyFont }}
                   >
-                    <svg
-                      className="w-5 h-5"
-                      style={{ color: accentColor }}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2.5}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </motion.div>
-                </div>
-                <div className="flex justify-center">
-                  {competitor?.features?.includes(feature) ? (
-                    <div
+                    {feature}
+                  </div>
+                  <div className="flex justify-center">
+                    <motion.div
                       className="w-8 h-8 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
+                      style={{ backgroundColor: `${accentColor}20` }}
+                      whileHover={{ scale: 1.1 }}
                     >
                       <svg
                         className="w-5 h-5"
-                        style={{ color: `${textColor}30` }}
+                        style={{ color: accentColor }}
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -190,24 +207,109 @@ export default function ComparisonSectionBase({
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
-                    </div>
-                  ) : (
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: "rgba(239,68,68,0.1)" }}
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        style={{ color: "#ef4444" }}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2.5}
+                    </motion.div>
+                  </div>
+                  <div className="flex justify-center">
+                    {competitor?.features?.includes(feature) ? (
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
+                        <svg
+                          className="w-5 h-5"
+                          style={{ color: `${textColor}30` }}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    ) : (
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: "rgba(239,68,68,0.1)" }}
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          style={{ color: "#ef4444" }}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Mobile Layout */}
+                <div className="sm:hidden">
+                  <div
+                    className="text-sm mb-3 text-center"
+                    style={{ color: `${textColor}80`, fontFamily: bodyFont }}
+                  >
+                    {feature}
+                  </div>
+                  <div className="flex justify-center gap-8">
+                    <div className="flex flex-col items-center gap-1">
+                      <motion.div
+                        className="w-8 h-8 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: `${accentColor}20` }}
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          style={{ color: accentColor }}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </motion.div>
+                      <span className="text-[10px] uppercase tracking-wider" style={{ color: `${textColor}40` }}>Us</span>
                     </div>
-                  )}
+                    <div className="flex flex-col items-center gap-1">
+                      {competitor?.features?.includes(feature) ? (
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            style={{ color: `${textColor}30` }}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2.5}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      ) : (
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: "rgba(239,68,68,0.1)" }}
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            style={{ color: "#ef4444" }}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2.5}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      )}
+                      <span className="text-[10px] uppercase tracking-wider" style={{ color: `${textColor}40` }}>Others</span>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             ))}

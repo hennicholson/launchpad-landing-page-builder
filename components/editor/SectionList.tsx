@@ -1,8 +1,264 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEditorStore } from "@/lib/store";
-import type { SectionType } from "@/lib/page-schema";
+import type { SectionType, PageSection, CTAVariant, HeaderVariant, TestimonialVariant, FeaturesVariant } from "@/lib/page-schema";
+import ElementsPanel from "./ElementsPanel";
+import { DropIndicator } from "./DropIndicator";
+
+// CTA Layout variants with visual representations
+const CTA_LAYOUTS: { variant: CTAVariant; label: string; icon: React.ReactNode }[] = [
+  {
+    variant: "centered",
+    label: "Centered",
+    icon: (
+      <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-1">
+        <div className="w-8 h-1.5 bg-current rounded opacity-80" />
+        <div className="w-6 h-1 bg-current rounded opacity-40" />
+        <div className="w-4 h-2 bg-current rounded mt-1" />
+      </div>
+    ),
+  },
+  {
+    variant: "split",
+    label: "Split",
+    icon: (
+      <div className="w-full h-full flex items-center justify-between gap-1 p-1.5">
+        <div className="flex flex-col gap-0.5">
+          <div className="w-5 h-1.5 bg-current rounded opacity-80" />
+          <div className="w-4 h-1 bg-current rounded opacity-40" />
+        </div>
+        <div className="w-4 h-3 bg-current rounded" />
+      </div>
+    ),
+  },
+  {
+    variant: "banner",
+    label: "Banner",
+    icon: (
+      <div className="w-full h-full flex items-center justify-between gap-1 p-1 bg-current/10 rounded">
+        <div className="flex flex-col gap-0.5">
+          <div className="w-5 h-1 bg-current rounded opacity-80" />
+          <div className="w-3 h-0.5 bg-current rounded opacity-40" />
+        </div>
+        <div className="w-3 h-2 bg-current rounded" />
+      </div>
+    ),
+  },
+  {
+    variant: "minimal",
+    label: "Minimal",
+    icon: (
+      <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-1">
+        <div className="w-6 h-1 bg-current rounded opacity-70" />
+        <div className="w-3 h-0.5 bg-current rounded opacity-50 flex items-center">
+          <span className="text-[4px] opacity-80">→</span>
+        </div>
+      </div>
+    ),
+  },
+];
+
+// Header Layout variants with visual representations
+const HEADER_LAYOUTS: { variant: HeaderVariant; label: string; icon: React.ReactNode }[] = [
+  {
+    variant: "default",
+    label: "Animated",
+    icon: (
+      <div className="w-full h-full flex items-center justify-between gap-1 p-1">
+        <div className="w-3 h-2 bg-current rounded opacity-80" />
+        <div className="flex gap-0.5">
+          <div className="w-2 h-1 bg-current rounded opacity-40" />
+          <div className="w-2 h-1 bg-current rounded opacity-40" />
+          <div className="w-2 h-1 bg-current rounded opacity-40" />
+        </div>
+        <div className="w-3 h-1.5 bg-current rounded" />
+      </div>
+    ),
+  },
+  {
+    variant: "header-2",
+    label: "Scroll",
+    icon: (
+      <div className="w-full h-full flex flex-col gap-0.5 p-1">
+        {/* Top line representing scroll state */}
+        <div className="w-full h-0.5 bg-current/30 rounded" />
+        <div className="flex items-center justify-between">
+          <div className="w-3 h-1.5 bg-current rounded opacity-80" />
+          <div className="flex gap-0.5">
+            <div className="w-2 h-1 bg-current rounded opacity-40" />
+            <div className="w-2 h-1 bg-current rounded opacity-40" />
+          </div>
+          <div className="w-3 h-1.5 bg-current rounded" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    variant: "floating-header",
+    label: "Floating",
+    icon: (
+      <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-1">
+        {/* Gap at top to show floating effect */}
+        <div className="w-[90%] h-3 flex items-center justify-between gap-1 p-0.5 bg-current/10 rounded-full">
+          <div className="w-2 h-1.5 bg-current rounded opacity-80" />
+          <div className="flex gap-0.5">
+            <div className="w-1.5 h-0.5 bg-current rounded opacity-40" />
+            <div className="w-1.5 h-0.5 bg-current rounded opacity-40" />
+          </div>
+          <div className="w-2 h-1 bg-current rounded" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    variant: "simple-header",
+    label: "Simple",
+    icon: (
+      <div className="w-full h-full flex flex-col p-1">
+        <div className="flex items-center justify-between">
+          <div className="w-4 h-2 bg-current rounded opacity-80" />
+          <div className="w-3 h-1.5 bg-current rounded" />
+        </div>
+        <div className="w-full h-[1px] bg-current/30 mt-1" />
+      </div>
+    ),
+  },
+  {
+    variant: "header-with-search",
+    label: "Search",
+    icon: (
+      <div className="w-full h-full flex items-center justify-between gap-1 p-1">
+        <div className="w-3 h-2 bg-current rounded opacity-80" />
+        {/* Search bar representation */}
+        <div className="flex-1 h-1.5 mx-1 bg-current/20 rounded-full flex items-center justify-center">
+          <div className="w-1 h-1 bg-current/50 rounded-full" />
+        </div>
+        <div className="w-3 h-1.5 bg-current rounded" />
+      </div>
+    ),
+  },
+];
+
+// Testimonials Layout variants with visual representations
+const TESTIMONIALS_LAYOUTS: { variant: TestimonialVariant; label: string; icon: React.ReactNode }[] = [
+  {
+    variant: "scrolling",
+    label: "Scrolling",
+    icon: (
+      <div className="w-full h-full flex items-center justify-center gap-1 p-1">
+        {/* 3 columns representation */}
+        <div className="flex flex-col gap-0.5">
+          <div className="w-2 h-2 bg-current rounded opacity-60" />
+          <div className="w-2 h-2 bg-current rounded opacity-40" />
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <div className="w-2 h-2 bg-current rounded opacity-40" />
+          <div className="w-2 h-2 bg-current rounded opacity-60" />
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <div className="w-2 h-2 bg-current rounded opacity-60" />
+          <div className="w-2 h-2 bg-current rounded opacity-40" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    variant: "twitter-cards",
+    label: "Twitter",
+    icon: (
+      <div className="w-full h-full flex items-center justify-center p-1">
+        {/* Stacked cards representation */}
+        <div className="relative w-8 h-6">
+          <div className="absolute left-0 top-0 w-5 h-4 bg-current rounded opacity-30 transform -rotate-6" />
+          <div className="absolute left-1.5 top-0.5 w-5 h-4 bg-current rounded opacity-50 transform -rotate-3" />
+          <div className="absolute left-3 top-1 w-5 h-4 bg-current rounded opacity-80" />
+        </div>
+      </div>
+    ),
+  },
+];
+
+const FEATURES_LAYOUTS: { variant: FeaturesVariant; label: string; icon: React.ReactNode }[] = [
+  {
+    variant: "default",
+    label: "Default",
+    icon: (
+      <div className="relative w-full h-full flex items-center justify-center">
+        <div className="w-full h-full grid grid-cols-3 gap-0.5 p-2">
+          <div className="bg-current rounded opacity-30" />
+          <div className="bg-current rounded opacity-30" />
+          <div className="bg-current rounded opacity-30" />
+          <div className="bg-current rounded opacity-30" />
+          <div className="bg-current rounded opacity-30" />
+          <div className="bg-current rounded opacity-30" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    variant: "illustrated",
+    label: "Illustrated",
+    icon: (
+      <div className="relative w-full h-full flex items-center justify-center">
+        <div className="w-full h-full grid grid-cols-3 gap-0.5 p-2">
+          <div className="bg-current rounded opacity-30 flex flex-col gap-0.5 p-0.5">
+            <div className="bg-blue-500/50 h-1/2 rounded-sm" />
+          </div>
+          <div className="bg-current rounded opacity-30 flex flex-col gap-0.5 p-0.5">
+            <div className="bg-blue-500/50 h-1/2 rounded-sm" />
+          </div>
+          <div className="bg-current rounded opacity-30 flex flex-col gap-0.5 p-0.5">
+            <div className="bg-blue-500/50 h-1/2 rounded-sm" />
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  {
+    variant: "hover",
+    label: "Hover",
+    icon: (
+      <div className="relative w-full h-full flex items-center justify-center">
+        <div className="w-full h-full grid grid-cols-4 gap-0.5 p-2">
+          <div className="bg-current rounded opacity-30 relative">
+            <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-blue-500" />
+          </div>
+          <div className="bg-current rounded opacity-30" />
+          <div className="bg-current rounded opacity-30" />
+          <div className="bg-current rounded opacity-30" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    variant: "bento",
+    label: "Bento",
+    icon: (
+      <div className="relative w-full h-full flex items-center justify-center">
+        <div className="w-full h-full grid grid-cols-6 grid-rows-2 gap-0.5 p-2">
+          <div className="bg-current rounded opacity-30 col-span-4 row-span-2" />
+          <div className="bg-current rounded opacity-30 col-span-2" />
+          <div className="bg-current rounded opacity-30 col-span-2" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    variant: "table",
+    label: "Table",
+    icon: (
+      <div className="relative w-full h-full flex items-center justify-center">
+        <div className="w-full h-full flex flex-col gap-0.5 p-2">
+          <div className="bg-current rounded h-1.5 opacity-30" />
+          <div className="bg-current rounded h-1.5 opacity-30" />
+          <div className="bg-current rounded h-1.5 opacity-30" />
+        </div>
+      </div>
+    ),
+  },
+];
 
 const SECTION_ICONS: Record<SectionType, React.ReactNode> = {
   hero: (
@@ -95,9 +351,15 @@ const SECTION_ICONS: Record<SectionType, React.ReactNode> = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
     </svg>
   ),
+  blank: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+    </svg>
+  ),
 };
 
 const SECTION_TYPES: { type: SectionType; label: string }[] = [
+  { type: "blank", label: "Blank Canvas" },
   { type: "header", label: "Header" },
   { type: "hero", label: "Hero" },
   { type: "features", label: "Features" },
@@ -118,63 +380,558 @@ const SECTION_TYPES: { type: SectionType; label: string }[] = [
   { type: "footer", label: "Footer" },
 ];
 
+type TabType = 'sections' | 'elements';
+
+// Draggable section item component
+function SectionItem({
+  section,
+  isSelected,
+  onSelect,
+  onDuplicate,
+  onRemove,
+  sectionRef,
+  onDragStart,
+}: {
+  section: PageSection;
+  isSelected: boolean;
+  onSelect: () => void;
+  onDuplicate: () => void;
+  onRemove: () => void;
+  sectionRef: (el: HTMLLIElement | null) => void;
+  onDragStart: (e: React.DragEvent, section: PageSection) => void;
+}) {
+  return (
+    <motion.li
+      layout
+      layoutId={section.id}
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{
+        layout: {
+          type: "spring",
+          stiffness: 400,
+          damping: 30,
+          mass: 0.8,
+        },
+        opacity: { duration: 0.2 },
+      }}
+      style={{
+        willChange: "transform",
+      }}
+      ref={(el: HTMLLIElement | null) => {
+        if (el) {
+          sectionRef(el);
+        }
+      }}
+    >
+      <div
+        draggable="true"
+        onDragStart={(e) => onDragStart(e, section)}
+        className={`group relative p-3 rounded-xl cursor-grab active:cursor-grabbing transition-all ${
+          isSelected
+            ? "bg-amber-500/10 ring-1 ring-amber-500/30"
+            : "hover:bg-white/5"
+        }`}
+        onClick={onSelect}
+      >
+      <div className="flex items-center gap-2">
+        {/* Drag Handle */}
+        <div className="p-1 rounded cursor-grab hover:bg-white/10 active:cursor-grabbing transition-colors">
+          <svg
+            className="w-4 h-4 text-white/40"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 8h16M4 16h16"
+            />
+          </svg>
+        </div>
+
+        {/* Section Icon */}
+        <div
+          className={`p-1.5 rounded-lg ${
+            isSelected
+              ? "bg-amber-500/20 text-amber-400"
+              : "bg-white/5 text-white/40"
+          }`}
+        >
+          {SECTION_ICONS[section.type]}
+        </div>
+
+        {/* Section Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium truncate capitalize">
+              {section.type}
+            </p>
+            {section.elements && section.elements.length > 0 && (
+              <span className="text-[10px] text-[#D6FC51]/70 font-medium">
+                +{section.elements.length}
+              </span>
+            )}
+          </div>
+          {section.content.heading && (
+            <p className="text-xs text-white/30 truncate">
+              {section.content.heading}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Section Actions */}
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" role="group" aria-label="Section actions">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDuplicate();
+          }}
+          className="p-1 rounded hover:bg-white/10"
+          aria-label="Duplicate section"
+        >
+          <svg className="w-3.5 h-3.5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
+          </svg>
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          className="p-1 rounded hover:bg-red-500/20 hover:text-red-400"
+          aria-label="Delete section"
+        >
+          <svg className="w-3.5 h-3.5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+          </svg>
+        </button>
+      </div>
+      </div>
+    </motion.li>
+  );
+}
+
 export default function SectionList() {
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showCTALayoutPicker, setShowCTALayoutPicker] = useState(false);
+  const [showHeaderLayoutPicker, setShowHeaderLayoutPicker] = useState(false);
+  const [showTestimonialsLayoutPicker, setShowTestimonialsLayoutPicker] = useState(false);
+  const [showFeaturesLayoutPicker, setShowFeaturesLayoutPicker] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('sections');
   const {
     page,
     selectedSectionId,
     selectSection,
     addSection,
     removeSection,
-    moveSection,
+    reorderSections,
     duplicateSection,
   } = useEditorStore();
 
+  // Track section positions for drop indicator calculation
+  const sectionRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Native drag handlers (Kanban-style)
+  const handleDragStart = (e: React.DragEvent, section: PageSection) => {
+    e.dataTransfer.setData("sectionId", section.id);
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    const sectionId = e.dataTransfer.getData("sectionId");
+
+    clearHighlights();
+
+    const indicators = getIndicators();
+    const { element } = getNearestIndicator(e, indicators);
+    const before = element.dataset.before || "-1";
+
+    if (before !== sectionId) {
+      let copy = [...page.sections];
+      let sectionToMove = copy.find((s) => s.id === sectionId);
+      if (!sectionToMove) return;
+
+      copy = copy.filter((s) => s.id !== sectionId);
+
+      const moveToEnd = before === "-1";
+      if (moveToEnd) {
+        copy.push(sectionToMove);
+      } else {
+        const insertAtIndex = copy.findIndex((s) => s.id === before);
+        if (insertAtIndex === -1) return;
+        copy.splice(insertAtIndex, 0, sectionToMove);
+      }
+
+      reorderSections(copy);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    highlightIndicator(e);
+  };
+
+  const handleDragLeave = () => {
+    clearHighlights();
+  };
+
+  const clearHighlights = (els?: HTMLElement[]) => {
+    const indicators = els || getIndicators();
+    indicators.forEach((i) => {
+      i.style.opacity = "0";
+    });
+  };
+
+  const highlightIndicator = (e: React.DragEvent) => {
+    const indicators = getIndicators();
+    clearHighlights(indicators);
+    const el = getNearestIndicator(e, indicators);
+    el.element.style.opacity = "1";
+  };
+
+  const getNearestIndicator = (
+    e: React.DragEvent,
+    indicators: HTMLElement[]
+  ) => {
+    const DISTANCE_OFFSET = 50;
+
+    const el = indicators.reduce(
+      (closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = e.clientY - (box.top + DISTANCE_OFFSET);
+
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child };
+        } else {
+          return closest;
+        }
+      },
+      {
+        offset: Number.NEGATIVE_INFINITY,
+        element: indicators[indicators.length - 1],
+      }
+    );
+
+    return el;
+  };
+
+  const getIndicators = () => {
+    return Array.from(
+      document.querySelectorAll(
+        `[data-drop-indicator="true"]`
+      ) as unknown as HTMLElement[]
+    );
+  };
+
+  // Handle adding a section with special handling for CTA, Header, and Testimonials
+  const handleAddSection = (type: SectionType) => {
+    if (type === "cta") {
+      setShowCTALayoutPicker(true);
+      setShowHeaderLayoutPicker(false);
+      setShowTestimonialsLayoutPicker(false);
+      setShowFeaturesLayoutPicker(false);
+    } else if (type === "header") {
+      setShowHeaderLayoutPicker(true);
+      setShowCTALayoutPicker(false);
+      setShowTestimonialsLayoutPicker(false);
+      setShowFeaturesLayoutPicker(false);
+    } else if (type === "testimonials") {
+      setShowTestimonialsLayoutPicker(true);
+      setShowCTALayoutPicker(false);
+      setShowHeaderLayoutPicker(false);
+      setShowFeaturesLayoutPicker(false);
+    } else if (type === "features") {
+      setShowFeaturesLayoutPicker(true);
+      setShowCTALayoutPicker(false);
+      setShowHeaderLayoutPicker(false);
+      setShowTestimonialsLayoutPicker(false);
+    } else {
+      addSection(type);
+      setShowAddMenu(false);
+    }
+  };
+
+  // Handle selecting a CTA layout
+  const handleSelectCTALayout = (variant: CTAVariant) => {
+    addSection("cta", undefined, { ctaVariant: variant });
+    setShowCTALayoutPicker(false);
+    setShowAddMenu(false);
+  };
+
+  // Handle selecting a Header layout
+  const handleSelectHeaderLayout = (variant: HeaderVariant) => {
+    addSection("header", undefined, { headerVariant: variant });
+    setShowHeaderLayoutPicker(false);
+    setShowAddMenu(false);
+  };
+
+  // Handle selecting a Testimonials layout
+  const handleSelectTestimonialsLayout = (variant: TestimonialVariant) => {
+    addSection("testimonials", undefined, { testimonialVariant: variant });
+    setShowTestimonialsLayoutPicker(false);
+    setShowAddMenu(false);
+  };
+
+  // Handle selecting a Features layout
+  const handleSelectFeaturesLayout = (variant: FeaturesVariant) => {
+    addSection("features", undefined, { featuresVariant: variant });
+    setShowFeaturesLayoutPicker(false);
+    setShowAddMenu(false);
+  };
+
   return (
     <div className="w-64 border-r border-white/5 flex flex-col flex-shrink-0 bg-[#0f0f10]">
-      {/* Header */}
-      <div className="p-4 border-b border-white/5">
-        <div className="flex items-center justify-between">
-          <h2 className="font-['Sora',sans-serif] font-medium text-sm text-white/80">Sections</h2>
-          <div className="relative">
-            <button
-              onClick={() => setShowAddMenu(!showAddMenu)}
-              className="p-1.5 rounded-lg hover:bg-white/5 transition-colors"
-              aria-label="Add new section"
-              aria-expanded={showAddMenu}
-            >
-              <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-            </button>
-
-            {/* Add Section Menu */}
-            {showAddMenu && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowAddMenu(false)} />
-                <div className="absolute right-0 top-full mt-1 w-48 rounded-xl bg-[#1a1a1c] border border-white/10 shadow-xl z-20 py-1 overflow-hidden">
-                  {SECTION_TYPES.map(({ type, label }) => (
-                    <button
-                      key={type}
-                      onClick={() => {
-                        addSection(type);
-                        setShowAddMenu(false);
-                      }}
-                      className="w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2"
-                    >
-                      {SECTION_ICONS[type]}
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+      {/* Tabs */}
+      <div className="flex border-b border-white/5 flex-shrink-0">
+        <button
+          onClick={() => setActiveTab('sections')}
+          className={`flex-1 px-4 py-3 text-xs font-medium transition-colors relative ${
+            activeTab === 'sections'
+              ? 'text-white'
+              : 'text-white/40 hover:text-white/60'
+          }`}
+        >
+          <span className="flex items-center justify-center gap-1.5">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6z" />
+            </svg>
+            Sections
+          </span>
+          {activeTab === 'sections' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D6FC51]" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('elements')}
+          className={`flex-1 px-4 py-3 text-xs font-medium transition-colors relative ${
+            activeTab === 'elements'
+              ? 'text-white'
+              : 'text-white/40 hover:text-white/60'
+          }`}
+        >
+          <span className="flex items-center justify-center gap-1.5">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Elements
+          </span>
+          {activeTab === 'elements' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D6FC51]" />
+          )}
+        </button>
       </div>
 
+      {/* Elements Tab Content */}
+      {activeTab === 'elements' && (
+        <div className="flex-1 overflow-y-auto">
+          <ElementsPanel />
+        </div>
+      )}
+
+      {/* Sections Tab Content */}
+      {activeTab === 'sections' && (
+        <>
+          {/* Header with Add Button */}
+          <div className="p-4 border-b border-white/5">
+            <div className="flex items-center justify-between">
+              <h2 className="font-['Sora',sans-serif] font-medium text-sm text-white/80">Page Sections</h2>
+              <div className="relative">
+                <button
+                  onClick={() => setShowAddMenu(!showAddMenu)}
+                  className="p-1.5 rounded-lg hover:bg-white/5 transition-colors"
+                  aria-label="Add new section"
+                  aria-expanded={showAddMenu}
+                >
+                  <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                </button>
+
+                {/* Add Section Menu */}
+                {showAddMenu && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => {
+                      setShowAddMenu(false);
+                      setShowCTALayoutPicker(false);
+                      setShowHeaderLayoutPicker(false);
+                      setShowTestimonialsLayoutPicker(false);
+                    }} />
+                    <div className="absolute right-0 top-full mt-1 w-48 rounded-xl bg-[#1a1a1c] border border-white/10 shadow-xl z-20 py-1 overflow-hidden max-h-80 overflow-y-auto">
+                      {SECTION_TYPES.map(({ type, label }) => (
+                        <button
+                          key={type}
+                          onClick={() => handleAddSection(type)}
+                          className={`w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2 ${
+                            (type === "cta" && showCTALayoutPicker) || (type === "header" && showHeaderLayoutPicker) || (type === "testimonials" && showTestimonialsLayoutPicker) ? "bg-white/5 text-white" : ""
+                          }`}
+                        >
+                          {SECTION_ICONS[type]}
+                          {label}
+                          {(type === "cta" || type === "header" || type === "testimonials" || type === "features") && (
+                            <svg className="w-3 h-3 ml-auto opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                            </svg>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* CTA Layout Picker Submenu */}
+                    {showCTALayoutPicker && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        className="absolute left-full ml-1 top-0 w-56 rounded-xl bg-[#1a1a1c] border border-white/10 shadow-xl z-30 p-3"
+                      >
+                        <div className="text-xs font-medium text-white/50 mb-3 uppercase tracking-wider">
+                          Choose CTA Layout
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {CTA_LAYOUTS.map(({ variant, label, icon }) => (
+                            <button
+                              key={variant}
+                              onClick={() => handleSelectCTALayout(variant)}
+                              className="group relative p-3 rounded-lg border border-white/10 hover:border-[#D6FC51]/50 hover:bg-white/5 transition-all text-center"
+                            >
+                              <div className="w-full h-10 text-white/40 group-hover:text-[#D6FC51] transition-colors mb-2">
+                                {icon}
+                              </div>
+                              <div className="text-[10px] font-medium text-white/60 group-hover:text-white/80 uppercase tracking-wide">
+                                {label}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => setShowCTALayoutPicker(false)}
+                          className="w-full mt-3 py-1.5 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+                        >
+                          ← Back to sections
+                        </button>
+                      </motion.div>
+                    )}
+
+                    {/* Header Layout Picker Submenu */}
+                    {showHeaderLayoutPicker && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        className="absolute left-full ml-1 top-0 w-56 rounded-xl bg-[#1a1a1c] border border-white/10 shadow-xl z-30 p-3"
+                      >
+                        <div className="text-xs font-medium text-white/50 mb-3 uppercase tracking-wider">
+                          Choose Header Layout
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {HEADER_LAYOUTS.map(({ variant, label, icon }) => (
+                            <button
+                              key={variant}
+                              onClick={() => handleSelectHeaderLayout(variant)}
+                              className="group relative p-3 rounded-lg border border-white/10 hover:border-[#D6FC51]/50 hover:bg-white/5 transition-all text-center"
+                            >
+                              <div className="w-full h-10 text-white/40 group-hover:text-[#D6FC51] transition-colors mb-2">
+                                {icon}
+                              </div>
+                              <div className="text-[10px] font-medium text-white/60 group-hover:text-white/80 uppercase tracking-wide">
+                                {label}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => setShowHeaderLayoutPicker(false)}
+                          className="w-full mt-3 py-1.5 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+                        >
+                          ← Back to sections
+                        </button>
+                      </motion.div>
+                    )}
+
+                    {/* Testimonials Layout Picker Submenu */}
+                    {showTestimonialsLayoutPicker && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        className="absolute left-full ml-1 top-0 w-56 rounded-xl bg-[#1a1a1c] border border-white/10 shadow-xl z-30 p-3"
+                      >
+                        <div className="text-xs font-medium text-white/50 mb-3 uppercase tracking-wider">
+                          Choose Testimonials Layout
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {TESTIMONIALS_LAYOUTS.map(({ variant, label, icon }) => (
+                            <button
+                              key={variant}
+                              onClick={() => handleSelectTestimonialsLayout(variant)}
+                              className="group relative p-3 rounded-lg border border-white/10 hover:border-[#D6FC51]/50 hover:bg-white/5 transition-all text-center"
+                            >
+                              <div className="w-full h-10 text-white/40 group-hover:text-[#D6FC51] transition-colors mb-2">
+                                {icon}
+                              </div>
+                              <div className="text-[10px] font-medium text-white/60 group-hover:text-white/80 uppercase tracking-wide">
+                                {label}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => setShowTestimonialsLayoutPicker(false)}
+                          className="w-full mt-3 py-1.5 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+                        >
+                          ← Back to sections
+                        </button>
+                      </motion.div>
+                    )}
+
+                    {/* Features Layout Picker Submenu */}
+                    {showFeaturesLayoutPicker && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        className="absolute left-full ml-1 top-0 w-56 rounded-xl bg-[#1a1a1c] border border-white/10 shadow-xl z-30 p-3"
+                      >
+                        <div className="text-xs font-medium text-white/50 mb-3 uppercase tracking-wider">
+                          Choose Features Layout
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {FEATURES_LAYOUTS.map(({ variant, label, icon }) => (
+                            <button
+                              key={variant}
+                              onClick={() => handleSelectFeaturesLayout(variant)}
+                              className="group relative p-3 rounded-lg border border-white/10 hover:border-[#D6FC51]/50 hover:bg-white/5 transition-all text-center"
+                            >
+                              <div className="w-full h-10 text-white/40 group-hover:text-[#D6FC51] transition-colors mb-2">
+                                {icon}
+                              </div>
+                              <div className="text-[10px] font-medium text-white/60 group-hover:text-white/80 uppercase tracking-wide">
+                                {label}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => setShowFeaturesLayoutPicker(false)}
+                          className="w-full mt-3 py-1.5 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+                        >
+                          ← Back to sections
+                        </button>
+                      </motion.div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
       {/* Section List */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-2">
         {page.sections.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-4">
             <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-3">
@@ -189,122 +946,68 @@ export default function SectionList() {
             </p>
           </div>
         ) : (
-          page.sections.map((section, index) => (
-            <div
-              key={section.id}
-              onClick={() => selectSection(section.id)}
-              className={`group relative p-3 rounded-xl cursor-pointer transition-all ${
-                selectedSectionId === section.id
-                  ? "bg-amber-500/10 ring-1 ring-amber-500/30"
+          <div
+            onDrop={handleDragEnd}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            className="flex flex-col gap-1"
+          >
+            <AnimatePresence mode="popLayout">
+              {page.sections.map((section) => (
+                <React.Fragment key={section.id}>
+                  {/* Drop indicator BEFORE this section */}
+                  <DropIndicator beforeId={section.id} />
+
+                  <SectionItem
+                    section={section}
+                    isSelected={selectedSectionId === section.id}
+                    onSelect={() => selectSection(section.id)}
+                    onDuplicate={() => duplicateSection(section.id)}
+                    onRemove={() => removeSection(section.id)}
+                    onDragStart={handleDragStart}
+                    sectionRef={(el) => {
+                      if (el) sectionRefs.current.set(section.id, el);
+                      else sectionRefs.current.delete(section.id);
+                    }}
+                  />
+                </React.Fragment>
+              ))}
+
+              {/* Drop indicator at the end */}
+              <DropIndicator beforeId={null} />
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+
+          {/* Page Settings */}
+          <div className="p-3 border-t border-white/5">
+            <button
+              onClick={() => selectSection(null)}
+              className={`w-full p-3 rounded-xl text-left transition-all ${
+                selectedSectionId === null
+                  ? "bg-violet-500/10 ring-1 ring-violet-500/30"
                   : "hover:bg-white/5"
               }`}
             >
               <div className="flex items-center gap-2">
                 <div
                   className={`p-1.5 rounded-lg ${
-                    selectedSectionId === section.id
-                      ? "bg-amber-500/20 text-amber-400"
+                    selectedSectionId === null
+                      ? "bg-violet-500/20 text-violet-400"
                       : "bg-white/5 text-white/40"
                   }`}
                 >
-                  {SECTION_ICONS[section.type]}
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
+                  </svg>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate capitalize">
-                    {section.type}
-                  </p>
-                  {section.content.heading && (
-                    <p className="text-xs text-white/30 truncate">
-                      {section.content.heading}
-                    </p>
-                  )}
-                </div>
+                <span className="text-sm font-medium">Page Settings</span>
               </div>
-
-              {/* Section Actions */}
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity" role="group" aria-label="Section actions">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    moveSection(section.id, "up");
-                  }}
-                  disabled={index === 0}
-                  className="p-1 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
-                  aria-label="Move section up"
-                >
-                  <svg className="w-3.5 h-3.5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
-                  </svg>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    moveSection(section.id, "down");
-                  }}
-                  disabled={index === page.sections.length - 1}
-                  className="p-1 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
-                  aria-label="Move section down"
-                >
-                  <svg className="w-3.5 h-3.5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                  </svg>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    duplicateSection(section.id);
-                  }}
-                  className="p-1 rounded hover:bg-white/10"
-                  aria-label="Duplicate section"
-                >
-                  <svg className="w-3.5 h-3.5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
-                  </svg>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeSection(section.id);
-                  }}
-                  className="p-1 rounded hover:bg-red-500/20 hover:text-red-400"
-                  aria-label="Delete section"
-                >
-                  <svg className="w-3.5 h-3.5 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Page Settings */}
-      <div className="p-3 border-t border-white/5">
-        <button
-          onClick={() => selectSection(null)}
-          className={`w-full p-3 rounded-xl text-left transition-all ${
-            selectedSectionId === null
-              ? "bg-violet-500/10 ring-1 ring-violet-500/30"
-              : "hover:bg-white/5"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <div
-              className={`p-1.5 rounded-lg ${
-                selectedSectionId === null
-                  ? "bg-violet-500/20 text-violet-400"
-                  : "bg-white/5 text-white/40"
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42" />
-              </svg>
-            </div>
-            <span className="text-sm font-medium">Page Settings</span>
+            </button>
           </div>
-        </button>
-      </div>
+        </>
+      )}
     </div>
   );
 }

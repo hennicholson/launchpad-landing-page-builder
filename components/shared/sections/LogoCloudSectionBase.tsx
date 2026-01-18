@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import type { SectionItem } from "@/lib/page-schema";
+import { SectionBackground } from "../SectionBackground";
 
 export default function LogoCloudSectionBase({
   section,
@@ -30,11 +31,18 @@ export default function LogoCloudSectionBase({
   const duplicatedLogos = [...logos, ...logos];
   const duplicatedBrands = [...brandNames, ...brandNames];
 
+  const DEFAULT_PADDING = { top: 64, bottom: 96 };
+
   return (
     <section
-      className="py-16 lg:py-24 relative overflow-hidden"
-      style={{ backgroundColor: bgColor }}
+      className="relative overflow-hidden"
+      style={{
+        backgroundColor: bgColor,
+        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
+        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+      }}
     >
+      <SectionBackground effect={content.backgroundEffect} />
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         {/* Header */}
         <motion.div
@@ -44,7 +52,7 @@ export default function LogoCloudSectionBase({
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          {content.heading && (
+          {content.showHeading !== false && content.heading && (
             <span
               className="block text-sm uppercase tracking-wider mb-8"
               style={{ color: `${textColor}50`, fontFamily: bodyFont }}
@@ -64,7 +72,7 @@ export default function LogoCloudSectionBase({
         </motion.div>
 
         {/* Logo Marquee */}
-        {logos.length > 0 ? (
+        {content.showItems !== false && logos.length > 0 ? (
           <div className="relative">
             {/* Gradient masks */}
             <div
@@ -121,7 +129,7 @@ export default function LogoCloudSectionBase({
               </motion.div>
             </div>
           </div>
-        ) : brandNames.length > 0 ? (
+        ) : content.showBrands !== false && brandNames.length > 0 ? (
           /* Text-based brand marquee */
           <div className="relative">
             {/* Gradient masks */}
@@ -184,7 +192,7 @@ export default function LogoCloudSectionBase({
         )}
 
         {/* Subheading below logos */}
-        {content.subheading && (
+        {content.showSubheading !== false && content.subheading && (
           <motion.div
             className="text-center text-sm mt-8"
             style={{ color: `${textColor}40` }}

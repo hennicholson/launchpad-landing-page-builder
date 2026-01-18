@@ -1,7 +1,7 @@
 "use client";
 
 import type { PageSection } from "@/lib/page-schema";
-import { useEditorStore } from "@/lib/store";
+import { useEditorStoreOrPublished } from "@/lib/store";
 import StatsSectionBase from "@/components/shared/sections/StatsSectionBase";
 import EditableText from "../EditableText";
 
@@ -10,7 +10,7 @@ type Props = {
 };
 
 export default function StatsSection({ section }: Props) {
-  const { page } = useEditorStore();
+  const { page } = useEditorStoreOrPublished();
 
   return (
     <StatsSectionBase

@@ -56,29 +56,118 @@ function getHeadingStyleCSS(
 // Section renderers
 function renderHeader(section: PageSection, colorScheme: ColorScheme, typography: Typography): string {
   const { content } = section;
-  const bgColor = content.backgroundColor || "transparent";
+  const bgColor = content.backgroundColor || colorScheme.background;
   const textColor = content.textColor || colorScheme.text;
   const primaryColor = colorScheme.primary;
+  const backgroundColor = colorScheme.background;
+  const variant = content.headerVariant || "default";
 
   const links = content.links || [];
   const linksHtml = links
     .map(
       (link) =>
-        `<a href="${escapeHtml(link.url)}" class="text-sm font-medium uppercase tracking-wider transition-colors hover:opacity-100" style="color: ${textColor}99;">${escapeHtml(link.label)}</a>`
+        `<a href="${escapeHtml(link.url)}" class="text-sm font-medium transition-colors hover:opacity-100" style="color: ${textColor}99;">${escapeHtml(link.label)}</a>`
     )
     .join("");
 
+  const logoHtml = content.logoUrl
+    ? `<img src="${escapeHtml(content.logoUrl)}" alt="${escapeHtml(content.logoText || "Logo")}" class="h-8 w-auto" />`
+    : `<span class="font-mono text-lg font-medium" style="color: ${textColor};">${escapeHtml(content.logoText || "Logo")}</span>`;
+
+  const ctaButtonHtml = content.buttonText
+    ? `<a href="${escapeHtml(content.buttonLink || "#")}" class="px-4 py-2 rounded-md text-sm font-medium transition-all hover:scale-105" style="background-color: ${primaryColor}; color: ${backgroundColor};">${escapeHtml(content.buttonText)}</a>`
+    : "";
+
+  // header-2: Scroll-responsive header (static export shows scrolled state)
+  if (variant === "header-2") {
+    return `
+      <header class="sticky top-0 z-50 w-full border-b backdrop-blur-md" style="background-color: ${bgColor}f2; border-color: ${textColor}10;">
+        <div class="max-w-6xl mx-auto px-6 lg:px-8">
+          <div class="flex h-16 items-center justify-between">
+            <a href="#">${logoHtml}</a>
+            <nav class="hidden md:flex items-center gap-8">
+              ${linksHtml}
+            </nav>
+            <div class="flex items-center gap-4">
+              ${ctaButtonHtml}
+            </div>
+          </div>
+        </div>
+      </header>
+    `;
+  }
+
+  // floating-header: Floating rounded container with offset
+  if (variant === "floating-header") {
+    return `
+      <header class="sticky top-0 z-50 w-full pt-5">
+        <div class="max-w-5xl mx-auto px-4">
+          <div class="flex items-center justify-between py-3 px-6 rounded-full backdrop-blur-md border" style="background-color: ${bgColor}f2; border-color: ${textColor}15;">
+            <a href="#">${logoHtml}</a>
+            <nav class="hidden md:flex items-center gap-6">
+              ${links.map(link => `<a href="${escapeHtml(link.url)}" class="text-sm transition-colors hover:opacity-100" style="color: ${textColor}99;">${escapeHtml(link.label)}</a>`).join("")}
+            </nav>
+            ${ctaButtonHtml}
+          </div>
+        </div>
+      </header>
+    `;
+  }
+
+  // simple-header: Standard sticky header with border
+  if (variant === "simple-header") {
+    return `
+      <header class="sticky top-0 z-50 w-full border-b" style="background-color: ${bgColor}; border-color: ${textColor}10;">
+        <div class="max-w-6xl mx-auto px-6 lg:px-8">
+          <div class="flex h-16 items-center justify-between">
+            <a href="#">${logoHtml}</a>
+            <nav class="hidden md:flex items-center gap-8">
+              ${linksHtml}
+            </nav>
+            ${ctaButtonHtml}
+          </div>
+        </div>
+      </header>
+    `;
+  }
+
+  // header-with-search: Header with command palette search
+  if (variant === "header-with-search") {
+    const searchPlaceholder = content.searchPlaceholder || "Search...";
+    return `
+      <header class="sticky top-0 z-50 w-full border-b backdrop-blur-md" style="background-color: ${bgColor}f2; border-color: ${textColor}10;">
+        <div class="max-w-6xl mx-auto px-6 lg:px-8">
+          <div class="flex h-16 items-center justify-between gap-6">
+            <a href="#">${logoHtml}</a>
+            <nav class="hidden md:flex items-center gap-6">
+              ${linksHtml}
+            </nav>
+            <div class="flex items-center gap-4">
+              <button type="button" class="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm rounded-md border" style="background-color: ${textColor}08; border-color: ${textColor}15; color: ${textColor}60;">
+                <svg class="w-4 h-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <span>${escapeHtml(searchPlaceholder)}</span>
+                <kbd class="ml-2 px-1.5 py-0.5 text-xs rounded border" style="background-color: ${textColor}10; border-color: ${textColor}20;">⌘K</kbd>
+              </button>
+              ${ctaButtonHtml}
+            </div>
+          </div>
+        </div>
+      </header>
+    `;
+  }
+
+  // Default variant: Animated header with full navigation
   return `
-    <header class="sticky top-0 z-50 w-full py-5 backdrop-blur-md" style="background-color: ${bgColor}ee;">
+    <header class="sticky top-0 z-50 w-full py-4 backdrop-blur-md" style="background-color: ${bgColor}f2;">
       <div class="max-w-6xl mx-auto px-6 lg:px-8">
         <div class="flex items-center justify-between">
-          <a href="#" class="text-xl uppercase tracking-wider" style="color: ${textColor}; font-family: var(--font-heading);">
-            ${content.logoUrl ? `<img src="${escapeHtml(content.logoUrl)}" alt="${escapeHtml(content.logoText || "Logo")}" class="h-8 w-auto" />` : escapeHtml(content.logoText || "Your Brand")}
-          </a>
+          <a href="#">${logoHtml}</a>
           <nav class="hidden md:flex items-center gap-8">
             ${linksHtml}
-            ${content.buttonText ? `<a href="${escapeHtml(content.buttonLink || "#")}" class="px-5 py-2 rounded-lg text-sm font-semibold uppercase tracking-wider transition-all hover:scale-105" style="background-color: ${primaryColor}; color: ${colorScheme.background}; font-family: var(--font-body);">${escapeHtml(content.buttonText)}</a>` : ""}
           </nav>
+          <div class="flex items-center gap-4">
+            ${ctaButtonHtml}
+          </div>
         </div>
       </div>
     </header>
@@ -397,8 +486,9 @@ function renderTestimonials(section: PageSection, colorScheme: ColorScheme): str
   const bgColor = content.backgroundColor || colorScheme.background;
   const textColor = content.textColor || colorScheme.text;
   const accentColor = content.accentColor || colorScheme.accent;
+  const variant = content.testimonialVariant || "scrolling";
 
-  // Helper to render a single testimonial card
+  // Helper to render a single testimonial card (scrolling variant)
   const renderTestimonialCard = (item: SectionItem) => {
     const initials = item.author
       ?.split(" ")
@@ -429,15 +519,87 @@ function renderTestimonials(section: PageSection, colorScheme: ColorScheme): str
     `;
   };
 
-  // Split items into 3 columns
+  // Helper to render a Twitter-style card
+  const renderTwitterCard = (item: SectionItem, index: number) => {
+    const handle = item.role
+      ? `@${item.role.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 15)}`
+      : item.author
+        ? `@${item.author.toLowerCase().replace(/[^a-z0-9]/g, "_").slice(0, 15)}`
+        : "@user";
+
+    const cardStyles = [
+      "transform: rotate(-8deg) translateX(0) translateY(0);",
+      "transform: rotate(-8deg) translateX(64px) translateY(40px);",
+      "transform: rotate(-8deg) translateX(128px) translateY(80px);"
+    ];
+
+    return `
+      <div class="relative flex min-h-[180px] w-[380px] select-none flex-col rounded-2xl border px-4 py-4" style="background-color: ${bgColor}f2; border-color: ${textColor}20; ${cardStyles[index] || cardStyles[2]}">
+        <div class="flex items-start gap-3 mb-3">
+          ${item.imageUrl
+            ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.author || "")}" class="w-12 h-12 rounded-full object-cover" />`
+            : `<div class="w-12 h-12 rounded-full flex items-center justify-center" style="background: linear-gradient(135deg, #4ade80, #facc15, #22c55e);"><span class="text-2xl">🐸</span></div>`
+          }
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1">
+              <span class="font-bold truncate" style="color: ${textColor};">${escapeHtml(item.author || "Customer")}</span>
+              <svg class="w-4 h-4 text-[#1d9bf0]" viewBox="0 0 22 22" fill="currentColor"><path d="M20.396 11c-.018-.646-.215-1.275-.57-1.816-.354-.54-.852-.972-1.438-1.246.223-.607.27-1.264.14-1.897-.131-.634-.437-1.218-.882-1.687-.47-.445-1.053-.75-1.687-.882-.633-.13-1.29-.083-1.897.14-.273-.587-.704-1.086-1.245-1.44S11.647 1.62 11 1.604c-.646.017-1.273.213-1.813.568s-.969.854-1.24 1.44c-.608-.223-1.267-.272-1.902-.14-.635.13-1.22.436-1.69.882-.445.47-.749 1.055-.878 1.688-.13.633-.08 1.29.144 1.896-.587.274-1.087.705-1.443 1.245-.356.54-.555 1.17-.574 1.817.02.647.218 1.276.574 1.817.356.54.856.972 1.443 1.245-.224.606-.274 1.263-.144 1.896.13.634.433 1.218.877 1.688.47.443 1.054.747 1.687.878.633.132 1.29.084 1.897-.136.274.586.705 1.084 1.246 1.439.54.354 1.17.551 1.816.569.647-.016 1.276-.213 1.817-.567s.972-.854 1.245-1.44c.604.239 1.266.296 1.903.164.636-.132 1.22-.447 1.68-.907.46-.46.776-1.044.908-1.681s.075-1.299-.165-1.903c.586-.274 1.084-.705 1.439-1.246.354-.54.551-1.17.569-1.816zM9.662 14.85l-3.429-3.428 1.293-1.302 2.072 2.072 4.4-4.794 1.347 1.246z"/></svg>
+            </div>
+            <span class="text-sm" style="color: ${textColor}80;">${handle}</span>
+          </div>
+          <svg class="w-5 h-5" style="color: ${textColor};" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </div>
+        <p class="text-[15px] leading-relaxed mb-3" style="color: ${textColor};">${escapeHtml(item.title || item.description || "Great product!")}</p>
+        <div class="flex items-center justify-between text-sm mt-auto" style="color: ${textColor}80;">
+          <span>Jan ${index + 1}, 2026</span>
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+              <span>${Math.floor(Math.random() * 200) + 20}</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+              <span>${Math.floor(Math.random() * 50) + 5}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  };
+
+  // Header section (common to both variants)
+  const headerHtml = `
+    <div class="text-center mb-16">
+      ${content.badge ? `<span data-animate class="inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider mb-6" style="background-color: ${accentColor}15; color: ${accentColor};">${escapeHtml(content.badge)}</span>` : ""}
+      ${content.heading ? `<h2 data-animate data-delay="100" class="text-4xl sm:text-5xl lg:text-6xl uppercase leading-[0.95]" style="color: ${textColor}; font-family: var(--font-heading);">${escapeHtml(content.heading)}</h2>` : ""}
+      ${content.subheading ? `<p data-animate data-delay="200" class="mt-4 text-lg max-w-2xl mx-auto" style="color: ${textColor}70;">${escapeHtml(content.subheading)}</p>` : ""}
+    </div>
+  `;
+
+  // Twitter Cards variant
+  if (variant === "twitter-cards") {
+    const displayItems = (items || []).slice(0, 3);
+    return `
+      <section class="py-20 lg:py-32 overflow-hidden" style="background-color: ${bgColor};">
+        <div class="max-w-6xl mx-auto px-6 lg:px-8">
+          ${headerHtml}
+          <div class="flex justify-center py-8">
+            <div class="relative" style="width: 500px; height: 280px;">
+              ${displayItems.map((item, index) => renderTwitterCard(item, index)).join("")}
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  // Scrolling columns variant (default)
   const column1 = (items || []).filter((_, i) => i % 3 === 0);
   const column2 = (items || []).filter((_, i) => i % 3 === 1);
   const column3 = (items || []).filter((_, i) => i % 3 === 2);
 
-  // Helper to render a scroll column with infinite scroll
   const renderScrollColumn = (colItems: SectionItem[], speed: number, direction: "up" | "down", hiddenClass: string) => {
     if (colItems.length === 0) return "";
-    // Triple items for seamless loop
     const tripled = [...colItems, ...colItems, ...colItems];
     return `
       <div class="scroll-column ${hiddenClass}" style="--scroll-bg: ${bgColor};">
@@ -451,11 +613,7 @@ function renderTestimonials(section: PageSection, colorScheme: ColorScheme): str
   return `
     <section class="py-20 lg:py-32 overflow-hidden" style="background-color: ${bgColor};">
       <div class="max-w-6xl mx-auto px-6 lg:px-8">
-        <div class="text-center mb-16">
-          ${content.badge ? `<span data-animate class="inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider mb-6" style="background-color: ${accentColor}15; color: ${accentColor};">${escapeHtml(content.badge)}</span>` : ""}
-          ${content.heading ? `<h2 data-animate data-delay="100" class="text-4xl sm:text-5xl lg:text-6xl uppercase leading-[0.95]" style="color: ${textColor}; font-family: var(--font-heading);">${escapeHtml(content.heading)}</h2>` : ""}
-          ${content.subheading ? `<p data-animate data-delay="200" class="mt-4 text-lg max-w-2xl mx-auto" style="color: ${textColor}70;">${escapeHtml(content.subheading)}</p>` : ""}
-        </div>
+        ${headerHtml}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           ${renderScrollColumn(column1, 35, "up", "")}
           ${renderScrollColumn(column2, 28, "down", "hidden md:block")}

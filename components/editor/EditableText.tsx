@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, KeyboardEvent, useMemo } from "react";
-import { useEditorStore } from "@/lib/store";
+import { useEditorStoreOrPublished } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { resolveElementStyle } from "@/lib/style-utils";
 
@@ -32,7 +32,7 @@ export default function EditableText({
   useElementStyles = false,
 }: Props) {
   const { editingField, setEditingField, updateFieldValue, isPreviewMode, selectSection, openElementStylePanel, page } =
-    useEditorStore();
+    useEditorStoreOrPublished();
   const [localValue, setLocalValue] = useState(value);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 

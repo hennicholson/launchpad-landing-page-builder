@@ -25,9 +25,20 @@ function generatePackageJson(): string {
       react: "18.3.1",
       "react-dom": "18.3.1",
       "framer-motion": "11.3.8",
-      tailwindcss: "3.4.4",
-      postcss: "8.4.39",
-      autoprefixer: "10.4.19"
+      "lucide-react": "0.460.0",
+      tailwindcss: "4.0.0",
+      "@tailwindcss/postcss": "4.0.0",
+      // shadcn/ui dependencies
+      "@radix-ui/react-dialog": "1.1.4",
+      "@radix-ui/react-slot": "1.1.1",
+      "@radix-ui/react-avatar": "1.1.2",
+      "class-variance-authority": "0.7.1",
+      "clsx": "2.1.1",
+      "tailwind-merge": "2.6.0",
+      "vaul": "1.1.2",
+      "embla-carousel-react": "8.5.1",
+      "cmdk": "1.0.4",
+      "simplex-noise": "4.0.3"
     },
     devDependencies: {
       "@types/node": "20.14.10",
@@ -96,22 +107,19 @@ module.exports = {
 `;
 }
 
-// Generate postcss.config.js
+// Generate postcss.config.js (Tailwind v4)
 function generatePostcssConfig(): string {
   return `module.exports = {
   plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
+    '@tailwindcss/postcss': {},
   },
 };
 `;
 }
 
-// Generate app/globals.css (fonts loaded via <link> in layout for better performance)
+// Generate app/globals.css (Tailwind v4 syntax with animations)
 function generateGlobalsCss(colorScheme: ColorScheme, typography: Typography): string {
-  return `@tailwind base;
-@tailwind components;
-@tailwind utilities;
+  return `@import "tailwindcss";
 
 :root {
   --color-primary: ${colorScheme.primary};
@@ -146,26 +154,107 @@ html {
 /* Custom scrollbar for webkit browsers */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-background);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-text);
-  opacity: 0.2;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  opacity: 0.4;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Animation utilities */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoom-in-95 {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-in {
+  animation-duration: 200ms;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+.fade-in {
+  animation-name: fade-in;
+}
+
+.zoom-in-95 {
+  animation-name: zoom-in-95;
+}
+
+/* Shimmer animation for skeleton loading */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s infinite;
+  background-size: 200% 100%;
+}
+
+/* Marquee animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 `;
 }
 
+// Tracking configuration for analytics injection
+export type TrackingConfig = {
+  enabled: boolean;
+  projectId: string;
+  apiUrl?: string;
+};
+
 // Generate app/layout.tsx
-function generateLayout(page: LandingPage, settings?: ProjectSettings): string {
+function generateLayout(page: LandingPage, settings?: ProjectSettings, tracking?: TrackingConfig): string {
   const faviconUrl = settings?.favicon || '/favicon.ico';
   const ogImageUrl = settings?.ogImage || '';
 
@@ -173,6 +262,16 @@ function generateLayout(page: LandingPage, settings?: ProjectSettings): string {
   const headingFontParam = page.typography.headingFont.replace(/ /g, '+');
   const bodyFontParam = page.typography.bodyFont.replace(/ /g, '+');
   const fontsUrl = `https://fonts.googleapis.com/css2?family=${headingFontParam}:wght@400;500;600;700&family=${bodyFontParam}:wght@400;500;600;700&display=swap`;
+
+  // Generate tracking script tag if tracking is enabled (Free tier only)
+  const trackingScript = tracking?.enabled && tracking?.projectId
+    ? `<script
+          src="${tracking.apiUrl || 'https://launchpad.whop.com'}/analytics.js"
+          data-lp-project="${tracking.projectId}"
+          data-lp-api="${tracking.apiUrl || 'https://launchpad.whop.com'}"
+          defer
+        ></script>`
+    : '';
 
   return `import type { Metadata } from 'next';
 import './globals.css';
@@ -201,6 +300,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="${fontsUrl}" rel="stylesheet" />
         ${settings?.customHead || ''}
+        ${trackingScript}
       </head>
       <body>{children}</body>
     </html>
@@ -309,6 +409,9 @@ export type StatsVariant = "cards" | "minimal" | "bars" | "circles";
 export type CTAVariant = "centered" | "split" | "banner" | "minimal";
 export type ProcessVariant = "timeline" | "cards" | "horizontal";
 export type HeadingStyle = "solid" | "gradient" | "outline";
+export type TestimonialVariant = "scrolling" | "twitter-cards";
+export type HeaderVariant = "default" | "header-2" | "floating-header" | "simple-header" | "header-with-search";
+export type BackgroundEffect = "none" | "elegant-shapes" | "background-circles" | "background-paths" | "glow" | "shooting-stars" | "stars-background" | "wavy-background";
 
 export type NavLink = {
   label: string;
@@ -369,8 +472,142 @@ export type SectionContent = {
   ctaVariant?: CTAVariant;
   processVariant?: ProcessVariant;
   headingStyle?: HeadingStyle;
+  testimonialVariant?: TestimonialVariant;
+  headerVariant?: HeaderVariant;
+  backgroundEffect?: BackgroundEffect;
   paddingTop?: number;
   paddingBottom?: number;
+};
+
+// Element types for drag-and-drop elements
+export type ElementType =
+  | 'button'
+  | 'image'
+  | 'text'
+  | 'divider'
+  | 'icon'
+  | 'video'
+  | 'social'
+  | 'badge'
+  | 'countdown'
+  | 'form'
+  | 'html';
+
+export type ElementPosition = {
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+};
+
+export type ElementAnimation = {
+  hover?: 'scale' | 'lift' | 'glow' | 'bounce' | 'shake' | 'pulse' | 'underline' | 'fill' | 'none';
+  click?: 'press' | 'ripple' | 'bounce' | 'none';
+};
+
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'gradient' | 'neon' | '3d' | 'glass' | 'pill' | 'icon' | 'underline' | 'bounce'
+  | 'animated-generate' | 'liquid' | 'flow' | 'ripple' | 'cartoon' | 'win98';
+export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
+export type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'gradient' | 'outline' | 'glow';
+export type IconVariant = 'circle' | 'square' | 'none' | 'glow' | 'shadow';
+export type DividerVariant = 'solid' | 'dashed' | 'dotted' | 'gradient' | 'double';
+export type FontWeight = 'normal' | 'medium' | 'semibold' | 'bold';
+export type ShadowSize = 'none' | 'sm' | 'md' | 'lg';
+export type WidthMode = 'auto' | 'full' | number;
+
+export type ElementContent = {
+  buttonText?: string;
+  buttonLink?: string;
+  buttonVariant?: ButtonVariant;
+  buttonSize?: ButtonSize;
+  buttonPaddingX?: number;
+  buttonPaddingY?: number;
+  buttonBorderRadius?: number;
+  buttonBgColor?: string;
+  buttonTextColor?: string;
+  buttonBorderWidth?: number;
+  buttonBorderColor?: string;
+  buttonFontSize?: number;
+  buttonFontWeight?: FontWeight;
+  buttonShadow?: ShadowSize;
+  buttonWidth?: WidthMode;
+  imageUrl?: string;
+  imageAlt?: string;
+  imageWidth?: number;
+  imageFit?: 'cover' | 'contain' | 'fill';
+  imageBorderRadius?: number;
+  imageShadow?: ShadowSize;
+  imageBorderWidth?: number;
+  imageBorderColor?: string;
+  text?: string;
+  textType?: 'heading' | 'subheading' | 'paragraph' | 'caption';
+  textFontSize?: number;
+  textFontWeight?: FontWeight;
+  textColor?: string;
+  textAlign?: 'left' | 'center' | 'right';
+  textLineHeight?: number;
+  textLetterSpacing?: string;
+  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  textMaxWidth?: number;
+  iconName?: string;
+  iconSize?: number;
+  iconVariant?: IconVariant;
+  iconColor?: string;
+  iconBgColor?: string;
+  videoUrl?: string;
+  videoWidth?: number;
+  videoBorderRadius?: number;
+  videoAspectRatio?: '16:9' | '4:3' | '1:1';
+  videoShadow?: ShadowSize;
+  socialLinks?: Array<{ platform: string; url: string }>;
+  socialVariant?: 'default' | 'filled' | 'minimal';
+  socialIconSize?: number;
+  socialGap?: number;
+  socialIconColor?: string;
+  badgeText?: string;
+  badgeVariant?: BadgeVariant;
+  badgeBgColor?: string;
+  badgeTextColor?: string;
+  badgeFontSize?: number;
+  badgePaddingX?: number;
+  badgePaddingY?: number;
+  badgeBorderRadius?: number;
+  countdownTarget?: string;
+  countdownBoxBgColor?: string;
+  countdownNumberColor?: string;
+  countdownLabelColor?: string;
+  countdownBorderRadius?: number;
+  countdownGap?: number;
+  countdownShowLabels?: boolean;
+  formPlaceholder?: string;
+  formButtonText?: string;
+  formInputBgColor?: string;
+  formInputTextColor?: string;
+  formButtonBgColor?: string;
+  formButtonTextColor?: string;
+  formBorderRadius?: number;
+  formBorderColor?: string;
+  htmlCode?: string;
+  dividerVariant?: DividerVariant;
+  dividerThickness?: number;
+  dividerWidth?: number;
+  dividerColor?: string;
+  animation?: ElementAnimation;
+};
+
+export type ElementStyleOverride = {
+  color?: string;
+};
+
+export type PageElement = {
+  id: string;
+  type: ElementType;
+  position: ElementPosition;
+  snapToGrid: boolean;
+  visible: boolean;
+  content: ElementContent;
+  styles: ElementStyleOverride;
+  groupId?: string;
 };
 
 export type PageSection = {
@@ -378,6 +615,7 @@ export type PageSection = {
   type: SectionType;
   content: SectionContent;
   items?: SectionItem[];
+  elements?: PageElement[];
 };
 
 export type ColorScheme = {
@@ -393,6 +631,9 @@ export type Typography = {
   bodyFont: string;
 };
 
+// Default design canvas width (max-w-4xl = 896px)
+export const DEFAULT_DESIGN_WIDTH = 896;
+
 export type LandingPage = {
   title: string;
   description: string;
@@ -400,6 +641,8 @@ export type LandingPage = {
   colorScheme: ColorScheme;
   typography: Typography;
   smoothScroll?: boolean;
+  // Responsive scaling reference (design canvas width in px)
+  designCanvasWidth?: number; // Default: 896 (max-w-4xl)
 };
 `;
 }
@@ -411,20 +654,36 @@ function generatePage(page: LandingPage): string {
   return `'use client';
 
 import SectionRenderer from '../components/SectionRenderer';
+import { ProductionElementsLayer } from '../components/shared/elements/ProductionElementRenderer';
 import type { LandingPage } from '../lib/page-schema';
 
 const pageData: LandingPage = JSON.parse('${pageDataJson}');
 
 export default function Page() {
   return (
-    <main className="min-h-screen" style={{ backgroundColor: pageData.colorScheme.background }}>
+    <main
+      className="min-h-screen"
+      style={{
+        backgroundColor: pageData.colorScheme.background,
+        color: pageData.colorScheme.text,
+        fontFamily: pageData.typography.bodyFont,
+      }}
+    >
       {pageData.sections.map((section) => (
-        <SectionRenderer
+        <div
           key={section.id}
-          section={section}
-          colorScheme={pageData.colorScheme}
-          typography={pageData.typography}
-        />
+          className="relative"
+        >
+          {/* Section components handle their own padding internally */}
+          <SectionRenderer
+            section={section}
+            colorScheme={pageData.colorScheme}
+            typography={pageData.typography}
+          />
+          {section.elements && section.elements.length > 0 && (
+            <ProductionElementsLayer elements={section.elements} designCanvasWidth={pageData.designCanvasWidth} />
+          )}
+        </div>
       ))}
     </main>
   );
@@ -526,14 +785,34 @@ function getSharedComponentFiles(): Record<string, string> {
       // From components/shared/sections/ need ../../../lib (3 levels)
       // From components/shared/hooks/ need ../../../lib (3 levels)
       // From components/shared/primitives/ need ../../../lib (3 levels)
-      const libPath = '../'.repeat(depth) + 'lib/shared-section-types';
+      // From components/shared/elements/ need ../../../lib (3 levels)
+      const libPrefix = '../'.repeat(depth) + 'lib/';
       content = content.replace(
         /@\/lib\/shared-section-types/g,
-        libPath
+        libPrefix + 'shared-section-types'
+      );
+      content = content.replace(
+        /@\/lib\/page-schema/g,
+        libPrefix + 'page-schema'
       );
       content = content.replace(
         /@\/components\/shared\//g,
         '../'
+      );
+      // Transform @/components/ui/ imports
+      content = content.replace(
+        /@\/components\/ui\//g,
+        '../'.repeat(depth) + 'components/ui/'
+      );
+      // Transform @/hooks/ imports (project-level hooks)
+      content = content.replace(
+        /@\/hooks\//g,
+        '../'.repeat(depth) + 'hooks/'
+      );
+      // Transform @/lib/utils import
+      content = content.replace(
+        /@\/lib\/utils/g,
+        '../'.repeat(depth) + 'lib/utils'
       );
       return content;
     } catch (error) {
@@ -541,6 +820,12 @@ function getSharedComponentFiles(): Record<string, string> {
       return '';
     }
   };
+
+  // Read root-level shared files (like SectionBackground.tsx)
+  const rootSharedFiles = fs.readdirSync(basePath).filter(f => f.endsWith('.tsx') && !fs.statSync(path.join(basePath, f)).isDirectory());
+  for (const file of rootSharedFiles) {
+    files[`components/shared/${file}`] = readAndTransform(path.join(basePath, file));
+  }
 
   // Read hooks
   const hooksPath = path.join(basePath, 'hooks');
@@ -566,6 +851,51 @@ function getSharedComponentFiles(): Record<string, string> {
     const sectionFiles = fs.readdirSync(sectionsPath).filter(f => f.endsWith('.tsx'));
     for (const file of sectionFiles) {
       files[`components/shared/sections/${file}`] = readAndTransform(path.join(sectionsPath, file));
+    }
+  }
+
+  // Read features-variants subdirectory
+  const featuresVariantsPath = path.join(basePath, 'sections', 'features-variants');
+  if (fs.existsSync(featuresVariantsPath)) {
+    const variantFiles = fs.readdirSync(featuresVariantsPath).filter(f => f.endsWith('.tsx'));
+    for (const file of variantFiles) {
+      files[`components/shared/sections/features-variants/${file}`] = readAndTransform(path.join(featuresVariantsPath, file), 4); // 4 levels deep
+    }
+  }
+
+  // Read elements components (ProductionElementRenderer for deployed sites)
+  const elementsPath = path.join(basePath, 'elements');
+  if (fs.existsSync(elementsPath)) {
+    const elementFiles = fs.readdirSync(elementsPath).filter(f => f.endsWith('.tsx'));
+    for (const file of elementFiles) {
+      files[`components/shared/elements/${file}`] = readAndTransform(path.join(elementsPath, file));
+    }
+  }
+
+  // Read UI components (depth=2: components/ui/file.tsx → ../../lib/)
+  const uiPath = path.join(process.cwd(), 'components', 'ui');
+  if (fs.existsSync(uiPath)) {
+    const uiFiles = fs.readdirSync(uiPath).filter(f => f.endsWith('.tsx'));
+    for (const file of uiFiles) {
+      files[`components/ui/${file}`] = readAndTransform(path.join(uiPath, file), 2);
+    }
+  }
+
+  // Read UI backgrounds subdirectory (depth=3: components/ui/backgrounds/file.tsx → ../../../lib/)
+  const backgroundsPath = path.join(process.cwd(), 'components', 'ui', 'backgrounds');
+  if (fs.existsSync(backgroundsPath)) {
+    const backgroundFiles = fs.readdirSync(backgroundsPath).filter(f => f.endsWith('.tsx'));
+    for (const file of backgroundFiles) {
+      files[`components/ui/backgrounds/${file}`] = readAndTransform(path.join(backgroundsPath, file), 3);
+    }
+  }
+
+  // Read project-level hooks (depth=1: hooks/file.tsx → ../lib/)
+  const hooksRootPath = path.join(process.cwd(), 'hooks');
+  if (fs.existsSync(hooksRootPath)) {
+    const hookFiles = fs.readdirSync(hooksRootPath).filter(f => f.endsWith('.tsx') || f.endsWith('.ts'));
+    for (const file of hookFiles) {
+      files[`hooks/${file}`] = readAndTransform(path.join(hooksRootPath, file), 1);
     }
   }
 
@@ -650,7 +980,8 @@ export default function NotFound() {
 export function generateNextJsProject(
   page: LandingPage,
   settings?: ProjectSettings,
-  siteUrl?: string
+  siteUrl?: string,
+  tracking?: TrackingConfig
 ): Record<string, string> {
   // Get all shared component files
   const sharedFiles = getSharedComponentFiles();
@@ -663,11 +994,11 @@ export function generateNextJsProject(
     "package.json": generatePackageJson(),
     "tsconfig.json": generateTsConfig(),
     "next.config.js": generateNextConfig(),
-    "tailwind.config.js": generateTailwindConfig(),
+    // Note: Tailwind v4 doesn't require tailwind.config.js - it uses CSS-based configuration
     "postcss.config.js": generatePostcssConfig(),
 
     // App structure
-    "app/layout.tsx": generateLayout(page, settings),
+    "app/layout.tsx": generateLayout(page, settings, tracking),
     "app/page.tsx": generatePage(page),
     "app/globals.css": generateGlobalsCss(page.colorScheme, page.typography),
     "app/not-found.tsx": generate404Page(page.colorScheme, page.typography),
@@ -676,9 +1007,10 @@ export function generateNextJsProject(
     "public/robots.txt": generateRobotsTxt(finalSiteUrl),
     "public/sitemap.xml": generateSitemapXml(page, finalSiteUrl),
 
-    // Types
+    // Types and utilities
     "lib/page-schema.ts": generatePageSchemaTypes(),
     "lib/shared-section-types.ts": generateSharedSectionTypes(),
+    "lib/utils.ts": fs.readFileSync(path.join(process.cwd(), 'lib', 'utils.ts'), 'utf-8'),
 
     // Components
     "components/SectionRenderer.tsx": generateSectionRenderer(),

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import type { SectionItem } from "@/lib/page-schema";
+import { SectionBackground } from "../SectionBackground";
 
 export default function FoundersSectionBase({
   section,
@@ -22,11 +23,18 @@ export default function FoundersSectionBase({
   const headingFont = typography.headingFont;
   const bodyFont = typography.bodyFont;
 
+  const DEFAULT_PADDING = { top: 96, bottom: 128 };
+
   return (
     <section
-      className="py-24 lg:py-32 relative overflow-hidden"
-      style={{ backgroundColor: bgColor }}
+      className="relative overflow-hidden"
+      style={{
+        backgroundColor: bgColor,
+        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
+        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+      }}
     >
+      <SectionBackground effect={content.backgroundEffect} />
       {/* Background gradient */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -38,7 +46,34 @@ export default function FoundersSectionBase({
       <div className="relative max-w-6xl mx-auto px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
-          {content.subheading && (
+          {content.showBadge !== false && content.badge && (
+            <motion.span
+              className="inline-block mb-4 px-3 py-1 text-[10px] font-semibold tracking-[0.2em] uppercase border rounded-full"
+              style={{
+                borderColor: `${accentColor}33`,
+                color: accentColor,
+                backgroundColor: `${accentColor}0d`,
+                fontFamily: bodyFont,
+              }}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              {renderText ? (
+                renderText({
+                  value: content.badge,
+                  sectionId: section.id,
+                  field: "badge",
+                  className: "",
+                })
+              ) : (
+                content.badge
+              )}
+            </motion.span>
+          )}
+
+          {content.showSubheading !== false && content.subheading && (
             <motion.span
               className="inline-block mb-4 px-3 py-1 text-[10px] font-semibold tracking-[0.2em] uppercase border rounded-full"
               style={{
@@ -65,7 +100,7 @@ export default function FoundersSectionBase({
             </motion.span>
           )}
 
-          {content.heading && (
+          {content.showHeading !== false && content.heading && (
             <motion.h2
               className="text-4xl sm:text-5xl lg:text-6xl uppercase leading-[0.95]"
               style={{ color: textColor, fontFamily: headingFont }}
@@ -89,7 +124,7 @@ export default function FoundersSectionBase({
         </div>
 
         {/* Founders Grid */}
-        {items && items.length > 0 ? (
+        {content.showItems !== false && items && items.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
             {items.map((founder: SectionItem, index: number) => (
               <motion.div

@@ -69,15 +69,24 @@ export async function POST(
       })
       .returning();
 
+    // Determine if tracking should be enabled (Free tier only)
+    const trackingEnabled = planLimits.trackingEnabled;
+    const siteUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || "https://launchpad.whop.com";
+
     // Generate project files here (where we have filesystem access for shared components)
     const projectFiles = generateNextJsProject(
       project.pageData as LandingPage,
-      (project.settings as ProjectSettings) || undefined
+      (project.settings as ProjectSettings) || undefined,
+      undefined, // siteUrl for SEO - will be set after deploy
+      trackingEnabled ? {
+        enabled: true,
+        projectId: id,
+        apiUrl: siteUrl,
+      } : undefined
     );
 
     // Trigger background function to handle the actual build/deploy
     // This runs asynchronously for up to 15 minutes
-    const siteUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || "https://onwhop.com";
 
     try {
       // Fire and forget - don't await the response

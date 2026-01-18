@@ -15,4 +15,4 @@
 
 # Background function for deploy (can run up to 15 minutes)
 [functions."deploy-background"]
-  external_node_modules = ["@neondatabase/serverless"]
+  external_node_modules = ["@neondatabase/serverless", "drizzle-orm"]

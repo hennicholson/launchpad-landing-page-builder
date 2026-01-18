@@ -71,7 +71,21 @@ export async function POST(
 
     // Determine if tracking should be enabled (Free tier only)
     const trackingEnabled = planLimits.trackingEnabled;
-    const siteUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || "https://launchpad.whop.com";
+
+    // Get the site URL for triggering the background function
+    // Priority: Netlify env vars > NEXT_PUBLIC_APP_URL > fallback
+    let siteUrl = process.env.URL || process.env.DEPLOY_PRIME_URL;
+    if (!siteUrl) {
+      // Check if we're in local dev
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+      if (appUrl?.includes("localhost")) {
+        // Local dev - need to use netlify dev or the production URL
+        console.warn("[Deploy] Running locally - background functions require 'netlify dev' or will use production");
+        siteUrl = "https://launchpad-builder.netlify.app"; // Production fallback (must use .netlify.app for functions)
+      } else {
+        siteUrl = appUrl || "https://launchpad-builder.netlify.app";
+      }
+    }
 
     // Generate project files here (where we have filesystem access for shared components)
     const projectFiles = generateNextJsProject(
@@ -87,10 +101,12 @@ export async function POST(
 
     // Trigger background function to handle the actual build/deploy
     // This runs asynchronously for up to 15 minutes
+    const functionUrl = `${siteUrl}/.netlify/functions/deploy-background`;
+    console.log(`[Deploy] Triggering background function at: ${functionUrl}`);
+    console.log(`[Deploy] Project: ${project.slug}, Deployment: ${deployment.id}`);
 
     try {
-      // Fire and forget - don't await the response
-      fetch(`${siteUrl}/.netlify/functions/deploy-background`, {
+      const response = await fetch(functionUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -102,12 +118,29 @@ export async function POST(
           slug: project.slug,
           netlifyId: project.netlifyId,
         }),
-      }).catch((err) => {
-        console.error("Failed to trigger background function:", err);
       });
+
+      // For background functions, Netlify returns 202 Accepted
+      if (!response.ok && response.status !== 202) {
+        const errorText = await response.text();
+        console.error(`[Deploy] Background function returned ${response.status}: ${errorText}`);
+        // Update deployment to failed
+        await db.update(deployments).set({
+          status: "failed",
+          errorMessage: `Failed to trigger build: ${response.status}`,
+          errorCode: "TRIGGER_FAILED",
+        }).where(eq(deployments.id, deployment.id));
+      } else {
+        console.log(`[Deploy] Background function triggered successfully (status: ${response.status})`);
+      }
     } catch (triggerError) {
-      console.error("Error triggering background deploy:", triggerError);
-      // Don't fail - the deployment record exists, client will poll and see status
+      console.error("[Deploy] Error triggering background deploy:", triggerError);
+      // Update deployment to failed so user sees error instead of infinite pending
+      await db.update(deployments).set({
+        status: "failed",
+        errorMessage: triggerError instanceof Error ? triggerError.message : "Failed to start build",
+        errorCode: "TRIGGER_ERROR",
+      }).where(eq(deployments.id, deployment.id));
     }
 
     // Return immediately - client will poll GET /api/users/deploy/[id] for status

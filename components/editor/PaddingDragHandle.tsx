@@ -11,6 +11,7 @@ type Props = {
   currentPadding: number;
   onPaddingChange: (padding: number) => void;
   isVisible: boolean;
+  backgroundColor?: string;
 };
 
 const DEFAULT_PADDING = 48;
@@ -23,6 +24,7 @@ export default function PaddingDragHandle({
   currentPadding,
   onPaddingChange,
   isVisible,
+  backgroundColor,
 }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [showValue, setShowValue] = useState(false);
@@ -172,7 +174,8 @@ export default function PaddingDragHandle({
           }`}
           style={{
             height: `${displayPadding}px`,
-            background: "repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(214, 252, 81, 0.1) 5px, rgba(214, 252, 81, 0.1) 10px)",
+            backgroundColor: backgroundColor || '#0a0a0a',
+            backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(214, 252, 81, 0.05) 5px, rgba(214, 252, 81, 0.05) 10px)",
             borderTop: position === "bottom" ? "1px dashed rgba(214, 252, 81, 0.4)" : "none",
             borderBottom: position === "top" ? "1px dashed rgba(214, 252, 81, 0.4)" : "none",
           }}

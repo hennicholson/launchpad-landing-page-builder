@@ -5,6 +5,7 @@ import { motion, useInView } from "framer-motion";
 import type { StatsVariant, SectionItem } from "@/lib/page-schema";
 import type { BaseSectionProps, RenderTextProps } from "@/lib/shared-section-types";
 import { useCountUp, parseStatValue } from "../hooks/useCountUp";
+import { SectionBackground } from "../SectionBackground";
 
 // ==================== CARD VARIANT ====================
 function StatCardVariant({
@@ -320,6 +321,8 @@ export default function StatsSectionBase({
     ? Math.max(...items.map((item: SectionItem) => parseStatValue(item.title || "0").value))
     : 100;
 
+  const DEFAULT_PADDING = { top: 80, bottom: 128 };
+
   // Helper to render text (editable in editor, static in deploy)
   const renderTextContent = (props: Omit<Parameters<NonNullable<typeof renderText>>[0], "sectionId">) => {
     if (renderText) {
@@ -487,9 +490,14 @@ export default function StatsSectionBase({
   return (
     <section
       ref={containerRef}
-      className="py-20 lg:py-32 relative overflow-hidden"
-      style={{ backgroundColor: bgColor }}
+      className="relative overflow-hidden"
+      style={{
+        backgroundColor: bgColor,
+        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
+        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+      }}
     >
+      <SectionBackground effect={content.backgroundEffect} />
       {/* Background pattern */}
       <div
         className="absolute inset-0 opacity-[0.02]"
@@ -508,7 +516,7 @@ export default function StatsSectionBase({
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          {content.badge && (
+          {content.showBadge !== false && content.badge && (
             <span
               className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider mb-6"
               style={{
@@ -528,7 +536,7 @@ export default function StatsSectionBase({
               )}
             </span>
           )}
-          {content.heading && (
+          {content.showHeading !== false && content.heading && (
             <h2
               className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95]"
               style={{ color: textColor, fontFamily: headingFont }}
@@ -545,7 +553,7 @@ export default function StatsSectionBase({
               )}
             </h2>
           )}
-          {content.subheading && (
+          {content.showSubheading !== false && content.subheading && (
             <span
               className="block mt-4 text-lg max-w-2xl mx-auto"
               style={{ color: `${textColor}70`, fontFamily: bodyFont }}
@@ -565,7 +573,7 @@ export default function StatsSectionBase({
         </motion.div>
 
         {/* Stats */}
-        {renderStats()}
+        {content.showItems !== false && renderStats()}
       </div>
     </section>
   );

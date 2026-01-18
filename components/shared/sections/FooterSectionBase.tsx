@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import type { NavLink } from "@/lib/page-schema";
+import { SectionBackground } from "../SectionBackground";
 
 export default function FooterSectionBase({
   section,
@@ -22,11 +23,18 @@ export default function FooterSectionBase({
   const headingFont = typography.headingFont;
   const bodyFont = typography.bodyFont;
 
+  const DEFAULT_PADDING = { top: 48, bottom: 64 };
+
   return (
     <footer
-      className="py-12 lg:py-16 relative"
-      style={{ backgroundColor: bgColor }}
+      className="relative overflow-hidden"
+      style={{
+        backgroundColor: bgColor,
+        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
+        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+      }}
     >
+      <SectionBackground effect={content.backgroundEffect} />
       {/* Top border */}
       <div
         className="absolute top-0 left-0 right-0 h-px"
@@ -36,13 +44,14 @@ export default function FooterSectionBase({
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         <div className="flex flex-col items-center text-center">
           {/* Logo */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            {content.logoUrl ? (
+          {content.showLogo !== false && (content.logoUrl || content.logoText) && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              {content.logoUrl ? (
               renderImage ? (
                 renderImage({
                   src: content.logoUrl,
@@ -75,10 +84,11 @@ export default function FooterSectionBase({
                 )}
               </span>
             )}
-          </motion.div>
+            </motion.div>
+          )}
 
           {/* Tagline */}
-          {content.tagline && (
+          {content.showTagline !== false && content.tagline && (
             <motion.div
               className="text-sm sm:text-base uppercase tracking-[0.3em] mb-8"
               style={{ color: accentColor, fontFamily: headingFont }}
@@ -101,7 +111,7 @@ export default function FooterSectionBase({
           )}
 
           {/* Navigation Links */}
-          {content.links && content.links.length > 0 && (
+          {content.showLinks !== false && content.links && content.links.length > 0 && (
             <motion.nav
               className="flex flex-wrap items-center justify-center gap-6 lg:gap-8 mb-8"
               initial={{ opacity: 0, y: 20 }}
@@ -123,13 +133,14 @@ export default function FooterSectionBase({
           )}
 
           {/* Social Links */}
-          <motion.div
-            className="flex items-center gap-4 mb-8"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
+          {content.showSocial !== false && (
+            <motion.div
+              className="flex items-center gap-4 mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
             {/* Twitter/X */}
             <a
               href="#"
@@ -162,10 +173,11 @@ export default function FooterSectionBase({
                 <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
               </svg>
             </a>
-          </motion.div>
+            </motion.div>
+          )}
 
           {/* Copyright */}
-          {content.bodyText && (
+          {content.showBodyText !== false && content.bodyText && (
             <motion.div
               className="text-xs"
               style={{ color: `${textColor}40`, fontFamily: bodyFont }}

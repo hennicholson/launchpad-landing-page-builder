@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import SectionButton, { getButtonPropsFromContent } from "./SectionButton";
+import { SectionBackground } from "../SectionBackground";
 
 export default function CredibilitySectionBase({
   section,
@@ -12,7 +13,6 @@ export default function CredibilitySectionBase({
   renderImage,
 }: BaseSectionProps) {
   const { content } = section;
-  const [isHovered, setIsHovered] = useState(false);
 
   // Dynamic colors
   const bgColor = content.backgroundColor || colorScheme.background;
@@ -25,13 +25,20 @@ export default function CredibilitySectionBase({
   const headingFont = typography.headingFont;
   const bodyFont = typography.bodyFont;
 
+  const DEFAULT_PADDING = { top: 80, bottom: 80 };
+
   return (
     <section
       className="relative min-h-[80vh] flex items-center justify-center overflow-hidden"
-      style={{ backgroundColor: bgColor }}
+      style={{
+        backgroundColor: bgColor,
+        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
+        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+      }}
     >
+      <SectionBackground effect={content.backgroundEffect} />
       {/* Background Image */}
-      {content.backgroundImage && (
+      {content.showBackgroundImage !== false && content.backgroundImage && (
         <div className="absolute inset-0">
           {renderImage ? (
             renderImage({
@@ -86,7 +93,7 @@ export default function CredibilitySectionBase({
 
           <div className="relative">
             {/* Heading */}
-            {content.heading && (
+            {content.showHeading !== false && content.heading && (
               <motion.h2
                 className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95] mb-6"
                 style={{ color: textColor, fontFamily: headingFont }}
@@ -109,7 +116,7 @@ export default function CredibilitySectionBase({
             )}
 
             {/* Subheading */}
-            {content.subheading && (
+            {content.showSubheading !== false && content.subheading && (
               <motion.div
                 className="text-lg sm:text-xl mb-4"
                 style={{ color: `${textColor}cc`, fontFamily: bodyFont }}
@@ -132,7 +139,7 @@ export default function CredibilitySectionBase({
             )}
 
             {/* Body Text */}
-            {content.bodyText && (
+            {content.showBodyText !== false && content.bodyText && (
               <motion.div
                 className="text-base max-w-xl mx-auto mb-8"
                 style={{ color: `${textColor}80`, fontFamily: bodyFont }}
@@ -154,73 +161,26 @@ export default function CredibilitySectionBase({
               </motion.div>
             )}
 
-            {/* CTA Button with price toggle animation */}
-            {content.buttonText && (
+            {/* CTA Button */}
+            {content.showButton !== false && content.buttonText && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.5 }}
               >
-                <a
-                  href={content.buttonLink || "#"}
-                  className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-semibold text-sm uppercase tracking-wide overflow-hidden"
-                  style={{
-                    backgroundColor: primaryColor,
-                    color: bgColor,
-                    fontFamily: bodyFont,
-                  }}
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                >
-                  {/* Main text - slides up on hover */}
-                  <span
-                    className="inline-flex items-center gap-2 transition-transform duration-300"
-                    style={{
-                      transform: isHovered ? "translateY(-100%)" : "translateY(0)",
-                    }}
-                  >
-                    {content.buttonText}
-                    <svg
-                      className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
-                      />
-                    </svg>
-                  </span>
-
-                  {/* Price text - slides up from below on hover */}
-                  {content.priceYearly && (
-                    <span
-                      className="absolute inset-0 flex items-center justify-center gap-2 transition-transform duration-300"
-                      style={{
-                        transform: isHovered ? "translateY(0)" : "translateY(100%)",
-                      }}
-                    >
-                      {content.priceYearly}
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
-                        />
-                      </svg>
-                    </span>
-                  )}
-                </a>
+                <SectionButton
+                  text={content.buttonText || ""}
+                  link={content.buttonLink || "#"}
+                  sectionId={section.id}
+                  {...getButtonPropsFromContent(content)}
+                  sectionBgColor={bgColor}
+                  primaryColor={primaryColor}
+                  accentColor={accentColor}
+                  schemeTextColor={textColor}
+                  bodyFont={bodyFont}
+                  renderText={renderText}
+                />
               </motion.div>
             )}
           </div>

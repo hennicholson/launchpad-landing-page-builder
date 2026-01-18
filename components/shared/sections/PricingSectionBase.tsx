@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import SectionButton, { getButtonPropsFromContent } from "./SectionButton";
+import { SectionBackground } from "../SectionBackground";
 
 export default function PricingSectionBase({
   section,
@@ -26,11 +28,18 @@ export default function PricingSectionBase({
   // Get the first pricing item
   const pricingItem = items?.[0];
 
+  const DEFAULT_PADDING = { top: 96, bottom: 128 };
+
   return (
     <section
-      className="py-24 lg:py-32 relative"
-      style={{ backgroundColor: bgColor }}
+      className="relative overflow-hidden"
+      style={{
+        backgroundColor: bgColor,
+        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
+        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+      }}
     >
+      <SectionBackground effect={content.backgroundEffect} />
       {/* Background gradient */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -43,7 +52,7 @@ export default function PricingSectionBase({
         {/* Header */}
         <div className="text-center mb-12">
           {/* Badge */}
-          {content.badge && (
+          {content.showBadge !== false && content.badge && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -85,9 +94,9 @@ export default function PricingSectionBase({
           )}
 
           {/* Heading */}
-          {content.heading && (
+          {content.showHeading !== false && content.heading && (
             <motion.h2
-              className="text-4xl sm:text-5xl uppercase leading-[0.95] mb-4"
+              className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95] mb-4"
               style={{ color: textColor, fontFamily: headingFont }}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -108,7 +117,7 @@ export default function PricingSectionBase({
           )}
 
           {/* Subheading */}
-          {content.subheading && (
+          {content.showSubheading !== false && content.subheading && (
             <motion.div
               className="text-base max-w-lg mx-auto"
               style={{ color: `${textColor}80`, fontFamily: bodyFont }}
@@ -132,7 +141,7 @@ export default function PricingSectionBase({
         </div>
 
         {/* Pricing Card */}
-        {pricingItem && (
+        {content.showItems !== false && pricingItem && (
           <motion.div
             className="relative"
             initial={{ opacity: 0, y: 30 }}
@@ -192,7 +201,7 @@ export default function PricingSectionBase({
               {pricingItem.price && (
                 <div className="flex items-baseline gap-2 mb-3">
                   <span
-                    className="text-6xl lg:text-7xl"
+                    className="text-5xl sm:text-6xl lg:text-7xl"
                     style={{ color: textColor, fontFamily: headingFont }}
                   >
                     {pricingItem.price.replace(/\/.*$/, "")}
@@ -223,40 +232,31 @@ export default function PricingSectionBase({
               )}
 
               {/* CTA Button */}
-              <a
-                href={content.buttonLink || "#"}
-                className="group flex items-center justify-center gap-3 w-full py-4 rounded-xl font-semibold text-sm uppercase tracking-wide transition-all duration-300"
-                style={{
-                  backgroundColor: primaryColor,
-                  color: bgColor,
-                  fontFamily: bodyFont,
-                  boxShadow: isHovered ? `0 0 40px ${primaryColor}4d` : "none",
-                }}
-              >
-                {content.buttonText || "Get Access Now"}
-                <svg
-                  className="w-4 h-4 group-hover:translate-x-1 transition-transform"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
-                  />
-                </svg>
-              </a>
+              {content.showButton !== false && content.buttonText && (
+                <SectionButton
+                  text={content.buttonText || "Get Access Now"}
+                  link={content.buttonLink || "#"}
+                  sectionId={section.id}
+                  {...getButtonPropsFromContent(content)}
+                  sectionBgColor={bgColor}
+                  primaryColor={primaryColor}
+                  accentColor={accentColor}
+                  schemeTextColor={textColor}
+                  bodyFont={bodyFont}
+                  className="w-full justify-center"
+                />
+              )}
 
               {/* Divider */}
-              <div
-                className="my-8 h-px"
-                style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
-              />
+              {content.showFeatures !== false && pricingItem.features && pricingItem.features.length > 0 && (
+                <div
+                  className="my-8 h-px"
+                  style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
+                />
+              )}
 
               {/* Features */}
-              {pricingItem.features && pricingItem.features.length > 0 && (
+              {content.showFeatures !== false && pricingItem.features && pricingItem.features.length > 0 && (
                 <ul className="space-y-4">
                   {pricingItem.features.map((feature: string, i: number) => (
                     <motion.li

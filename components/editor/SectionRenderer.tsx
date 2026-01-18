@@ -19,6 +19,11 @@ import StatsSection from "./sections/StatsSection";
 import LogoCloudSection from "./sections/LogoCloudSection";
 import ComparisonSection from "./sections/ComparisonSection";
 import ProcessSection from "./sections/ProcessSection";
+import BlankSection from "./sections/BlankSection";
+import CustomersTableSection from "./sections/CustomersTableSection";
+import FeaturesIllustratedSection from "./sections/FeaturesIllustratedSection";
+import FeaturesHoverSection from "./sections/FeaturesHoverSection";
+import FeaturesBentoSection from "./sections/FeaturesBentoSection";
 
 type Props = {
   section: PageSection;
@@ -62,6 +67,8 @@ export default function SectionRenderer({ section }: Props) {
       return <ComparisonSection section={section} />;
     case "process":
       return <ProcessSection section={section} />;
+    case "blank":
+      return <BlankSection section={section} />;
     default:
       return (
         <div className="py-16 px-8 text-center opacity-50">

@@ -3,6 +3,28 @@
 import { motion } from "framer-motion";
 import type { CTAVariant, HeadingStyle } from "@/lib/page-schema";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import SectionButton, { getButtonPropsFromContent } from "./SectionButton";
+import { SectionBackground } from "../SectionBackground";
+
+// Helper to determine if a color is light or dark
+function isLightColor(color: string): boolean {
+  if (!color || color === "transparent") return false;
+  let hex = color.toLowerCase().replace(/[^0-9a-f]/g, "");
+  if (hex.length === 3) {
+    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+  }
+  if (hex.length !== 6) return false;
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5;
+}
+
+// Get contrasting text color
+function getContrastTextColor(bgColor: string): string {
+  return isLightColor(bgColor) ? "#000000" : "#ffffff";
+}
 
 // Helper to get heading styles based on headingStyle setting
 function getHeadingStyles(
@@ -34,71 +56,6 @@ function getHeadingStyles(
   }
 }
 
-// ==================== SHARED BUTTON COMPONENT ====================
-function CTAButton({
-  buttonText,
-  buttonLink,
-  bgColor,
-  primaryColor,
-  bodyFont,
-  large = false,
-  renderText,
-  sectionId,
-}: {
-  buttonText: string;
-  buttonLink: string;
-  bgColor: string;
-  primaryColor: string;
-  bodyFont: string;
-  large?: boolean;
-  renderText?: BaseSectionProps["renderText"];
-  sectionId: string;
-}) {
-  return (
-    <motion.a
-      href={buttonLink || "#"}
-      className={`group relative inline-flex items-center justify-center gap-3 rounded-2xl font-semibold text-sm uppercase tracking-wider overflow-hidden ${
-        large ? "px-12 py-6" : "px-10 py-5"
-      }`}
-      style={{
-        backgroundColor: primaryColor,
-        color: bgColor,
-        fontFamily: bodyFont,
-      }}
-      whileHover={{
-        scale: 1.02,
-        boxShadow: `0 0 60px ${primaryColor}40`,
-      }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.2 }}
-    >
-      {/* Shine effect on hover */}
-      <span className="absolute inset-0 w-full h-full shine-effect" />
-      <span className="relative z-10">
-        {renderText ? (
-          renderText({
-            value: buttonText || "",
-            sectionId,
-            field: "buttonText",
-            className: "font-semibold text-sm uppercase tracking-wider",
-            style: { fontFamily: bodyFont },
-          })
-        ) : (
-          buttonText || "Get Started"
-        )}
-      </span>
-      <svg
-        className="relative z-10 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-      </svg>
-    </motion.a>
-  );
-}
 
 function TrustIndicators({ textColor }: { textColor: string }) {
   return (
@@ -109,19 +66,19 @@ function TrustIndicators({ textColor }: { textColor: string }) {
       viewport={{ once: true }}
       transition={{ duration: 0.6, delay: 0.6 }}
     >
-      <div className="flex items-center gap-2" style={{ color: `${textColor}40` }}>
+      <div className="flex items-center gap-2" style={{ color: `${textColor}50` }}>
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
         </svg>
         <span className="text-xs uppercase tracking-wider">Secure</span>
       </div>
-      <div className="flex items-center gap-2" style={{ color: `${textColor}40` }}>
+      <div className="flex items-center gap-2" style={{ color: `${textColor}50` }}>
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <span className="text-xs uppercase tracking-wider">Instant Access</span>
       </div>
-      <div className="flex items-center gap-2" style={{ color: `${textColor}40` }}>
+      <div className="flex items-center gap-2" style={{ color: `${textColor}50` }}>
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
         </svg>
@@ -158,7 +115,7 @@ function CTACentered({
 
   return (
     <div className="relative max-w-4xl mx-auto px-6 lg:px-8 text-center">
-      {content.badge && (
+      {content.showBadge !== false && content.badge && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -177,50 +134,59 @@ function CTACentered({
         </motion.div>
       )}
 
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.7 }}
-      >
-        <h2
-          className="text-4xl sm:text-5xl lg:text-7xl uppercase leading-[0.95] mb-8"
-          style={{ fontFamily: headingFont, ...headingStyles }}
+      {content.showHeading !== false && content.heading && (
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
         >
-          {renderText ? renderText({ value: content.heading || "", sectionId: section.id, field: "heading", className: "" }) : content.heading}
-        </h2>
-      </motion.div>
+          <h2
+            className="text-3xl sm:text-5xl lg:text-7xl uppercase leading-[0.95] mb-8"
+            style={{ fontFamily: headingFont, ...headingStyles }}
+          >
+            {renderText ? renderText({ value: content.heading || "", sectionId: section.id, field: "heading", className: "" }) : content.heading}
+          </h2>
+        </motion.div>
+      )}
 
-      <motion.div
-        className="max-w-xl mx-auto mb-12"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-      >
-        <span className="block text-lg sm:text-xl leading-relaxed" style={{ color: `${textColor}70`, fontFamily: bodyFont }}>
-          {renderText ? renderText({ value: content.subheading || "", sectionId: section.id, field: "subheading", className: "" }) : content.subheading}
-        </span>
-      </motion.div>
+      {content.showSubheading !== false && content.subheading && (
+        <motion.div
+          className="max-w-xl mx-auto mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <span className="block text-lg sm:text-xl leading-relaxed" style={{ color: `${textColor}70`, fontFamily: bodyFont }}>
+            {renderText ? renderText({ value: content.subheading || "", sectionId: section.id, field: "subheading", className: "" }) : content.subheading}
+          </span>
+        </motion.div>
+      )}
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6, delay: 0.3 }}
-      >
-        <CTAButton
-          buttonText={content.buttonText || ""}
-          buttonLink={content.buttonLink || "#"}
-          bgColor={bgColor}
-          primaryColor={primaryColor}
-          bodyFont={bodyFont}
-          renderText={renderText}
-          sectionId={section.id}
-        />
-      </motion.div>
+      {content.showButton !== false && content.buttonText && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <SectionButton
+            text={content.buttonText || ""}
+            link={content.buttonLink || "#"}
+            sectionId={section.id}
+            {...getButtonPropsFromContent(content)}
+            sectionBgColor={bgColor}
+            primaryColor={primaryColor}
+            accentColor={accentColor}
+            schemeTextColor={textColor}
+            bodyFont={bodyFont}
+            renderText={renderText}
+          />
+        </motion.div>
+      )}
 
-      {content.bodyText && (
+      {content.showBodyText !== false && content.bodyText && (
         <motion.div
           className="mt-12 flex flex-wrap items-center justify-center gap-6"
           initial={{ opacity: 0 }}
@@ -228,7 +194,7 @@ function CTACentered({
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.5 }}
         >
-          <span className="block text-sm" style={{ color: `${textColor}50` }}>
+          <span className="block text-sm" style={{ color: `${textColor}60` }}>
             {renderText ? renderText({ value: content.bodyText, sectionId: section.id, field: "bodyText", className: "" }) : content.bodyText}
           </span>
         </motion.div>
@@ -273,7 +239,7 @@ function CTASplit({
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
         >
-          {content.badge && (
+          {content.showBadge !== false && content.badge && (
             <span
               className="inline-block px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider mb-6"
               style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
@@ -282,20 +248,24 @@ function CTASplit({
             </span>
           )}
 
-          <h2
-            className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95] mb-6"
-            style={{ fontFamily: headingFont, ...headingStyles }}
-          >
-            {renderText ? renderText({ value: content.heading || "", sectionId: section.id, field: "heading", className: "" }) : content.heading}
-          </h2>
+          {content.showHeading !== false && content.heading && (
+            <h2
+              className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95] mb-6"
+              style={{ fontFamily: headingFont, ...headingStyles }}
+            >
+              {renderText ? renderText({ value: content.heading || "", sectionId: section.id, field: "heading", className: "" }) : content.heading}
+            </h2>
+          )}
 
-          <div className="mb-8">
-            <span className="block text-lg leading-relaxed" style={{ color: `${textColor}70`, fontFamily: bodyFont }}>
-              {renderText ? renderText({ value: content.subheading || "", sectionId: section.id, field: "subheading", className: "" }) : content.subheading}
-            </span>
-          </div>
+          {content.showSubheading !== false && content.subheading && (
+            <div className="mb-8">
+              <span className="block text-lg leading-relaxed" style={{ color: `${textColor}70`, fontFamily: bodyFont }}>
+                {renderText ? renderText({ value: content.subheading || "", sectionId: section.id, field: "subheading", className: "" }) : content.subheading}
+              </span>
+            </div>
+          )}
 
-          {content.bodyText && (
+          {content.showBodyText !== false && content.bodyText && (
             <p className="text-sm" style={{ color: `${textColor}50` }}>{content.bodyText}</p>
           )}
         </motion.div>
@@ -307,18 +277,23 @@ function CTASplit({
           viewport={{ once: true }}
           transition={{ duration: 0.7, delay: 0.2 }}
         >
-          <CTAButton
-            buttonText={content.buttonText || ""}
-            buttonLink={content.buttonLink || "#"}
-            bgColor={bgColor}
-            primaryColor={primaryColor}
-            bodyFont={bodyFont}
-            large
-            renderText={renderText}
-            sectionId={section.id}
-          />
+          {content.showButton !== false && content.buttonText && (
+            <SectionButton
+              text={content.buttonText || ""}
+              link={content.buttonLink || "#"}
+              sectionId={section.id}
+              {...getButtonPropsFromContent(content)}
+              sectionBgColor={bgColor}
+              primaryColor={primaryColor}
+              accentColor={accentColor}
+              schemeTextColor={textColor}
+              bodyFont={bodyFont}
+              large
+              renderText={renderText}
+            />
+          )}
 
-          <div className="mt-8 flex flex-wrap gap-4" style={{ color: `${textColor}40` }}>
+          <div className="mt-8 flex flex-wrap gap-4" style={{ color: `${textColor}50` }}>
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
@@ -343,6 +318,7 @@ function CTABanner({
   section,
   bgColor,
   primaryColor,
+  accentColor,
   headingFont,
   bodyFont,
   renderText,
@@ -350,11 +326,16 @@ function CTABanner({
   section: BaseSectionProps["section"];
   bgColor: string;
   primaryColor: string;
+  accentColor: string;
   headingFont: string;
   bodyFont: string;
   renderText?: BaseSectionProps["renderText"];
 }) {
   const { content } = section;
+
+  // Calculate proper contrast text color for the banner (which has primaryColor bg)
+  const bannerTextColor = getContrastTextColor(primaryColor);
+  const bannerTextColorSubtle = `${bannerTextColor}cc`; // 80% opacity
 
   return (
     <div className="relative">
@@ -369,31 +350,39 @@ function CTABanner({
         <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-8">
             <div className="text-center sm:text-left">
-              <h2
-                className="text-2xl sm:text-3xl lg:text-4xl uppercase leading-tight mb-2"
-                style={{ fontFamily: headingFont, color: bgColor }}
-              >
-                {renderText ? renderText({ value: content.heading || "", sectionId: section.id, field: "heading", className: "" }) : content.heading}
-              </h2>
-              {content.subheading && (
-                <p className="text-sm sm:text-base opacity-80" style={{ color: bgColor, fontFamily: bodyFont }}>
+              {content.showHeading !== false && content.heading && (
+                <h2
+                  className="text-2xl sm:text-3xl lg:text-4xl uppercase leading-tight mb-2"
+                  style={{ fontFamily: headingFont, color: bannerTextColor }}
+                >
+                  {renderText ? renderText({ value: content.heading || "", sectionId: section.id, field: "heading", className: "" }) : content.heading}
+                </h2>
+              )}
+              {content.showSubheading !== false && content.subheading && (
+                <p className="text-sm sm:text-base" style={{ color: bannerTextColorSubtle, fontFamily: bodyFont }}>
                   {content.subheading}
                 </p>
               )}
             </div>
 
-            <motion.a
-              href={content.buttonLink || "#"}
-              className="flex-shrink-0 inline-flex items-center gap-3 px-8 py-4 rounded-xl font-semibold text-sm uppercase tracking-wider"
-              style={{ backgroundColor: bgColor, color: primaryColor, fontFamily: bodyFont }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {renderText ? renderText({ value: content.buttonText || "", sectionId: section.id, field: "buttonText", className: "" }) : content.buttonText || "Get Started"}
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-            </motion.a>
+            {content.showButton !== false && content.buttonText && (
+              <SectionButton
+                text={content.buttonText || ""}
+                link={content.buttonLink || "#"}
+                sectionId={section.id}
+                {...getButtonPropsFromContent(content)}
+                // Banner variant defaults: inverted colors if no custom colors set
+                bgColor={content.buttonBgColor ?? bannerTextColor}
+                textColor={content.buttonTextColor ?? primaryColor}
+                sectionBgColor={primaryColor}
+                primaryColor={bannerTextColor}
+                accentColor={accentColor}
+                schemeTextColor={bannerTextColor}
+                bodyFont={bodyFont}
+                renderText={renderText}
+                className="flex-shrink-0"
+              />
+            )}
           </div>
         </div>
       </motion.div>
@@ -404,6 +393,7 @@ function CTABanner({
 // ==================== MINIMAL VARIANT ====================
 function CTAMinimal({
   section,
+  bgColor,
   textColor,
   accentColor,
   primaryColor,
@@ -413,6 +403,7 @@ function CTAMinimal({
   renderText,
 }: {
   section: BaseSectionProps["section"];
+  bgColor: string;
   textColor: string;
   accentColor: string;
   primaryColor: string;
@@ -432,37 +423,37 @@ function CTAMinimal({
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
       >
-        <h2
-          className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95] mb-6"
-          style={{ fontFamily: headingFont, ...headingStyles }}
-        >
-          {renderText ? renderText({ value: content.heading || "", sectionId: section.id, field: "heading", className: "" }) : content.heading}
-        </h2>
+        {content.showHeading !== false && content.heading && (
+          <h2
+            className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95] mb-6"
+            style={{ fontFamily: headingFont, ...headingStyles }}
+          >
+            {renderText ? renderText({ value: content.heading || "", sectionId: section.id, field: "heading", className: "" }) : content.heading}
+          </h2>
+        )}
 
-        {content.subheading && (
+        {content.showSubheading !== false && content.subheading && (
           <p className="text-lg mb-10 max-w-lg mx-auto" style={{ color: `${textColor}60`, fontFamily: bodyFont }}>
             {renderText ? renderText({ value: content.subheading, sectionId: section.id, field: "subheading", className: "" }) : content.subheading}
           </p>
         )}
 
-        <a
-          href={content.buttonLink || "#"}
-          className="inline-flex items-center gap-2 text-lg font-medium group"
-          style={{ color: primaryColor }}
-        >
-          <span className="border-b-2 border-current pb-0.5">
-            {content.buttonText || "Get Started"}
-          </span>
-          <svg
-            className="w-5 h-5 group-hover:translate-x-1 transition-transform"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-          </svg>
-        </a>
+        {content.showButton !== false && content.buttonText && (
+          <SectionButton
+            text={content.buttonText || ""}
+            link={content.buttonLink || "#"}
+            sectionId={section.id}
+            {...getButtonPropsFromContent(content)}
+            // Minimal variant defaults to underline style if no variant set
+            variant={content.buttonVariant ?? "underline"}
+            sectionBgColor={bgColor}
+            primaryColor={primaryColor}
+            accentColor={accentColor}
+            schemeTextColor={textColor}
+            bodyFont={bodyFont}
+            renderText={renderText}
+          />
+        )}
       </motion.div>
     </div>
   );
@@ -503,11 +494,18 @@ export default function CTASectionBase({
     renderText,
   };
 
+  const DEFAULT_PADDING = { top: 96, bottom: 160 };
+
   return (
     <section
-      className={`relative overflow-hidden ${variant === "banner" ? "" : "py-24 lg:py-40"}`}
-      style={{ backgroundColor: bgColor }}
+      className="relative overflow-hidden"
+      style={{
+        backgroundColor: bgColor,
+        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
+        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+      }}
     >
+      <SectionBackground effect={content.backgroundEffect} />
       {/* Background effects (not for banner) */}
       {variant !== "banner" && variant !== "minimal" && (
         <>
@@ -544,14 +542,14 @@ export default function CTASectionBase({
       {variant === "banner" && <CTABanner {...sharedProps} />}
       {variant === "minimal" && <CTAMinimal {...sharedProps} />}
 
-      {/* Add keyframe animation for shine effect */}
+      {/* Add keyframe animation for shine effect - adaptive to background color */}
       <style>{`
         @keyframes shine {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(100%); }
         }
         .shine-effect {
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+          background: linear-gradient(90deg, transparent, ${isLightColor(bgColor) ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.2)"}, transparent);
           transform: translateX(-100%);
           opacity: 0;
           transition: opacity 0.5s;

@@ -1,7 +1,7 @@
 "use client";
 
 import type { PageSection } from "@/lib/page-schema";
-import { useEditorStore } from "@/lib/store";
+import { useEditorStoreOrPublished } from "@/lib/store";
 import TestimonialsSectionBase from "@/components/shared/sections/TestimonialsSectionBase";
 import EditableText from "../EditableText";
 import EditableImage from "../EditableImage";
@@ -11,7 +11,7 @@ type Props = {
 };
 
 export default function TestimonialsSection({ section }: Props) {
-  const { page } = useEditorStore();
+  const { page } = useEditorStoreOrPublished();
 
   return (
     <TestimonialsSectionBase

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import { SectionBackground } from "../SectionBackground";
 
 export default function AudienceSectionBase({
   section,
@@ -23,11 +24,18 @@ export default function AudienceSectionBase({
   const headingFont = typography.headingFont;
   const bodyFont = typography.bodyFont;
 
+  const DEFAULT_PADDING = { top: 96, bottom: 128 };
+
   return (
     <section
-      className="py-24 lg:py-32 relative overflow-hidden"
-      style={{ backgroundColor: bgColor }}
+      className="relative overflow-hidden"
+      style={{
+        backgroundColor: bgColor,
+        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
+        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+      }}
     >
+      <SectionBackground effect={content.backgroundEffect} />
       {/* Subtle background gradient */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -38,9 +46,9 @@ export default function AudienceSectionBase({
 
       <div className="relative max-w-5xl mx-auto px-6 lg:px-8">
         {/* Header */}
-        {content.heading && (
+        {content.showHeading !== false && content.heading && (
           <motion.h2
-            className="text-4xl sm:text-5xl uppercase leading-[0.95] text-center mb-16"
+            className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95] text-center mb-16"
             style={{ color: textColor, fontFamily: headingFont }}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -63,6 +71,7 @@ export default function AudienceSectionBase({
         {/* Two Column Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
           {/* FOR Column */}
+          {content.showForItems !== false && content.forItems && content.forItems.length > 0 && (
           <motion.div
             className="relative rounded-2xl p-6 lg:p-8 transition-all duration-300"
             style={{
@@ -137,8 +146,10 @@ export default function AudienceSectionBase({
               }}
             />
           </motion.div>
+          )}
 
           {/* NOT FOR Column */}
+          {content.showNotForItems !== false && content.notForItems && content.notForItems.length > 0 && (
           <motion.div
             className="relative rounded-2xl p-6 lg:p-8 transition-all duration-300"
             style={{
@@ -213,6 +224,7 @@ export default function AudienceSectionBase({
               }}
             />
           </motion.div>
+          )}
         </div>
 
         {/* Empty state */}

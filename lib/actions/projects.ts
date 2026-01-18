@@ -8,7 +8,7 @@ import { generateId, defaultPage, type LandingPage, type ProjectSettings } from 
 import { getTemplateByIdOrDefault } from "@/lib/templates";
 import { generateLandingPage } from "@/lib/claude";
 import { revalidatePath } from "next/cache";
-import { generateNextJsProject } from "@/lib/nextjs-project-generator";
+import { deleteSite } from "@/lib/netlify";
 
 export type Project = {
   id: string;
@@ -33,6 +33,7 @@ export type DashboardUser = {
     plan: string;
     projectCount: number;
     deployCount: number;
+    balanceCents: number;
     email: string | null;
     username: string | null;
     name: string | null;
@@ -42,6 +43,7 @@ export type DashboardUser = {
 
 /**
  * Get current user for dashboard display
+ * Creates user in DB if authenticated via Whop but not yet in our database
  */
 export async function getDashboardUser(): Promise<DashboardUser> {
   try {
@@ -52,11 +54,47 @@ export async function getDashboardUser(): Promise<DashboardUser> {
     }
 
     // Get internal user from DB
-    const [userData] = await db
+    let [userData] = await db
       .select()
       .from(users)
       .where(eq(users.whopId, whopUser.id))
       .limit(1);
+
+    // CREATE USER IF NOT EXISTS - this is the key fix
+    if (!userData) {
+      console.log("[getDashboardUser] User authenticated but not in DB, creating:", whopUser.id);
+
+      try {
+        [userData] = await db
+          .insert(users)
+          .values({
+            whopId: whopUser.id,
+            whopUniqueId: whopUser.unique_id,
+            email: whopUser.email,
+            username: whopUser.username,
+            name: whopUser.name,
+            bio: whopUser.bio,
+            avatarUrl: whopUser.profile_pic_url,
+            bannerUrl: whopUser.banner_url,
+            userType: whopUser.user_type,
+            isSuspended: whopUser.is_suspended ? "true" : "false",
+            plan: "free",
+            balanceCents: 0,
+          })
+          .returning();
+        console.log("[getDashboardUser] User created successfully:", userData.id);
+      } catch (insertError) {
+        // Handle race condition where user was created between select and insert
+        console.error("[getDashboardUser] Insert error (might be race condition):", insertError);
+
+        // Try to fetch again
+        [userData] = await db
+          .select()
+          .from(users)
+          .where(eq(users.whopId, whopUser.id))
+          .limit(1);
+      }
+    }
 
     return {
       whop: whopUser,
@@ -65,6 +103,7 @@ export async function getDashboardUser(): Promise<DashboardUser> {
         plan: userData.plan,
         projectCount: userData.projectCount,
         deployCount: userData.deployCount,
+        balanceCents: userData.balanceCents,
         email: userData.email,
         username: userData.username,
         name: userData.name,
@@ -191,15 +230,25 @@ export async function createProject(data: {
     }
 
     // Create the project
-    const [newProject] = await db
-      .insert(projects)
-      .values({
-        userId: userData.id,
-        name,
-        slug,
-        pageData,
-      })
-      .returning();
+    let newProject;
+    try {
+      [newProject] = await db
+        .insert(projects)
+        .values({
+          userId: userData.id,
+          name,
+          slug,
+          pageData,
+        })
+        .returning();
+    } catch (insertError: unknown) {
+      // Check for unique constraint violation on slug
+      const errorMessage = insertError instanceof Error ? insertError.message : String(insertError);
+      if (errorMessage.includes("unique") || errorMessage.includes("duplicate") || errorMessage.includes("slug")) {
+        return { success: false, error: "A project with this name already exists. Please choose a different name." };
+      }
+      throw insertError;
+    }
 
     // Update user's project count
     await db
@@ -215,7 +264,7 @@ export async function createProject(data: {
     if (error instanceof Error && error.message === "Unauthorized") {
       return { success: false, error: "Unauthorized" };
     }
-    return { success: false, error: "Failed to create project" };
+    return { success: false, error: "Failed to create project. Please try again." };
   }
 }
 
@@ -251,6 +300,20 @@ export async function deleteProject(projectId: string): Promise<{ success: boole
     if (project.userId !== userData.id) {
       return { success: false, error: "Unauthorized" };
     }
+
+    // If project is deployed to Netlify, delete the site (don't block on failure)
+    if (project.netlifyId) {
+      try {
+        await deleteSite(project.netlifyId);
+        console.log(`[Projects] Deleted Netlify site: ${project.netlifyId}`);
+      } catch (netlifyError) {
+        // Log but don't block deletion - site might already be deleted or token invalid
+        console.warn(`[Projects] Failed to delete Netlify site ${project.netlifyId}:`, netlifyError);
+      }
+    }
+
+    // Delete all deployments first (foreign key constraint)
+    await db.delete(deployments).where(eq(deployments.projectId, projectId));
 
     // Delete the project
     await db.delete(projects).where(eq(projects.id, projectId));
@@ -417,11 +480,16 @@ export type DeployStatus = {
 
 /**
  * Start a deployment for a project
+ *
+ * NEW APPROACH: Dynamic subdomain rendering
+ * - No separate Netlify sites per user
+ * - Main app serves all landing pages based on subdomain
+ * - Deploy = instant DB update (mark as published, set liveUrl)
  */
 export async function startDeploy(
   projectId: string,
   customSubdomain?: string | null
-): Promise<{ success: boolean; deploymentId?: string; error?: string; message?: string }> {
+): Promise<{ success: boolean; url?: string; error?: string; message?: string }> {
   try {
     const user = await requireWhopUser();
 
@@ -447,9 +515,11 @@ export async function startDeploy(
       return { success: false, error: "Project not found" };
     }
 
-    // Check user's deploy limits
+    // Check user's deploy limits (first deploy counts)
     const planLimits = PLAN_LIMITS[userData.plan];
-    if (planLimits.deploys !== -1 && userData.deployCount >= planLimits.deploys) {
+    const isFirstDeploy = project.isPublished !== "true";
+
+    if (isFirstDeploy && planLimits.deploys !== -1 && userData.deployCount >= planLimits.deploys) {
       return {
         success: false,
         error: "Deploy limit reached",
@@ -457,63 +527,72 @@ export async function startDeploy(
       };
     }
 
-    // Create a pending deployment record
-    const [deployment] = await db
+    // Determine the slug to use
+    // Priority: customSubdomain (user-specified) > project.slug (default)
+    const finalSlug = customSubdomain || project.slug;
+    const liveUrl = `https://onwhop.com/s/${finalSlug}`;
+
+    // Check if slug is already taken by another project
+    if (customSubdomain) {
+      const [existingProject] = await db
+        .select()
+        .from(projects)
+        .where(and(
+          eq(projects.slug, customSubdomain),
+          sql`${projects.id} != ${projectId}`
+        ))
+        .limit(1);
+
+      if (existingProject) {
+        return {
+          success: false,
+          error: "URL path already taken",
+          message: `The path "${customSubdomain}" is already in use. Please choose a different one.`,
+        };
+      }
+    }
+
+    // Update project as published with live URL
+    await db
+      .update(projects)
+      .set({
+        isPublished: "true",
+        liveUrl,
+        slug: finalSlug, // Update slug if custom path was provided
+        updatedAt: new Date(),
+      })
+      .where(eq(projects.id, projectId));
+
+    // Increment deploy count only on first publish
+    if (isFirstDeploy) {
+      await db
+        .update(users)
+        .set({ deployCount: sql`${users.deployCount} + 1` })
+        .where(eq(users.id, userData.id));
+    }
+
+    // Create a deployment record for history
+    await db
       .insert(deployments)
       .values({
         projectId,
-        status: "pending",
-      })
-      .returning();
-
-    // Determine if tracking should be enabled (Free tier only)
-    const trackingEnabled = planLimits.trackingEnabled;
-    const siteUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || "https://launchpad.whop.com";
-
-    // Generate project files
-    const projectFiles = generateNextJsProject(
-      project.pageData as LandingPage,
-      (project.settings as ProjectSettings) || undefined,
-      undefined,
-      trackingEnabled ? {
-        enabled: true,
-        projectId,
-        apiUrl: siteUrl,
-      } : undefined
-    );
-
-    // Trigger background function
-    try {
-      fetch(`${siteUrl}/.netlify/functions/deploy-background`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectId,
-          deploymentId: deployment.id,
-          customSubdomain,
-          userId: userData.id,
-          projectFiles,
-          slug: project.slug,
-          netlifyId: project.netlifyId,
-        }),
-      }).catch((err) => {
-        console.error("Failed to trigger background function:", err);
+        status: "ready",
+        url: liveUrl,
       });
-    } catch (triggerError) {
-      console.error("Error triggering background deploy:", triggerError);
-    }
+
+    revalidatePath("/dashboard");
 
     return {
       success: true,
-      deploymentId: deployment.id,
-      message: "Deployment started. Building your site...",
+      url: liveUrl,
+      message: "Your site is live!",
     };
   } catch (error) {
     console.error("[Projects] startDeploy error:", error);
     if (error instanceof Error && error.message === "Unauthorized") {
       return { success: false, error: "Unauthorized" };
     }
-    return { success: false, error: "Failed to start deployment" };
+    return { success: false, error: "Failed to publish site" };
   }
 }
 

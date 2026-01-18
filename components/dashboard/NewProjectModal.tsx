@@ -1,34 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { templates, type Template } from "@/lib/templates";
+import { createProject } from "@/lib/actions/projects";
+
+type Step = "choose" | "template" | "ai" | "details";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
+  initialStep?: Step;
 };
 
-type Step = "choose" | "template" | "ai" | "details";
-
-export default function NewProjectModal({ isOpen, onClose }: Props) {
+export default function NewProjectModal({ isOpen, onClose, onSuccess, initialStep = "choose" }: Props) {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("choose");
+  const [isPending, startTransition] = useTransition();
+  const [step, setStep] = useState<Step>(initialStep);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
   const [projectName, setProjectName] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const resetState = () => {
-    setStep("choose");
+    setStep(initialStep);
     setSelectedTemplate(null);
     setAiPrompt("");
     setProjectName("");
-    setIsCreating(false);
     setError(null);
   };
+
+  // Reset step when modal opens with different initialStep
+  useEffect(() => {
+    if (isOpen) {
+      setStep(initialStep);
+      // For "details" step (Start from Scratch), pre-select blank template
+      if (initialStep === "details") {
+        setSelectedTemplate(templates.find((t) => t.id === "blank") || null);
+      } else {
+        setSelectedTemplate(null);
+      }
+      setAiPrompt("");
+      setProjectName("");
+      setError(null);
+    }
+  }, [isOpen, initialStep]);
 
   const handleClose = () => {
     resetState();
@@ -48,46 +66,35 @@ export default function NewProjectModal({ isOpen, onClose }: Props) {
     setStep("details");
   };
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!projectName.trim()) {
       setError("Please enter a project name");
       return;
     }
 
-    setIsCreating(true);
     setError(null);
 
-    try {
-      const body: Record<string, string> = {
-        name: projectName.trim(),
-      };
+    startTransition(async () => {
+      try {
+        const result = await createProject({
+          name: projectName.trim(),
+          templateId: selectedTemplate?.id || (aiPrompt ? undefined : "skinny"),
+          aiPrompt: aiPrompt || undefined,
+        });
 
-      if (selectedTemplate) {
-        body.templateId = selectedTemplate.id;
-      } else if (aiPrompt) {
-        body.aiPrompt = aiPrompt;
-      } else {
-        body.templateId = "skinny"; // Default to skinny template
+        if (!result.success) {
+          setError(result.error || "Failed to create project");
+          return;
+        }
+
+        // Navigate to editor
+        router.push(`/editor/${result.projectId}`);
+        handleClose();
+        onSuccess?.();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
       }
-
-      const response = await fetch("/api/projects", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to create project");
-      }
-
-      const project = await response.json();
-      router.push(`/editor/${project.id}`);
-      handleClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-      setIsCreating(false);
-    }
+    });
   };
 
   if (!isOpen) return null;
@@ -212,20 +219,30 @@ export default function NewProjectModal({ isOpen, onClose }: Props) {
                     >
                       {/* Template Preview */}
                       <div className="aspect-video rounded-lg bg-gradient-to-br from-[#0a0a0a] to-[#1a1a1a] mb-4 overflow-hidden relative">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-center">
-                            <div className="font-anton text-xl text-white/80 uppercase">
-                              {template.name}
+                        {template.preview ? (
+                          <img
+                            src={template.preview}
+                            alt={`${template.name} preview`}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="text-center">
+                                <div className="font-anton text-xl text-white/80 uppercase">
+                                  {template.name}
+                                </div>
+                                <div className="text-xs text-[#D6FC51]/60 mt-1">
+                                  {template.tags.join(" • ")}
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-xs text-[#D6FC51]/60 mt-1">
-                              {template.tags.join(" • ")}
-                            </div>
-                          </div>
-                        </div>
-                        {/* Decorative elements */}
-                        <div className="absolute top-3 left-3 w-16 h-1 rounded-full bg-[#D6FC51]/20" />
-                        <div className="absolute top-6 left-3 w-10 h-1 rounded-full bg-white/10" />
-                        <div className="absolute bottom-3 right-3 w-8 h-8 rounded-lg bg-[#D6FC51]/30" />
+                            {/* Decorative elements */}
+                            <div className="absolute top-3 left-3 w-16 h-1 rounded-full bg-[#D6FC51]/20" />
+                            <div className="absolute top-6 left-3 w-10 h-1 rounded-full bg-white/10" />
+                            <div className="absolute bottom-3 right-3 w-8 h-8 rounded-lg bg-[#D6FC51]/30" />
+                          </>
+                        )}
                       </div>
                       <h3 className="text-white font-semibold mb-1">{template.name}</h3>
                       <p className="text-white/50 text-sm">{template.description}</p>
@@ -326,16 +343,16 @@ export default function NewProjectModal({ isOpen, onClose }: Props) {
               <button
                 onClick={handleClose}
                 className="px-4 py-2 text-sm font-medium text-white/60 hover:text-white transition-colors"
-                disabled={isCreating}
+                disabled={isPending}
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreate}
-                disabled={!projectName.trim() || isCreating}
+                disabled={!projectName.trim() || isPending}
                 className="px-5 py-2.5 bg-[#D6FC51] text-black text-sm font-semibold rounded-lg hover:bg-[#D6FC51]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
               >
-                {isCreating ? (
+                {isPending ? (
                   <>
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />

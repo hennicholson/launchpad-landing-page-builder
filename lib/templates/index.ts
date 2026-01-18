@@ -11,6 +11,7 @@ export type Template = {
   name: string;
   description: string;
   thumbnail: string;
+  preview?: string;
   template: LandingPage;
   tags: string[];
 };
@@ -44,6 +45,7 @@ export const templates: Template[] = [
     name: "SaaS Funnel",
     description: "High-converting SaaS template with trust-building blue and action-driving orange. AIDA copywriting formula.",
     thumbnail: "/templates/saas-thumb.png",
+    preview: "/templates/saas.gif",
     template: saasTemplate,
     tags: ["saas", "software", "startup", "funnel", "light"],
   },
@@ -52,6 +54,7 @@ export const templates: Template[] = [
     name: "Agency Funnel",
     description: "Premium black and gold theme for service businesses. PAS copywriting formula for maximum conversions.",
     thumbnail: "/templates/agency-thumb.png",
+    preview: "/templates/agency.gif",
     template: agencyTemplate,
     tags: ["agency", "services", "consulting", "premium", "dark", "funnel"],
   },
@@ -60,6 +63,7 @@ export const templates: Template[] = [
     name: "Course Funnel",
     description: "Growth-focused green and navy theme for online courses. Before-After-Bridge formula that sells.",
     thumbnail: "/templates/course-thumb.png",
+    preview: "/templates/course.gif",
     template: courseTemplate,
     tags: ["course", "education", "coaching", "funnel", "light"],
   },
@@ -68,6 +72,7 @@ export const templates: Template[] = [
     name: "E-Commerce Funnel",
     description: "Bold red and gold theme that drives urgency and action. Direct benefit copy for physical products.",
     thumbnail: "/templates/ecommerce-thumb.png",
+    preview: "/templates/ecom.gif",
     template: ecommerceTemplate,
     tags: ["ecommerce", "product", "shop", "retail", "funnel", "light"],
   },
