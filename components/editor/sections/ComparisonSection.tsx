@@ -24,6 +24,7 @@ export default function ComparisonSection({ section }: Props) {
           field={props.field}
           itemId={props.itemId}
           className={props.className}
+          style={props.style}
           useElementStyles
         />
       )}

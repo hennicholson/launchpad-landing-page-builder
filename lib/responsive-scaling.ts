@@ -2,7 +2,7 @@
  * Responsive Scaling Utilities
  *
  * Enables proportional scaling of custom elements across different viewports.
- * Elements are designed at a reference canvas width (896px) and automatically
+ * Elements are designed at a reference canvas width (1280px) and automatically
  * scale to maintain their relative proportions at any screen size.
  */
 
@@ -11,11 +11,11 @@ import { DEFAULT_DESIGN_WIDTH } from './page-schema';
 // Re-export for convenience
 export { DEFAULT_DESIGN_WIDTH };
 
-// Preview viewport sizes
+// Preview viewport sizes (industry standard breakpoints)
 export const PREVIEW_VIEWPORTS = {
   mobile: { width: 375, label: 'Mobile', icon: 'smartphone' },
   tablet: { width: 768, label: 'Tablet', icon: 'tablet' },
-  desktop: { width: 896, label: 'Desktop', icon: 'monitor' },
+  desktop: { width: 1280, label: 'Desktop', icon: 'monitor' },
 } as const;
 
 export type PreviewViewport = keyof typeof PREVIEW_VIEWPORTS;

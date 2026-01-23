@@ -658,8 +658,8 @@ export type ProjectSettings = {
   customHead?: string;
 };
 
-// Default design canvas width (max-w-4xl = 896px)
-export const DEFAULT_DESIGN_WIDTH = 896;
+// Default design canvas width (standard desktop = 1280px)
+export const DEFAULT_DESIGN_WIDTH = 1280;
 
 // Default empty page template
 export const defaultPage: LandingPage = {

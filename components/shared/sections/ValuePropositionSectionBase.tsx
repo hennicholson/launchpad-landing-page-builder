@@ -51,7 +51,7 @@ export default function ValuePropositionSectionBase({
         <div className="max-w-3xl mx-auto">
           {/* Badge */}
           {content.showBadge && content.badge && (
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-4 sm:mb-6">
               {renderText ? (
                 renderText({
                   value: content.badge,
@@ -82,18 +82,18 @@ export default function ValuePropositionSectionBase({
 
           {/* Heading */}
           {content.showHeading !== false && content.heading && (
-            <div className="mb-8 text-center">
+            <div className="mb-6 sm:mb-8 text-center">
               {renderText ? (
                 renderText({
                   value: content.heading,
                   sectionId: section.id,
                   field: "heading",
-                  className: "text-4xl md:text-5xl font-bold leading-tight",
+                  className: "text-3xl sm:text-4xl md:text-5xl font-bold leading-tight",
                   style: { color: textColor, fontFamily: headingFont },
                 })
               ) : (
                 <h2
-                  className="text-4xl md:text-5xl font-bold leading-tight"
+                  className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight"
                   style={{ color: textColor, fontFamily: headingFont }}
                 >
                   {content.heading}
@@ -103,7 +103,7 @@ export default function ValuePropositionSectionBase({
           )}
 
           {/* Body Paragraphs */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {bodyParagraphs.map((paragraph, index) => (
               <div key={index}>
                 {renderText ? (
@@ -113,7 +113,7 @@ export default function ValuePropositionSectionBase({
                     field: "bodyParagraphs",
                     paragraphIndex: index,
                     isRichText: true,
-                    className: "text-lg leading-relaxed rich-text-rendered",
+                    className: "text-sm sm:text-base md:text-lg leading-relaxed rich-text-rendered",
                     style: {
                       color: textColor,
                       fontFamily: bodyFont,
@@ -122,7 +122,7 @@ export default function ValuePropositionSectionBase({
                   })
                 ) : (
                   <div
-                    className="text-lg leading-relaxed rich-text-rendered"
+                    className="text-sm sm:text-base md:text-lg leading-relaxed rich-text-rendered"
                     style={{
                       color: textColor,
                       fontFamily: bodyFont,

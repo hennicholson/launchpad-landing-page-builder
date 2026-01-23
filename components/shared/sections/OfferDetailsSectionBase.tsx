@@ -45,7 +45,7 @@ export default function OfferDetailsSectionBase({
         <div className="max-w-6xl mx-auto">
           {/* Badge */}
           {content.showBadge && content.badge && (
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-4 sm:mb-6">
               {renderText ? (
                 renderText({
                   value: content.badge,
@@ -82,12 +82,12 @@ export default function OfferDetailsSectionBase({
                   value: content.heading,
                   sectionId: section.id,
                   field: "heading",
-                  className: "text-3xl md:text-4xl lg:text-5xl font-bold",
+                  className: "text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold",
                   style: { color: textColor, fontFamily: headingFont },
                 })
               ) : (
                 <h2
-                  className="text-3xl md:text-4xl lg:text-5xl font-bold"
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold"
                   style={{ color: textColor, fontFamily: headingFont }}
                 >
                   {content.heading}
@@ -98,18 +98,18 @@ export default function OfferDetailsSectionBase({
 
           {/* Description */}
           {content.description && (
-            <div className="mb-12 text-center">
+            <div className="mb-8 sm:mb-12 text-center">
               {renderText ? (
                 renderText({
                   value: content.description,
                   sectionId: section.id,
                   field: "description",
-                  className: "text-lg md:text-xl opacity-90",
+                  className: "text-base sm:text-lg md:text-xl opacity-90",
                   style: { color: textColor, fontFamily: bodyFont },
                 })
               ) : (
                 <p
-                  className="text-lg md:text-xl opacity-90"
+                  className="text-base sm:text-lg md:text-xl opacity-90"
                   style={{ color: textColor, fontFamily: bodyFont }}
                 >
                   {content.description}
@@ -119,13 +119,13 @@ export default function OfferDetailsSectionBase({
           )}
 
           {/* Two-column layout: Image + List */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Featured Image */}
             <div className="order-1 lg:order-1">
               {content.featuredImageUrl ? (
                 renderImage ? (
                   renderImage({
-                    src: content.featuredImageUrl,
+                    value: content.featuredImageUrl,
                     alt: content.featuredImageAlt || "Product image",
                     sectionId: section.id,
                     field: "featuredImageUrl",
@@ -155,13 +155,13 @@ export default function OfferDetailsSectionBase({
 
             {/* Feature List */}
             <div className="order-2 lg:order-2">
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {items.length > 0 ? (
                   items.map((item, index) => (
-                    <div key={item.id || index} className="flex items-start gap-3">
+                    <div key={item.id || index} className="flex items-start gap-2 sm:gap-3">
                       {/* Simple Checkmark Icon */}
                       <svg
-                        className="flex-shrink-0 w-6 h-6 mt-0.5"
+                        className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 mt-0.5"
                         style={{ color: accentColor }}
                         fill="none"
                         stroke="currentColor"
@@ -183,12 +183,12 @@ export default function OfferDetailsSectionBase({
                             value: item.title || `Feature ${index + 1}`,
                             sectionId: section.id,
                             field: `items.${index}.title`,
-                            className: "text-lg font-semibold mb-1",
+                            className: "text-base sm:text-lg font-semibold mb-1",
                             style: { color: textColor, fontFamily: bodyFont },
                           })
                         ) : (
                           <h3
-                            className="text-lg font-semibold mb-1"
+                            className="text-base sm:text-lg font-semibold mb-1"
                             style={{ color: textColor, fontFamily: bodyFont }}
                           >
                             {item.title || `Feature ${index + 1}`}

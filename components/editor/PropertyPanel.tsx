@@ -2771,6 +2771,25 @@ export default function PropertyPanel() {
                 <option value="minimal">Minimal (clean)</option>
               </select>
             </div>
+            {/* Grid Background Toggle - only for centered/split variants */}
+            {(selectedSection.content.ctaVariant === "centered" || selectedSection.content.ctaVariant === "split" || !selectedSection.content.ctaVariant) && (
+              <div className="space-y-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedSection.content.showGridBackground ?? true}
+                    onChange={(e) => updateSectionContent(selectedSectionId, { showGridBackground: e.target.checked })}
+                    className="rounded border-white/10 bg-white/5 text-amber-500 focus:ring-amber-500/50"
+                  />
+                  <span className="text-xs font-medium text-white/50 uppercase tracking-wide">
+                    Show Grid Background
+                  </span>
+                </label>
+                <p className="text-xs text-white/30">
+                  Subtle grid pattern overlay
+                </p>
+              </div>
+            )}
             {/* Heading Style */}
             <div className="space-y-2">
               <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
@@ -5380,16 +5399,26 @@ export default function PropertyPanel() {
 
             {/* Heading */}
             <div className="space-y-2">
-              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
-                Heading
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedSection.content.showHeading ?? true}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { showHeading: e.target.checked })}
+                  className="rounded border-white/10 bg-white/5 text-amber-500 focus:ring-amber-500/50"
+                />
+                <span className="text-xs font-medium text-white/50 uppercase tracking-wide">
+                  Show Heading
+                </span>
               </label>
-              <input
-                type="text"
-                value={selectedSection.content.heading || ""}
-                onChange={(e) => updateSectionContent(selectedSectionId, { heading: e.target.value })}
-                placeholder="What You Get"
-                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
-              />
+              {selectedSection.content.showHeading !== false && (
+                <input
+                  type="text"
+                  value={selectedSection.content.heading || ""}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { heading: e.target.value })}
+                  placeholder="What You Get"
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              )}
             </div>
 
             {/* Description */}
@@ -5418,8 +5447,22 @@ export default function PropertyPanel() {
                 placeholder="https://example.com/product-image.png"
                 className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
               />
+            </div>
+
+            {/* Featured Image Alt Text */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Image Alt Text
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.featuredImageAlt || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { featuredImageAlt: e.target.value })}
+                placeholder="Product mockup showing all features"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
               <p className="text-xs text-white/30">
-                Large product mockup or screenshot
+                Describe the image for accessibility
               </p>
             </div>
 
@@ -5465,6 +5508,31 @@ export default function PropertyPanel() {
                   className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
                 />
               </div>
+            </div>
+
+            {/* Accent Color (Checkmarks) */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Accent Color (Checkmarks)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={selectedSection.content.accentColor || "#10b981"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { accentColor: e.target.value })}
+                  className="h-10 w-16 rounded-lg bg-white/5 border border-white/10 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.accentColor || "#10b981"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { accentColor: e.target.value })}
+                  placeholder="#10b981"
+                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              </div>
+              <p className="text-xs text-white/30">
+                Color for checkmark icons next to features
+              </p>
             </div>
 
             {/* Items List Note */}
@@ -5514,6 +5582,53 @@ export default function PropertyPanel() {
               />
               <p className="text-xs text-white/30">
                 Professional photo or lifestyle shot
+              </p>
+            </div>
+
+            {/* Social Links */}
+            <div className="space-y-3">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Social Links (optional)
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={selectedSection.content.twitterUrl || ""}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { twitterUrl: e.target.value })}
+                  placeholder="Twitter/X URL"
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.instagramUrl || ""}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { instagramUrl: e.target.value })}
+                  placeholder="Instagram URL"
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.linkedinUrl || ""}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { linkedinUrl: e.target.value })}
+                  placeholder="LinkedIn URL"
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.youtubeUrl || ""}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { youtubeUrl: e.target.value })}
+                  placeholder="YouTube URL"
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.tiktokUrl || ""}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { tiktokUrl: e.target.value })}
+                  placeholder="TikTok URL"
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              </div>
+              <p className="text-xs text-white/30">
+                Icons appear below photo when URLs are added
               </p>
             </div>
 

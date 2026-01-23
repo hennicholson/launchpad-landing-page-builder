@@ -41,6 +41,7 @@ export default function ValuePropositionSection({ section }: Props) {
             sectionId={props.sectionId}
             field={props.field}
             className={props.className}
+            style={props.style}
             useElementStyles
           />
         );

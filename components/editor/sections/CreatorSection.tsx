@@ -24,12 +24,13 @@ export default function CreatorSection({ section }: Props) {
           sectionId={props.sectionId}
           field={props.field}
           className={props.className}
+          style={props.style}
           useElementStyles
         />
       )}
       renderImage={(props) => (
         <EditableImage
-          src={props.value}
+          value={props.value}
           alt={props.alt}
           sectionId={props.sectionId}
           field={props.field}

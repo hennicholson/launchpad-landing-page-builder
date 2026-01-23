@@ -526,13 +526,16 @@ export default function CTASectionBase({
             />
           </motion.div>
 
-          <div
-            className="absolute inset-0 opacity-[0.02]"
-            style={{
-              backgroundImage: `linear-gradient(${textColor} 1px, transparent 1px), linear-gradient(90deg, ${textColor} 1px, transparent 1px)`,
-              backgroundSize: "64px 64px",
-            }}
-          />
+          {/* Grid background - toggleable */}
+          {content.showGridBackground !== false && (
+            <div
+              className="absolute inset-0 opacity-[0.02]"
+              style={{
+                backgroundImage: `linear-gradient(${textColor} 1px, transparent 1px), linear-gradient(90deg, ${textColor} 1px, transparent 1px)`,
+                backgroundSize: "64px 64px",
+              }}
+            />
+          )}
         </>
       )}
 

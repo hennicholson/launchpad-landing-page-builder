@@ -44,7 +44,7 @@ export default function DetailedFeaturesSectionBase({
     const pathD = ICON_PATHS[iconName] || ICON_PATHS.star;
     return (
       <svg
-        className="w-6 h-6"
+        className="w-5 h-5 sm:w-6 sm:h-6"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -81,12 +81,12 @@ export default function DetailedFeaturesSectionBase({
                   value: content.heading,
                   sectionId: section.id,
                   field: "heading",
-                  className: "text-3xl md:text-4xl lg:text-5xl font-bold",
+                  className: "text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold",
                   style: { color: textColor, fontFamily: headingFont },
                 })
               ) : (
                 <h2
-                  className="text-3xl md:text-4xl lg:text-5xl font-bold"
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold"
                   style={{ color: textColor, fontFamily: headingFont }}
                 >
                   {content.heading}
@@ -97,7 +97,7 @@ export default function DetailedFeaturesSectionBase({
 
           {/* Intro Text */}
           {content.introText && (
-            <div className="mb-12 text-center max-w-3xl mx-auto">
+            <div className="mb-8 sm:mb-12 text-center max-w-3xl mx-auto">
               {renderText ? (
                 renderText({
                   value: content.introText,
@@ -119,7 +119,7 @@ export default function DetailedFeaturesSectionBase({
 
           {/* Featured Image */}
           {content.featuredImageUrl && (
-            <div className="mb-16">
+            <div className="mb-10 sm:mb-16">
               {renderImage ? (
                 renderImage({
                   value: content.featuredImageUrl,
@@ -140,9 +140,9 @@ export default function DetailedFeaturesSectionBase({
 
           {/* Features Grid */}
           {items.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-14">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10 lg:gap-14">
               {items.map((item, index) => (
-                <div key={item.id || index} className="flex items-start gap-4">
+                <div key={item.id || index} className="flex items-start gap-3 sm:gap-4">
                   {/* Simple Icon */}
                   <div className="flex-shrink-0 mt-1">
                     {renderIcon(item.icon)}
@@ -151,22 +151,24 @@ export default function DetailedFeaturesSectionBase({
                   {/* Feature Content */}
                   <div className="flex-1">
                     {/* Title */}
-                    {renderText ? (
-                      renderText({
-                        value: item.title || `Feature ${index + 1}`,
-                        sectionId: section.id,
-                        field: `items.${index}.title`,
-                        className: "text-xl font-bold mb-2",
-                        style: { color: textColor, fontFamily: headingFont },
-                      })
-                    ) : (
-                      <h3
-                        className="text-xl font-bold mb-2"
-                        style={{ color: textColor, fontFamily: headingFont }}
-                      >
-                        {item.title || `Feature ${index + 1}`}
-                      </h3>
-                    )}
+                    <div className="mb-2">
+                      {renderText ? (
+                        renderText({
+                          value: item.title || `Feature ${index + 1}`,
+                          sectionId: section.id,
+                          field: `items.${index}.title`,
+                          className: "text-lg sm:text-xl font-bold",
+                          style: { color: textColor, fontFamily: headingFont },
+                        })
+                      ) : (
+                        <h3
+                          className="text-lg sm:text-xl font-bold"
+                          style={{ color: textColor, fontFamily: headingFont }}
+                        >
+                          {item.title || `Feature ${index + 1}`}
+                        </h3>
+                      )}
+                    </div>
 
                     {/* Description */}
                     {item.description && (
@@ -176,12 +178,12 @@ export default function DetailedFeaturesSectionBase({
                             value: item.description,
                             sectionId: section.id,
                             field: `items.${index}.description`,
-                            className: "text-base leading-relaxed opacity-80",
+                            className: "text-sm sm:text-base leading-relaxed opacity-80",
                             style: { color: textColor, fontFamily: bodyFont },
                           })
                         ) : (
                           <p
-                            className="text-base leading-relaxed opacity-80"
+                            className="text-sm sm:text-base leading-relaxed opacity-80"
                             style={{ color: textColor, fontFamily: bodyFont }}
                           >
                             {item.description}
