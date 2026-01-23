@@ -20,11 +20,7 @@ export default function HeroSection({ section }: Props) {
       typography={page.typography}
       renderText={(props) => (
         <EditableText
-          value={props.value}
-          sectionId={props.sectionId}
-          field={props.field}
-          itemId={props.itemId}
-          className={props.className}
+          {...props}
           useElementStyles
         />
       )}

@@ -42,7 +42,7 @@ export default function LogoCloudSectionBase({
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <SectionBackground effect={content.backgroundEffect} />
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         {/* Header */}
         <motion.div

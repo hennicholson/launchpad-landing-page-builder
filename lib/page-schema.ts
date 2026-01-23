@@ -17,7 +17,30 @@ export type SectionType =
   | "logoCloud"
   | "comparison"
   | "process"
-  | "blank";
+  | "blank"
+  | "loader"
+  // Sales Funnel sections
+  | "value-proposition"
+  | "offer-details"
+  | "creator"
+  | "detailed-features"
+  // Whop University premium funnel sections
+  | "whop-hero"
+  | "whop-value-prop"
+  | "whop-offer"
+  | "whop-cta"
+  | "whop-comparison"
+  | "whop-creator"
+  | "whop-curriculum"
+  | "whop-results"
+  | "whop-testimonials"
+  | "whop-final-cta"
+  // Glass 3D components
+  | "glass-cta"
+  | "glass-features"
+  | "glass-founders"
+  | "glass-testimonials"
+  | "glass-pricing";
 
 export type LayoutType = "left" | "right" | "center" | "grid";
 
@@ -31,6 +54,9 @@ export type TestimonialVariant = "scrolling" | "twitter-cards";
 export type VideoVariant = "centered" | "grid" | "side-by-side" | "fullscreen";
 export type GalleryVariant = "bento" | "focusrail";
 export type FeaturesVariant = "default" | "illustrated" | "hover" | "bento" | "table";
+export type HeroVariant = "default" | "animated-preview" | "email-signup" | "sales-funnel";
+export type LogoSize = "small" | "medium" | "large" | "custom";
+export type TransitionAnimation = "fade" | "slide" | "zoom";
 
 // Background effect options
 export type BackgroundEffect =
@@ -41,7 +67,23 @@ export type BackgroundEffect =
   | "glow"
   | "shooting-stars"
   | "stars-background"
-  | "wavy-background";
+  | "wavy-background"
+  // Aceternity UI effects
+  | "aurora"
+  | "spotlight"
+  | "background-beams"
+  | "meteors"
+  | "sparkles";
+
+// Background effect configuration for Aceternity components
+export type BackgroundConfig = {
+  primaryColor?: string;
+  secondaryColor?: string;
+  speed?: "slow" | "medium" | "fast";
+  intensity?: number; // 0-100
+  showRadialGradient?: boolean;
+  blurAmount?: number;
+};
 
 // Animation presets
 export type AnimationPreset = "none" | "subtle" | "moderate" | "dramatic";
@@ -328,8 +370,10 @@ export type SectionItem = {
 };
 
 export type NavLink = {
+  id?: string;
   label: string;
   url: string;
+  styleOverrides?: Record<string, ElementStyleOverride>;
 };
 
 export type SectionContent = {
@@ -351,6 +395,19 @@ export type SectionContent = {
   buttonFontSize?: number;
   buttonFontWeight?: FontWeight;
   buttonShadow?: ShadowSize;
+  // Secondary button styling (independent from primary)
+  secondaryButtonVariant?: ButtonVariant;
+  secondaryButtonSize?: ButtonSize;
+  secondaryButtonBgColor?: string;
+  secondaryButtonTextColor?: string;
+  secondaryButtonBorderRadius?: number;
+  secondaryButtonBorderWidth?: number;
+  secondaryButtonBorderColor?: string;
+  secondaryButtonPaddingX?: number;
+  secondaryButtonPaddingY?: number;
+  secondaryButtonFontSize?: number;
+  secondaryButtonFontWeight?: FontWeight;
+  secondaryButtonShadow?: ShadowSize;
   imageUrl?: string;
   videoUrl?: string;
   backgroundColor?: string;
@@ -361,6 +418,7 @@ export type SectionContent = {
   showSubheading?: boolean;   // default true
   showBodyText?: boolean;     // default true
   showButton?: boolean;       // default true
+  showSecondaryButton?: boolean; // default true
   showImage?: boolean;        // default true
   showBadge?: boolean;        // default true
   showVideo?: boolean;        // default true
@@ -412,11 +470,50 @@ export type SectionContent = {
   videoVariant?: VideoVariant;
   galleryVariant?: GalleryVariant;
   featuresVariant?: FeaturesVariant;
+  // Hero variant system
+  heroVariant?: HeroVariant;
+  // Animated-preview & minimal hero variants
+  announcementText?: string;        // Badge announcement text
+  announcementLink?: string;        // Announcement link URL
+  primaryButtonText?: string;       // Primary CTA text
+  primaryButtonLink?: string;       // Primary CTA link
+  secondaryButtonText?: string;     // Secondary CTA text
+  secondaryButtonLink?: string;     // Secondary CTA link
+  appPreviewImageLight?: string;    // Light mode screenshot
+  appPreviewImageDark?: string;     // Dark mode screenshot
+  // Email-signup variant - Form
+  formPlaceholder?: string;         // Email input placeholder
+  formButtonText?: string;          // Form submit button text
+  formAction?: string;              // Form submission endpoint
+  // Email-signup variant - Editable Mockup Widget
+  mockupTitle?: string;             // Widget title (e.g., "Steps")
+  mockupCurrentValue?: string;      // Current stat value
+  mockupCurrentLabel?: string;      // Label for current stat
+  mockupPreviousValue?: string;     // Previous stat value
+  mockupPreviousLabel?: string;     // Label for previous stat
+  mockupDescription?: string;       // Description text
+  mockupCurrentYear?: string;       // Current year label
+  mockupPreviousYear?: string;      // Previous year label
+  // Scroll-3d variant
+  cardTitle?: string;               // Large centered title text
+  cardImageUrl?: string;            // Main card image
+  // Parallax gallery variant
+  galleryImages?: { url: string; title?: string }[]; // 18 images for 3-row gallery
+  // Logo cloud (all hero variants)
+  logoScrollSpeed?: number;         // Logo marquee speed (0.5-2.0)
   // Subheading configuration
   subheadingAnimation?: SubheadingAnimation;
   subheadingSize?: SubheadingSize;
   subheadingWeight?: SubheadingWeight;
   subheadingOpacity?: number; // 50-100 (default 80)
+  // Sales Funnel Hero variant fields
+  topTitle?: string;           // Small text above main heading
+  ctaText?: string;            // CTA button text
+  ctaUrl?: string;             // CTA button URL
+  ctaSecondaryText?: string;   // Secondary text below CTA (e.g., "Only $47")
+  badgeIcon?: string;          // Icon name for badge (e.g., "checkmark", "shield")
+  heroImageUrl?: string;       // Hero image URL
+  heroImageAlt?: string;       // Hero image alt text
   // Video section specific
   autoplayVideo?: boolean;
   muteVideo?: boolean;
@@ -424,6 +521,7 @@ export type SectionContent = {
   videoDuration?: string;  // Duration display (e.g., "5:30")
   videoAspectRatio?: '16:9' | '4:3' | '1:1';
   backgroundEffect?: BackgroundEffect;
+  backgroundConfig?: BackgroundConfig;
   headingStyle?: HeadingStyle;
   // Section-level padding overrides
   paddingTop?: number;      // Custom top padding in pixels
@@ -433,6 +531,26 @@ export type SectionContent = {
   elementStyles?: Record<string, ElementStyleOverride>;
   // Blank section specific
   minHeight?: number;        // Min height in pixels for blank canvas
+  // Loader section specific
+  logoSize?: LogoSize;       // Logo size preset or custom
+  customLogoSize?: number;   // Custom logo width in pixels (when logoSize is "custom")
+  transitionAnimation?: TransitionAnimation; // Page transition animation
+  transitionDuration?: number; // Transition duration in seconds (default 0.8)
+  // Sales Funnel sections
+  // Value Proposition section
+  bodyParagraphs?: string[];        // Array of paragraph text
+  // Offer Details section
+  featuredImageUrl?: string;        // Large product/featured image
+  featuredImageAlt?: string;        // Alt text for featured image
+  // Creator section
+  creatorPhotoUrl?: string;         // Creator/expert photo
+  creatorPhotoAlt?: string;         // Alt text for creator photo
+  creatorName?: string;             // Creator name
+  creatorRole?: string;             // Creator title/role
+  creatorBio?: string;              // Multi-paragraph bio (string with \n\n or will be split)
+  creatorCredentials?: string[];    // Optional array of credentials
+  // Detailed Features section
+  introText?: string;               // Brief intro before feature list
 };
 
 export type PageSection = {
@@ -568,7 +686,7 @@ export function generateId(): string {
 }
 
 // Create a new section with defaults
-export function createSection(type: SectionType, options?: { ctaVariant?: CTAVariant; headerVariant?: HeaderVariant; testimonialVariant?: TestimonialVariant; featuresVariant?: FeaturesVariant }): PageSection {
+export function createSection(type: SectionType, options?: { ctaVariant?: CTAVariant; headerVariant?: HeaderVariant; testimonialVariant?: TestimonialVariant; featuresVariant?: FeaturesVariant; heroVariant?: HeroVariant }): PageSection {
   const baseSection: PageSection = {
     id: generateId(),
     type,
@@ -583,13 +701,32 @@ export function createSection(type: SectionType, options?: { ctaVariant?: CTAVar
   // Add type-specific defaults
   switch (type) {
     case "hero":
-      baseSection.content = {
-        ...baseSection.content,
-        heading: "Welcome to Your Landing Page",
-        subheading: "Describe your product or service here",
-        buttonText: "Get Started",
-        buttonLink: "#",
-      };
+      const heroVariant = options?.heroVariant || "default";
+      if (heroVariant === "sales-funnel") {
+        baseSection.content = {
+          ...baseSection.content,
+          heroVariant,
+          topTitle: "For [Target Audience] That Want To...",
+          heading: "Your Compelling Main Headline Here",
+          subheading: "Clear benefit statement that makes them want to learn more",
+          imageUrl: "",
+          ctaText: "YES! DOWNLOAD NOW!",
+          ctaUrl: "#",
+          ctaSecondaryText: "Only $47 - one time payment",
+          badge: "365 DAYS MONEY BACK GUARANTEE",
+          badgeIcon: "checkmark",
+          showBadge: true,
+        };
+      } else {
+        baseSection.content = {
+          ...baseSection.content,
+          heroVariant,
+          heading: "Welcome to Your Landing Page",
+          subheading: "Describe your product or service here",
+          buttonText: "Get Started",
+          buttonLink: "#",
+        };
+      }
       break;
     case "features":
       const featuresVariant = options?.featuresVariant || "default";
@@ -1021,6 +1158,22 @@ export function createSection(type: SectionType, options?: { ctaVariant?: CTAVar
         },
       ];
       break;
+    case "loader":
+      baseSection.content = {
+        ...baseSection.content,
+        heading: "Welcome",
+        buttonText: "Enter",
+        buttonLink: "#content",
+        buttonVariant: "primary",
+        backgroundColor: "#0a0a0a",
+        textColor: "#ffffff",
+        logoUrl: "",
+        logoSize: "medium",
+        transitionAnimation: "fade",
+        transitionDuration: 0.8,
+        backgroundEffect: "none",
+      };
+      break;
     case "blank":
       baseSection.content = {
         ...baseSection.content,
@@ -1028,6 +1181,278 @@ export function createSection(type: SectionType, options?: { ctaVariant?: CTAVar
         textColor: "#ffffff",
         minHeight: 300,
       };
+      break;
+    // Sales Funnel sections
+    case "value-proposition":
+      baseSection.content = {
+        ...baseSection.content,
+        heading: "Here's How It Works",
+        badge: "VALUE PROPOSITION",
+        showBadge: true,
+        bodyParagraphs: [
+          "Tell your story here. This section is perfect for explaining the problem your audience faces and how your solution helps them.",
+          "Build empathy by describing the pain points and challenges. Make it personal and relatable.",
+          "Reveal your solution and explain why it works. Focus on benefits, not features."
+        ],
+        backgroundColor: "#ffffff",
+        textColor: "#111827",
+      };
+      break;
+    case "offer-details":
+      baseSection.content = {
+        ...baseSection.content,
+        heading: "What You Get",
+        description: "Everything included in your purchase:",
+        badge: "THE OFFER",
+        showBadge: true,
+        featuredImageUrl: "",
+        featuredImageAlt: "Product image",
+        backgroundColor: "#ffffff",
+        textColor: "#111827",
+      };
+      baseSection.items = [
+        { id: generateId(), title: "Complete Access", description: "Full access to all features and content", icon: "check" },
+        { id: generateId(), title: "Lifetime Updates", description: "Get all future updates and improvements for free", icon: "check" },
+        { id: generateId(), title: "24/7 Support", description: "Round-the-clock customer support when you need it", icon: "check" },
+        { id: generateId(), title: "Money-Back Guarantee", description: "30-day risk-free guarantee if you're not satisfied", icon: "check" },
+        { id: generateId(), title: "Community Access", description: "Join our exclusive community of users", icon: "check" },
+        { id: generateId(), title: "Bonus Resources", description: "Extra templates, guides, and resources", icon: "check" },
+      ];
+      break;
+    case "creator":
+      baseSection.content = {
+        ...baseSection.content,
+        heading: "Meet Your Instructor",
+        creatorPhotoUrl: "",
+        creatorPhotoAlt: "Creator photo",
+        creatorName: "Your Name",
+        creatorRole: "Expert & Founder",
+        creatorBio: "Share your story here. Explain who you are, what you've accomplished, and why you're qualified to help your audience.\n\nBuild trust by sharing your experience, credentials, and personal journey. Make it authentic and relatable.\n\nConnect with your audience on an emotional level. Show them you understand their challenges because you've been there too.",
+        creatorCredentials: [
+          "10+ years of experience in the field",
+          "Helped 1,000+ clients achieve success",
+          "Featured in major publications",
+          "Certified expert and thought leader"
+        ],
+        backgroundColor: "#ffffff",
+        textColor: "#111827",
+      };
+      break;
+    case "detailed-features":
+      baseSection.content = {
+        ...baseSection.content,
+        heading: "What's Inside",
+        introText: "Here's everything you'll get access to:",
+        featuredImageUrl: "",
+        featuredImageAlt: "Product features",
+        backgroundColor: "#ffffff",
+        textColor: "#111827",
+      };
+      baseSection.items = [
+        {
+          id: generateId(),
+          title: "Core Module 1",
+          description: "Learn the fundamental concepts and strategies that form the foundation of success.",
+          icon: "star"
+        },
+        {
+          id: generateId(),
+          title: "Advanced Techniques",
+          description: "Master advanced methods used by top professionals to get extraordinary results.",
+          icon: "rocket"
+        },
+        {
+          id: generateId(),
+          title: "Step-by-Step System",
+          description: "Follow our proven system that takes you from beginner to expert level.",
+          icon: "chart"
+        },
+        {
+          id: generateId(),
+          title: "Templates & Tools",
+          description: "Access our complete library of ready-to-use templates and tools.",
+          icon: "cube"
+        },
+        {
+          id: generateId(),
+          title: "Video Training",
+          description: "Watch over 50 hours of detailed video training covering every aspect.",
+          icon: "sparkles"
+        },
+        {
+          id: generateId(),
+          title: "Worksheets & Guides",
+          description: "Download practical worksheets and guides to implement what you learn.",
+          icon: "check"
+        },
+        {
+          id: generateId(),
+          title: "Case Studies",
+          description: "Study real-world examples and success stories from our clients.",
+          icon: "lightning"
+        },
+        {
+          id: generateId(),
+          title: "Bonus Resources",
+          description: "Get exclusive access to bonus materials and premium resources.",
+          icon: "heart"
+        },
+      ];
+      break;
+    // Glass 3D sections
+    case "glass-cta":
+      baseSection.content = {
+        ...baseSection.content,
+        heading: "Ready to get started?",
+        subheading: "Join thousands of happy customers",
+        buttonText: "Start Free Trial",
+        buttonLink: "#",
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
+      break;
+    case "glass-features":
+      baseSection.content = {
+        ...baseSection.content,
+        badge: "FEATURES",
+        heading: "Everything You Need to Succeed",
+        subheading: "Powerful tools designed to help you build, launch, and scale.",
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
+      baseSection.items = [
+        { id: generateId(), icon: "🚀", title: "Lightning Fast", description: "Experience blazing fast performance with our optimized infrastructure." },
+        { id: generateId(), icon: "💰", title: "Built-in Payments", description: "Accept payments globally with Stripe, PayPal, and crypto." },
+        { id: generateId(), icon: "📊", title: "Real-time Analytics", description: "Track conversions and revenue with beautiful dashboards." },
+        { id: generateId(), icon: "🎨", title: "Custom Branding", description: "Make it yours with custom domains, colors, and fonts." },
+        { id: generateId(), icon: "🔒", title: "Enterprise Security", description: "SOC 2 compliant with end-to-end encryption." },
+        { id: generateId(), icon: "🤝", title: "24/7 Support", description: "Get help anytime from our expert team." },
+      ];
+      break;
+    case "glass-founders":
+      baseSection.content = {
+        ...baseSection.content,
+        badge: "MEET THE TEAM",
+        heading: "Built by Founders, for Founders",
+        subheading: "We've been in your shoes. Now we're building the tools we wish we had.",
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
+      baseSection.items = [
+        {
+          id: generateId(),
+          title: "Alex Chen",
+          role: "CEO & Founder",
+          bio: "Built 3 successful startups. $50M+ in exits. Forbes 30 Under 30.",
+          imageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80",
+          label: "Serial Entrepreneur",
+          features: ["YC Alumni", "Forbes 30u30"],
+        },
+        {
+          id: generateId(),
+          title: "Sarah Mitchell",
+          role: "CTO",
+          bio: "Ex-Google, Ex-Meta. 15 years building scalable systems.",
+          imageUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80",
+          label: "Tech Veteran",
+          features: ["Ex-Google", "Ex-Meta"],
+        },
+        {
+          id: generateId(),
+          title: "Marcus Johnson",
+          role: "Head of Product",
+          bio: "Led product at 2 unicorns. Shipped to 10M+ users.",
+          imageUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80",
+          label: "Product Expert",
+          features: ["Unicorn Builder", "10M+ Users"],
+        },
+      ];
+      break;
+    case "glass-testimonials":
+      baseSection.content = {
+        ...baseSection.content,
+        badge: "TESTIMONIALS",
+        heading: "Loved by Thousands",
+        subheading: "Don't just take our word for it.",
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
+      baseSection.items = [
+        {
+          id: generateId(),
+          title: "$50K MRR",
+          description: "This platform completely transformed how I run my business. Revenue is up 300% in just 3 months.",
+          author: "Emily Park",
+          role: "Course Creator",
+          imageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&q=80",
+          rating: 5,
+        },
+        {
+          id: generateId(),
+          title: "10x ROI",
+          description: "The best investment I've ever made. The ROI paid for itself in the first week.",
+          author: "David Rodriguez",
+          role: "Agency Owner",
+          imageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80",
+          rating: 5,
+        },
+        {
+          id: generateId(),
+          title: "Quit Job",
+          description: "Finally quit my 9-5 thanks to this. The community alone is worth the price.",
+          author: "Jennifer Lee",
+          role: "Full-time Creator",
+          imageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80",
+          rating: 5,
+        },
+      ];
+      break;
+    case "glass-pricing":
+      baseSection.content = {
+        ...baseSection.content,
+        badge: "PRICING",
+        heading: "Simple, Transparent Pricing",
+        subheading: "No hidden fees. No surprises. Cancel anytime.",
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
+      baseSection.items = [
+        {
+          id: generateId(),
+          title: "Starter",
+          price: "$29/mo",
+          description: "Perfect for getting started",
+          features: ["5 Projects", "10GB Storage", "Basic Analytics", "Email Support"],
+          buttonText: "Start Free Trial",
+          buttonLink: "#",
+          popular: false,
+        },
+        {
+          id: generateId(),
+          title: "Pro",
+          price: "$79/mo",
+          description: "For growing businesses",
+          features: ["Unlimited Projects", "100GB Storage", "Advanced Analytics", "Priority Support", "Custom Domain", "API Access"],
+          buttonText: "Get Started",
+          buttonLink: "#",
+          popular: true,
+        },
+        {
+          id: generateId(),
+          title: "Enterprise",
+          price: "$199/mo",
+          description: "For large teams",
+          features: ["Everything in Pro", "Unlimited Storage", "Dedicated Manager", "SLA Guarantee", "SSO/SAML", "Custom Integrations"],
+          buttonText: "Contact Sales",
+          buttonLink: "#",
+          popular: false,
+        },
+      ];
       break;
   }
 

@@ -6,6 +6,8 @@ import type { SectionItem } from "@/lib/page-schema";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import { SectionBackground } from "../../SectionBackground";
 import { SubheadingText } from "../SubheadingText";
+import { useEditorStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 const staggerDelays = [0.1, 0.2, 0.25, 0.3, 0.35, 0.4];
 
@@ -35,9 +37,29 @@ function BentoCard({
   const isLarge = item.gridClass?.includes("col-span-2") || item.gridClass?.includes("col-span-3");
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Only enable selection in editor mode (when renderText exists)
+  const isEditorMode = !!renderText;
+  const selectItem = useEditorStore((state) => state.selectItem);
+  const selectedItemId = useEditorStore((state) => state.selectedItemId);
+  const isSelected = isEditorMode && selectedItemId === item.id;
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Only handle clicks in editor mode
+    if (!isEditorMode) return;
+    // Prevent click if user is selecting text
+    if (window.getSelection()?.toString()) return;
+    selectItem(sectionId, item.id);
+  };
+
   return (
     <motion.div
-      className={`group relative overflow-hidden rounded-2xl border hover:border-opacity-20 transition-colors duration-500 ${item.gridClass || ""}`}
+      onClick={isEditorMode ? handleCardClick : undefined}
+      className={cn(
+        "group relative overflow-hidden rounded-2xl border hover:border-opacity-20 transition-colors duration-500",
+        item.gridClass || "",
+        isEditorMode && "cursor-pointer",
+        isSelected && "ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent"
+      )}
       style={{
         borderColor: `${accentColor}33`,
         backgroundColor: `${textColor}05`,
@@ -169,7 +191,7 @@ export default function FeaturesDefault({
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <SectionBackground effect={content.backgroundEffect} />
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         {/* Header with gradient reveal */}
         <div className="text-center mb-12 overflow-hidden">

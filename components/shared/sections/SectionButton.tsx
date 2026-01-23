@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import type {
   ButtonVariant,
@@ -9,6 +10,14 @@ import type {
   SectionContent
 } from "@/lib/page-schema";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import {
+  adjustColorBrightness,
+  createGradientFromColor,
+  hexToRgba,
+  generateShadowColor,
+  generateWin98BorderColors,
+  normalizeColorToHex,
+} from "@/lib/utils/colorUtils";
 
 // Helper to determine if a color is light or dark
 function isLightColor(color: string): boolean {
@@ -116,6 +125,9 @@ type SectionButtonProps = {
   link: string;
   sectionId: string;
 
+  // Button type for field differentiation
+  buttonType?: "primary" | "secondary";
+
   // Button customization from SectionContent
   variant?: ButtonVariant;
   size?: ButtonSize;
@@ -150,6 +162,7 @@ export default function SectionButton({
   text,
   link,
   sectionId,
+  buttonType,
   variant,
   size = "lg",
   bgColor,
@@ -189,220 +202,472 @@ export default function SectionButton({
   const effectiveFontSize = fontSize ?? sizeDefaults.fontSize;
   const effectiveFontWeight = FONT_WEIGHTS[fontWeight ?? "semibold"];
 
-  // Handle colors based on variant and custom settings
-  let effectiveBgColor: string;
-  let effectiveTextColor: string;
-  let effectiveBorderWidth: number;
-  let effectiveBorderColor: string;
-  let effectiveBorderRadius: number;
-  let effectiveShadow: string;
-
-  // If user set custom bgColor, use it with auto-contrast text (unless text is also set)
-  if (bgColor) {
-    effectiveBgColor = bgColor;
-    effectiveTextColor = textColor ?? getContrastTextColor(bgColor);
-    effectiveBorderWidth = borderWidth ?? 0;
-    effectiveBorderColor = borderColor ?? "transparent";
-    effectiveBorderRadius = borderRadius ?? 12;
-    effectiveShadow = SHADOW_STYLES[shadow ?? "none"];
-  } else {
-    // Use variant-based defaults
-    switch (effectiveVariant) {
-      case "primary":
-        effectiveBgColor = primaryColor;
-        effectiveTextColor = textColor ?? getContrastTextColor(primaryColor);
-        effectiveBorderWidth = borderWidth ?? 0;
-        effectiveBorderColor = borderColor ?? "transparent";
-        effectiveBorderRadius = borderRadius ?? 12;
-        effectiveShadow = SHADOW_STYLES[shadow ?? "none"];
-        break;
-
-      case "secondary":
-        effectiveBgColor = `${effectiveSchemeTextColor}12`;
-        effectiveTextColor = textColor ?? effectiveSchemeTextColor;
-        effectiveBorderWidth = borderWidth ?? 1;
-        effectiveBorderColor = borderColor ?? `${effectiveSchemeTextColor}20`;
-        effectiveBorderRadius = borderRadius ?? 12;
-        effectiveShadow = SHADOW_STYLES[shadow ?? "none"];
-        break;
-
-      case "outline":
-        effectiveBgColor = "transparent";
-        effectiveTextColor = textColor ?? effectiveSchemeTextColor;
-        effectiveBorderWidth = borderWidth ?? 2;
-        effectiveBorderColor = borderColor ?? `${effectiveSchemeTextColor}50`;
-        effectiveBorderRadius = borderRadius ?? 12;
-        effectiveShadow = SHADOW_STYLES[shadow ?? "none"];
-        break;
-
-      case "ghost":
-        effectiveBgColor = "transparent";
-        effectiveTextColor = textColor ?? effectiveSchemeTextColor;
-        effectiveBorderWidth = borderWidth ?? 0;
-        effectiveBorderColor = borderColor ?? "transparent";
-        effectiveBorderRadius = borderRadius ?? 12;
-        effectiveShadow = SHADOW_STYLES[shadow ?? "none"];
-        break;
-
+  /**
+   * Helper function to get base variant styling separated into structure and colors
+   * This allows us to preserve variant effects while customizing colors
+   */
+  function getVariantBaseStyle(variant: ButtonVariant): {
+    structural: React.CSSProperties;
+    colors: {
+      bg: string;
+      text: string;
+      borderWidth: number;
+      borderColor: string;
+      borderRadius: number;
+      shadow: string;
+    };
+    isFancyVariant: boolean;
+  } {
+    switch (variant) {
       case "gradient":
-        effectiveBgColor = `linear-gradient(135deg, ${primaryColor}, ${accentColor || lightenColor(primaryColor, 30)})`;
-        effectiveTextColor = textColor ?? getContrastTextColor(primaryColor);
-        effectiveBorderWidth = borderWidth ?? 0;
-        effectiveBorderColor = borderColor ?? "transparent";
-        effectiveBorderRadius = borderRadius ?? 14;
-        effectiveShadow = shadow ? SHADOW_STYLES[shadow] : `0 4px 20px ${primaryColor}40`;
-        break;
+        return {
+          structural: {},
+          colors: {
+            bg: `linear-gradient(135deg, ${primaryColor}, ${accentColor || lightenColor(primaryColor, 30)})`,
+            text: getContrastTextColor(primaryColor),
+            borderWidth: 0,
+            borderColor: "transparent",
+            borderRadius: 14,
+            shadow: shadow ? SHADOW_STYLES[shadow] : `0 4px 20px ${primaryColor}40`,
+          },
+          isFancyVariant: true,
+        };
 
       case "neon":
-        effectiveBgColor = "transparent";
-        effectiveTextColor = textColor ?? primaryColor;
-        effectiveBorderWidth = borderWidth ?? 2;
-        effectiveBorderColor = borderColor ?? primaryColor;
-        effectiveBorderRadius = borderRadius ?? 12;
-        effectiveShadow = `0 0 15px ${primaryColor}60, 0 0 30px ${primaryColor}30, inset 0 0 15px ${primaryColor}10`;
-        break;
+        return {
+          structural: {},
+          colors: {
+            bg: "transparent",
+            text: primaryColor,
+            borderWidth: 2,
+            borderColor: primaryColor,
+            borderRadius: 12,
+            shadow: `0 0 15px ${primaryColor}60, 0 0 30px ${primaryColor}30, inset 0 0 15px ${primaryColor}10`,
+          },
+          isFancyVariant: true,
+        };
 
       case "3d":
-        effectiveBgColor = primaryColor;
-        effectiveTextColor = textColor ?? getContrastTextColor(primaryColor);
-        effectiveBorderWidth = borderWidth ?? 0;
-        effectiveBorderColor = borderColor ?? "transparent";
-        effectiveBorderRadius = borderRadius ?? 14;
-        effectiveShadow = `0 6px 0 ${darkenColor(primaryColor, 25)}, 0 8px 20px ${primaryColor}30`;
-        break;
+        return {
+          structural: {},
+          colors: {
+            bg: primaryColor,
+            text: getContrastTextColor(primaryColor),
+            borderWidth: 0,
+            borderColor: "transparent",
+            borderRadius: 14,
+            shadow: `0 6px 0 ${darkenColor(primaryColor, 25)}, 0 8px 20px ${primaryColor}30`,
+          },
+          isFancyVariant: true,
+        };
 
       case "glass":
-        effectiveBgColor = `${effectiveSchemeTextColor}08`;
-        effectiveTextColor = textColor ?? effectiveSchemeTextColor;
-        effectiveBorderWidth = borderWidth ?? 1;
-        effectiveBorderColor = borderColor ?? `${effectiveSchemeTextColor}15`;
-        effectiveBorderRadius = borderRadius ?? 16;
-        effectiveShadow = `0 8px 32px rgba(0, 0, 0, 0.1)`;
-        break;
+        return {
+          structural: {
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+          },
+          colors: {
+            bg: `${effectiveSchemeTextColor}08`,
+            text: effectiveSchemeTextColor,
+            borderWidth: 1,
+            borderColor: `${effectiveSchemeTextColor}15`,
+            borderRadius: 16,
+            shadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+          },
+          isFancyVariant: true,
+        };
 
       case "pill":
-        effectiveBgColor = primaryColor;
-        effectiveTextColor = textColor ?? getContrastTextColor(primaryColor);
-        effectiveBorderWidth = borderWidth ?? 0;
-        effectiveBorderColor = borderColor ?? "transparent";
-        effectiveBorderRadius = borderRadius ?? 9999;
-        effectiveShadow = shadow ? SHADOW_STYLES[shadow] : `0 4px 15px ${primaryColor}30`;
-        break;
-
-      case "icon":
-        effectiveBgColor = primaryColor;
-        effectiveTextColor = textColor ?? getContrastTextColor(primaryColor);
-        effectiveBorderWidth = borderWidth ?? 0;
-        effectiveBorderColor = borderColor ?? "transparent";
-        effectiveBorderRadius = borderRadius ?? 12;
-        effectiveShadow = SHADOW_STYLES[shadow ?? "none"];
-        break;
-
-      case "underline":
-        effectiveBgColor = "transparent";
-        effectiveTextColor = textColor ?? effectiveSchemeTextColor;
-        effectiveBorderWidth = 0;
-        effectiveBorderColor = "transparent";
-        effectiveBorderRadius = 0;
-        effectiveShadow = "none";
-        break;
-
-      case "bounce":
-        effectiveBgColor = primaryColor;
-        effectiveTextColor = textColor ?? getContrastTextColor(primaryColor);
-        effectiveBorderWidth = borderWidth ?? 0;
-        effectiveBorderColor = borderColor ?? "transparent";
-        effectiveBorderRadius = borderRadius ?? 14;
-        effectiveShadow = shadow ? SHADOW_STYLES[shadow] : `0 4px 15px ${primaryColor}30`;
-        break;
-
-      case "animated-generate":
-        effectiveBgColor = bgColor ?? "#0a0a0b";
-        effectiveTextColor = textColor ?? "#ffffff";
-        effectiveBorderWidth = borderWidth ?? 1;
-        effectiveBorderColor = borderColor ?? "rgba(255,255,255,0.2)";
-        effectiveBorderRadius = borderRadius ?? 24;
-        effectiveShadow = `inset 0px 1px 1px rgba(255,255,255,0.2), inset 0px 2px 2px rgba(255,255,255,0.15), 0 -4px 8px rgba(0,0,0,0.1)`;
-        break;
+        return {
+          structural: {},
+          colors: {
+            bg: primaryColor,
+            text: getContrastTextColor(primaryColor),
+            borderWidth: 0,
+            borderColor: "transparent",
+            borderRadius: 9999,
+            shadow: shadow ? SHADOW_STYLES[shadow] : `0 4px 15px ${primaryColor}30`,
+          },
+          isFancyVariant: true,
+        };
 
       case "liquid":
-        effectiveBgColor = `linear-gradient(135deg, ${primaryColor}, ${accentColor || lightenColor(primaryColor, 20)}, ${primaryColor})`;
-        effectiveTextColor = textColor ?? getContrastTextColor(primaryColor);
-        effectiveBorderWidth = borderWidth ?? 2;
-        effectiveBorderColor = borderColor ?? `${primaryColor}80`;
-        effectiveBorderRadius = borderRadius ?? 24;
-        effectiveShadow = `0 8px 32px ${primaryColor}40, inset 0 1px 0 rgba(255,255,255,0.3)`;
-        break;
+        return {
+          structural: {},
+          colors: {
+            bg: `linear-gradient(135deg, ${primaryColor}, ${accentColor || lightenColor(primaryColor, 20)}, ${primaryColor})`,
+            text: getContrastTextColor(primaryColor),
+            borderWidth: 2,
+            borderColor: `${primaryColor}80`,
+            borderRadius: 24,
+            shadow: `0 8px 32px ${primaryColor}40, inset 0 1px 0 rgba(255,255,255,0.3)`,
+          },
+          isFancyVariant: true,
+        };
 
       case "flow":
-        effectiveBgColor = "transparent";
-        effectiveTextColor = textColor ?? "#111111";
-        effectiveBorderWidth = borderWidth ?? 2;
-        effectiveBorderColor = borderColor ?? "rgba(51,51,51,0.4)";
-        effectiveBorderRadius = borderRadius ?? 100;
-        effectiveShadow = "none";
-        break;
+        return {
+          structural: {},
+          colors: {
+            bg: "transparent",
+            text: "#111111",
+            borderWidth: 2,
+            borderColor: "rgba(51,51,51,0.4)",
+            borderRadius: 100,
+            shadow: "none",
+          },
+          isFancyVariant: true,
+        };
 
       case "ripple":
-        effectiveBgColor = bgColor ?? primaryColor;
-        effectiveTextColor = textColor ?? getContrastTextColor(primaryColor);
-        effectiveBorderWidth = borderWidth ?? 2;
-        effectiveBorderColor = borderColor ?? `${primaryColor}50`;
-        effectiveBorderRadius = borderRadius ?? 8;
-        effectiveShadow = SHADOW_STYLES[shadow ?? "sm"];
-        break;
+        return {
+          structural: {},
+          colors: {
+            bg: primaryColor,
+            text: getContrastTextColor(primaryColor),
+            borderWidth: 2,
+            borderColor: `${primaryColor}50`,
+            borderRadius: 8,
+            shadow: SHADOW_STYLES[shadow ?? "sm"],
+          },
+          isFancyVariant: true,
+        };
 
       case "cartoon":
-        effectiveBgColor = bgColor ?? "#fb923c";
-        effectiveTextColor = textColor ?? "#262626";
-        effectiveBorderWidth = borderWidth ?? 2;
-        effectiveBorderColor = borderColor ?? "#262626";
-        effectiveBorderRadius = borderRadius ?? 9999;
-        effectiveShadow = "0 4px 0 0 #262626";
-        break;
+        return {
+          structural: {},
+          colors: {
+            bg: "#fb923c",
+            text: "#262626",
+            borderWidth: 2,
+            borderColor: "#262626",
+            borderRadius: 9999,
+            shadow: "0 4px 0 0 #262626",
+          },
+          isFancyVariant: true,
+        };
 
       case "win98":
-        effectiveBgColor = "#c0c0c0";
-        effectiveTextColor = "#000000";
-        effectiveBorderWidth = 0;
-        effectiveBorderColor = "transparent";
-        effectiveBorderRadius = borderRadius ?? 0;
-        effectiveShadow = "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf";
-        break;
+        return {
+          structural: {},
+          colors: {
+            bg: "#c0c0c0",
+            text: "#000000",
+            borderWidth: 0,
+            borderColor: "transparent",
+            borderRadius: 0,
+            shadow: "inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf",
+          },
+          isFancyVariant: true,
+        };
+
+      case "bounce":
+        return {
+          structural: {},
+          colors: {
+            bg: primaryColor,
+            text: getContrastTextColor(primaryColor),
+            borderWidth: 0,
+            borderColor: "transparent",
+            borderRadius: 14,
+            shadow: shadow ? SHADOW_STYLES[shadow] : `0 4px 15px ${primaryColor}30`,
+          },
+          isFancyVariant: true,
+        };
+
+      // Simple variants - fully overridable
+      case "primary":
+        return {
+          structural: {},
+          colors: {
+            bg: primaryColor,
+            text: getContrastTextColor(primaryColor),
+            borderWidth: 0,
+            borderColor: "transparent",
+            borderRadius: 12,
+            shadow: SHADOW_STYLES[shadow ?? "none"],
+          },
+          isFancyVariant: false,
+        };
+
+      case "secondary":
+        return {
+          structural: {},
+          colors: {
+            bg: `${effectiveSchemeTextColor}12`,
+            text: effectiveSchemeTextColor,
+            borderWidth: 1,
+            borderColor: `${effectiveSchemeTextColor}20`,
+            borderRadius: 12,
+            shadow: SHADOW_STYLES[shadow ?? "none"],
+          },
+          isFancyVariant: false,
+        };
+
+      case "outline":
+        return {
+          structural: {},
+          colors: {
+            bg: "transparent",
+            text: effectiveSchemeTextColor,
+            borderWidth: 2,
+            borderColor: `${effectiveSchemeTextColor}50`,
+            borderRadius: 12,
+            shadow: SHADOW_STYLES[shadow ?? "none"],
+          },
+          isFancyVariant: false,
+        };
+
+      case "ghost":
+        return {
+          structural: {},
+          colors: {
+            bg: "transparent",
+            text: effectiveSchemeTextColor,
+            borderWidth: 0,
+            borderColor: "transparent",
+            borderRadius: 12,
+            shadow: SHADOW_STYLES[shadow ?? "none"],
+          },
+          isFancyVariant: false,
+        };
+
+      case "icon":
+        return {
+          structural: {},
+          colors: {
+            bg: primaryColor,
+            text: getContrastTextColor(primaryColor),
+            borderWidth: 0,
+            borderColor: "transparent",
+            borderRadius: 12,
+            shadow: SHADOW_STYLES[shadow ?? "none"],
+          },
+          isFancyVariant: false,
+        };
+
+      case "underline":
+        return {
+          structural: {},
+          colors: {
+            bg: "transparent",
+            text: effectiveSchemeTextColor,
+            borderWidth: 0,
+            borderColor: "transparent",
+            borderRadius: 0,
+            shadow: "none",
+          },
+          isFancyVariant: false,
+        };
+
+      case "animated-generate":
+        return {
+          structural: {},
+          colors: {
+            bg: "#0a0a0b",
+            text: "#ffffff",
+            borderWidth: 1,
+            borderColor: "rgba(255,255,255,0.2)",
+            borderRadius: 24,
+            shadow: "inset 0px 1px 1px rgba(255,255,255,0.2), inset 0px 2px 2px rgba(255,255,255,0.15), 0 -4px 8px rgba(0,0,0,0.1)",
+          },
+          isFancyVariant: false,
+        };
 
       default:
-        effectiveBgColor = primaryColor;
-        effectiveTextColor = textColor ?? getContrastTextColor(primaryColor);
-        effectiveBorderWidth = 0;
-        effectiveBorderColor = "transparent";
-        effectiveBorderRadius = 12;
-        effectiveShadow = "none";
+        return {
+          structural: {},
+          colors: {
+            bg: primaryColor,
+            text: getContrastTextColor(primaryColor),
+            borderWidth: 0,
+            borderColor: "transparent",
+            borderRadius: 12,
+            shadow: "none",
+          },
+          isFancyVariant: false,
+        };
     }
   }
 
-  // Build inline styles
-  const isGradient = effectiveBgColor.includes("linear-gradient");
-  const buttonStyles: React.CSSProperties = {
-    paddingLeft: effectivePaddingX,
-    paddingRight: effectivePaddingX,
-    paddingTop: effectivePaddingY,
-    paddingBottom: effectivePaddingY,
-    borderRadius: effectiveBorderRadius,
-    backgroundColor: isGradient ? undefined : effectiveBgColor,
-    backgroundImage: isGradient ? effectiveBgColor : undefined,
-    color: effectiveTextColor,
-    borderWidth: effectiveBorderWidth,
-    borderStyle: effectiveBorderWidth > 0 ? "solid" : "none",
-    borderColor: effectiveBorderColor,
-    fontSize: effectiveFontSize,
-    fontWeight: effectiveFontWeight,
-    fontFamily: bodyFont,
-    boxShadow: effectiveShadow,
-    ...(effectiveVariant === "glass" ? { backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" } : {}),
-  };
+  /**
+   * Applies color overrides while preserving variant structural properties
+   */
+  function applyColorOverrides(
+    baseStyle: ReturnType<typeof getVariantBaseStyle>,
+    overrides: {
+      bgColor?: string;
+      textColor?: string;
+      borderRadius?: number;
+      borderWidth?: number;
+      borderColor?: string;
+    }
+  ): {
+    effectiveBgColor: string;
+    effectiveTextColor: string;
+    effectiveBorderRadius: number;
+    effectiveBorderWidth: number;
+    effectiveBorderColor: string;
+    effectiveShadow: string;
+    structuralStyle: React.CSSProperties;
+  } {
+    const { structural, colors, isFancyVariant } = baseStyle;
 
-  // Get hover animations based on variant
-  const getHoverAnimation = () => {
+    // VALIDATE all color overrides before processing
+    const validatedOverrides = {
+      ...overrides,
+      bgColor: overrides.bgColor ? normalizeColorToHex(overrides.bgColor, colors.bg) : undefined,
+      textColor: overrides.textColor ? normalizeColorToHex(overrides.textColor, colors.text) : undefined,
+      borderColor: overrides.borderColor ? normalizeColorToHex(overrides.borderColor, colors.borderColor) : undefined,
+    };
+
+    let finalBgColor = colors.bg;
+    let finalTextColor = colors.text;
+    let finalShadow = colors.shadow;
+    let finalBorderColor = colors.borderColor;
+
+    // For fancy variants, intelligently apply color overrides while preserving effects
+    if (isFancyVariant && validatedOverrides.bgColor) {
+      const customBg = validatedOverrides.bgColor;
+
+      // Special handling per variant type
+      if (effectiveVariant === "gradient" || effectiveVariant === "liquid") {
+        // For gradient variants, create a new gradient from the custom color
+        finalBgColor = createGradientFromColor(customBg, colors.bg);
+        // Update shadow to match new color
+        finalShadow = `0 4px 20px ${hexToRgba(customBg, 0.25)}`;
+      } else if (effectiveVariant === "neon") {
+        // Neon stays transparent but updates border/text/glow to match
+        finalBgColor = "transparent";
+        finalTextColor = validatedOverrides.textColor ?? customBg;
+        finalBorderColor = validatedOverrides.borderColor ?? customBg;
+        finalShadow = `0 0 15px ${hexToRgba(customBg, 0.6)}, 0 0 30px ${hexToRgba(customBg, 0.3)}, inset 0 0 15px ${hexToRgba(customBg, 0.1)}`;
+      } else if (effectiveVariant === "3d") {
+        // 3D uses custom bg and auto-generates shadow
+        finalBgColor = customBg;
+        finalTextColor = validatedOverrides.textColor ?? getContrastTextColor(customBg);
+        const shadowColor = generateShadowColor(customBg);
+        finalShadow = `0 6px 0 ${shadowColor}, 0 8px 20px ${hexToRgba(customBg, 0.3)}`;
+      } else if (effectiveVariant === "glass") {
+        // Glass adjusts opacity but keeps backdrop blur
+        finalBgColor = hexToRgba(customBg, 0.08);
+        finalTextColor = validatedOverrides.textColor ?? customBg;
+        finalBorderColor = validatedOverrides.borderColor ?? hexToRgba(customBg, 0.15);
+      } else if (effectiveVariant === "pill" || effectiveVariant === "bounce") {
+        // Pill and bounce use custom bg with updated glow
+        finalBgColor = customBg;
+        finalTextColor = validatedOverrides.textColor ?? getContrastTextColor(customBg);
+        finalShadow = `0 4px 15px ${hexToRgba(customBg, 0.3)}`;
+      } else if (effectiveVariant === "win98") {
+        // Win98 generates borders from custom color
+        const { light, dark } = generateWin98BorderColors(customBg);
+        finalBgColor = customBg;
+        finalTextColor = validatedOverrides.textColor ?? getContrastTextColor(customBg);
+        finalShadow = `inset -1px -1px ${dark}, inset 1px 1px ${light}, inset -2px -2px ${adjustColorBrightness(dark, -10)}, inset 2px 2px ${adjustColorBrightness(light, 10)}`;
+      } else if (effectiveVariant === "cartoon") {
+        // Cartoon uses custom bg with dark border
+        finalBgColor = customBg;
+        finalTextColor = validatedOverrides.textColor ?? getContrastTextColor(customBg);
+        const borderCol = adjustColorBrightness(customBg, -60);
+        finalBorderColor = validatedOverrides.borderColor ?? borderCol;
+        finalShadow = `0 4px 0 0 ${borderCol}`;
+      } else {
+        // Default fancy variant handling
+        finalBgColor = customBg;
+        finalTextColor = validatedOverrides.textColor ?? getContrastTextColor(customBg);
+      }
+    } else if (!isFancyVariant && validatedOverrides.bgColor) {
+      // Simple variants: fully override colors
+      finalBgColor = validatedOverrides.bgColor;
+      finalTextColor = validatedOverrides.textColor ?? getContrastTextColor(validatedOverrides.bgColor);
+    } else {
+      // No bgColor override, just apply text color if provided
+      if (validatedOverrides.textColor) {
+        finalTextColor = validatedOverrides.textColor;
+      }
+    }
+
+    return {
+      effectiveBgColor: finalBgColor,
+      effectiveTextColor: finalTextColor,
+      effectiveBorderRadius: validatedOverrides.borderRadius ?? colors.borderRadius,
+      effectiveBorderWidth: validatedOverrides.borderWidth ?? colors.borderWidth,
+      effectiveBorderColor: validatedOverrides.borderColor ?? finalBorderColor,
+      effectiveShadow: shadow ? SHADOW_STYLES[shadow] : finalShadow,
+      structuralStyle: structural,
+    };
+  }
+
+  // Memoize expensive style calculations
+  const buttonStyleData = useMemo(() => {
+    // Get base variant styling (preserves effects)
+    const baseStyle = getVariantBaseStyle(effectiveVariant);
+
+    // Apply user color overrides while preserving variant effects
+    const {
+      effectiveBgColor,
+      effectiveTextColor,
+      effectiveBorderRadius,
+      effectiveBorderWidth,
+      effectiveBorderColor,
+      effectiveShadow,
+      structuralStyle,
+    } = applyColorOverrides(baseStyle, {
+      bgColor,
+      textColor,
+      borderRadius,
+      borderWidth,
+      borderColor,
+    });
+
+    // Build inline styles
+    const isGradient = effectiveBgColor.includes("linear-gradient");
+    const buttonStyles: React.CSSProperties = {
+      ...structuralStyle, // Apply variant structural properties (backdrop blur, etc.)
+      paddingLeft: effectivePaddingX,
+      paddingRight: effectivePaddingX,
+      paddingTop: effectivePaddingY,
+      paddingBottom: effectivePaddingY,
+      borderRadius: effectiveBorderRadius,
+      backgroundColor: isGradient ? undefined : effectiveBgColor,
+      backgroundImage: isGradient ? effectiveBgColor : undefined,
+      color: effectiveTextColor,
+      borderWidth: effectiveBorderWidth,
+      borderStyle: effectiveBorderWidth > 0 ? "solid" : "none",
+      borderColor: effectiveBorderColor,
+      fontSize: effectiveFontSize,
+      fontWeight: effectiveFontWeight,
+      fontFamily: bodyFont,
+      boxShadow: effectiveShadow,
+    };
+
+    return {
+      buttonStyles,
+      effectiveBgColor,
+      effectiveTextColor,
+    };
+  }, [
+    effectiveVariant,
+    bgColor,
+    textColor,
+    borderRadius,
+    borderWidth,
+    borderColor,
+    shadow,
+    effectivePaddingX,
+    effectivePaddingY,
+    effectiveFontSize,
+    bodyFont,
+    primaryColor,
+    accentColor,
+    effectiveSchemeTextColor,
+  ]);
+
+  const { buttonStyles, effectiveBgColor, effectiveTextColor } = buttonStyleData;
+
+  // Memoize hover animation
+  const hoverAnimation = useMemo(() => {
     switch (effectiveVariant) {
       case "primary":
         return { scale: 1.03, boxShadow: `0 8px 25px ${primaryColor}40` };
@@ -447,10 +712,10 @@ export default function SectionButton({
       default:
         return { scale: 1.02 };
     }
-  };
+  }, [effectiveVariant, primaryColor, effectiveSchemeTextColor]);
 
-  // Get tap animations based on variant
-  const getTapAnimation = () => {
+  // Memoize tap animation
+  const tapAnimation = useMemo(() => {
     switch (effectiveVariant) {
       case "3d":
         return { y: 6, boxShadow: "none" };
@@ -463,7 +728,7 @@ export default function SectionButton({
       default:
         return { scale: 0.98 };
     }
-  };
+  }, [effectiveVariant]);
 
   // Extra classes for specific variants
   const extraClasses = `
@@ -477,8 +742,8 @@ export default function SectionButton({
       href={link || "#"}
       className={extraClasses}
       style={buttonStyles}
-      whileHover={getHoverAnimation()}
-      whileTap={getTapAnimation()}
+      whileHover={hoverAnimation}
+      whileTap={tapAnimation}
       transition={{
         type: "spring",
         stiffness: 400,
@@ -517,7 +782,9 @@ export default function SectionButton({
           renderText({
             value: text || "",
             sectionId,
-            field: "buttonText",
+            field: buttonType === "secondary" ? "secondaryButtonText" :
+                   buttonType === "primary" ? "primaryButtonText" :
+                   "buttonText",
             className: "uppercase tracking-wider",
             style: { fontFamily: bodyFont, fontWeight: effectiveFontWeight },
           })
@@ -572,5 +839,24 @@ export function getButtonPropsFromContent(content: SectionContent) {
     fontSize: content.buttonFontSize,
     fontWeight: content.buttonFontWeight,
     shadow: content.buttonShadow,
+  };
+}
+
+// Helper to extract secondary button props from SectionContent
+// Falls back to primary button properties if secondary properties are not set
+export function getSecondaryButtonPropsFromContent(content: SectionContent) {
+  return {
+    variant: content.secondaryButtonVariant ?? content.buttonVariant,
+    size: content.secondaryButtonSize ?? content.buttonSize,
+    bgColor: content.secondaryButtonBgColor ?? content.buttonBgColor,
+    textColor: content.secondaryButtonTextColor ?? content.buttonTextColor,
+    borderRadius: content.secondaryButtonBorderRadius ?? content.buttonBorderRadius,
+    borderWidth: content.secondaryButtonBorderWidth ?? content.buttonBorderWidth,
+    borderColor: content.secondaryButtonBorderColor ?? content.buttonBorderColor,
+    paddingX: content.secondaryButtonPaddingX ?? content.buttonPaddingX,
+    paddingY: content.secondaryButtonPaddingY ?? content.buttonPaddingY,
+    fontSize: content.secondaryButtonFontSize ?? content.buttonFontSize,
+    fontWeight: content.secondaryButtonFontWeight ?? content.buttonFontWeight,
+    shadow: content.secondaryButtonShadow ?? content.buttonShadow,
   };
 }

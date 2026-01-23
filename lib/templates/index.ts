@@ -3,6 +3,12 @@ import { saasTemplate } from "./saas-template";
 import { agencyTemplate } from "./agency-template";
 import { courseTemplate } from "./course-template";
 import { ecommerceTemplate } from "./ecommerce-template";
+import { darkConversionTemplate } from "./dark-conversion-template";
+import { saasProductTemplate } from "./saas-product-template";
+import { webinarTemplate } from "./webinar-template";
+import { leadMagnetTemplate } from "./leadmagnet-template";
+import { whopUniversityTemplate } from "./whop-university-template";
+import { salesFunnelTemplate } from "./sales-funnel-template";
 import type { LandingPage } from "../page-schema";
 import { defaultPage } from "../page-schema";
 
@@ -75,6 +81,55 @@ export const templates: Template[] = [
     preview: "/templates/ecom.gif",
     template: ecommerceTemplate,
     tags: ["ecommerce", "product", "shop", "retail", "funnel", "light"],
+  },
+  {
+    id: "dark-conversion",
+    name: "Dark Conversion Pro",
+    description: "High-converting sales page with advanced components and dark styling. Showcases all features variants, stats, animations, and CTAs.",
+    thumbnail: "/templates/dark-conversion.png",
+    preview: "/templates/dark-conversion.gif",
+    template: darkConversionTemplate,
+    tags: ["sales", "dark", "advanced", "conversion", "saas"],
+  },
+  {
+    id: "saas-product",
+    name: "SaaS Product",
+    description: "Free trial + feature-focused conversion funnel. Perfect for B2B software products with comprehensive feature showcases.",
+    thumbnail: "/templates/saas-product-thumb.png",
+    template: saasProductTemplate,
+    tags: ["saas", "b2b", "software", "trial", "funnel"],
+  },
+  {
+    id: "webinar",
+    name: "Webinar Registration",
+    description: "Countdown + speaker credibility + registration form. Optimized for event signups and live training sessions.",
+    thumbnail: "/templates/webinar-thumb.png",
+    template: webinarTemplate,
+    tags: ["webinar", "event", "leadgen", "education", "funnel"],
+  },
+  {
+    id: "leadmagnet",
+    name: "Lead Magnet / Ebook",
+    description: "Value-first email capture with ebook preview. Perfect for building your email list with high-value content offers.",
+    thumbnail: "/templates/leadmagnet-thumb.png",
+    template: leadMagnetTemplate,
+    tags: ["leadgen", "ebook", "download", "email", "funnel"],
+  },
+  {
+    id: "whop-university",
+    name: "Whop University",
+    description: "High-converting course funnel with dark theme, multiple CTAs, comparison section, and social proof. Perfect for course creators and educators.",
+    thumbnail: "/templates/whop-university-thumb.png",
+    template: whopUniversityTemplate,
+    tags: ["course", "education", "dark", "conversion", "funnel", "whop"],
+  },
+  {
+    id: "sales-funnel",
+    name: "Sales Funnel",
+    description: "High-converting sales funnel with proven 12-section structure. Perfect for digital products, courses, and services. Text-focused for maximum conversion.",
+    thumbnail: "/templates/sales-funnel-thumb.png",
+    template: salesFunnelTemplate,
+    tags: ["sales", "funnel", "conversion", "lead-gen", "copy-heavy", "light"],
   },
 ];
 

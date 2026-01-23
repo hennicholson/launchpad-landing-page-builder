@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "frosted-ui/styles.css";
+import { Theme } from "frosted-ui";
 import { UserProvider } from "@/lib/context/user-context";
 
 export const metadata: Metadata = {
@@ -23,9 +25,11 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <UserProvider>
-          {children}
-        </UserProvider>
+        <Theme appearance="dark" accentColor="orange">
+          <UserProvider>
+            {children}
+          </UserProvider>
+        </Theme>
       </body>
     </html>
   );

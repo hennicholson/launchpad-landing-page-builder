@@ -12,6 +12,8 @@ export type RenderTextProps = {
   style?: CSSProperties;
   multiline?: boolean;
   as?: "h1" | "h2" | "h3" | "h4" | "p" | "span" | "div";
+  // If true, renders wrapper as <span> instead of <div> to avoid hydration issues when used inside <p> or heading tags
+  inline?: boolean;
 };
 
 // Props for rendering images - used by renderImage slot

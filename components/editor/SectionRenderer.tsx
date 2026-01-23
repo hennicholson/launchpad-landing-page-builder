@@ -1,6 +1,6 @@
 "use client";
 
-import type { PageSection } from "@/lib/page-schema";
+import type { PageSection, ColorScheme, Typography } from "@/lib/page-schema";
 import HeroSection from "./sections/HeroSection";
 import FeaturesSection from "./sections/FeaturesSection";
 import TestimonialsSection from "./sections/TestimonialsSection";
@@ -20,13 +20,38 @@ import LogoCloudSection from "./sections/LogoCloudSection";
 import ComparisonSection from "./sections/ComparisonSection";
 import ProcessSection from "./sections/ProcessSection";
 import BlankSection from "./sections/BlankSection";
+import LoaderSection from "./sections/LoaderSection";
 import CustomersTableSection from "./sections/CustomersTableSection";
+// Sales Funnel sections
+import ValuePropositionSection from "./sections/ValuePropositionSection";
+import OfferDetailsSection from "./sections/OfferDetailsSection";
+import CreatorSection from "./sections/CreatorSection";
+import DetailedFeaturesSection from "./sections/DetailedFeaturesSection";
 import FeaturesIllustratedSection from "./sections/FeaturesIllustratedSection";
 import FeaturesHoverSection from "./sections/FeaturesHoverSection";
 import FeaturesBentoSection from "./sections/FeaturesBentoSection";
+// Whop University editor wrapper sections
+import WhopHeroSection from "./sections/WhopHeroSection";
+import WhopValuePropSection from "./sections/WhopValuePropSection";
+import WhopOfferSection from "./sections/WhopOfferSection";
+import WhopCTASection from "./sections/WhopCTASection";
+import WhopComparisonSection from "./sections/WhopComparisonSection";
+import WhopCreatorSection from "./sections/WhopCreatorSection";
+import WhopCurriculumSection from "./sections/WhopCurriculumSection";
+import WhopResultsSection from "./sections/WhopResultsSection";
+import WhopTestimonialsSection from "./sections/WhopTestimonialsSection";
+import WhopFinalCTASection from "./sections/WhopFinalCTASection";
+// Glass 3D sections
+import GlassCTASection from "./sections/GlassCTASection";
+import GlassFeaturesSection from "./sections/GlassFeaturesSection";
+import GlassFoundersSection from "./sections/GlassFoundersSection";
+import GlassTestimonialsSection from "./sections/GlassTestimonialsSection";
+import GlassPricingSection from "./sections/GlassPricingSection";
 
 type Props = {
   section: PageSection;
+  colorScheme?: ColorScheme;
+  typography?: Typography;
 };
 
 export default function SectionRenderer({ section }: Props) {
@@ -67,8 +92,51 @@ export default function SectionRenderer({ section }: Props) {
       return <ComparisonSection section={section} />;
     case "process":
       return <ProcessSection section={section} />;
+    case "loader":
+      return <LoaderSection section={section} />;
     case "blank":
       return <BlankSection section={section} />;
+    // Sales Funnel sections (with editor wrappers for inline editing)
+    case "value-proposition":
+      return <ValuePropositionSection section={section} />;
+    case "offer-details":
+      return <OfferDetailsSection section={section} />;
+    case "creator":
+      return <CreatorSection section={section} />;
+    case "detailed-features":
+      return <DetailedFeaturesSection section={section} />;
+    // Whop University premium sections (with editor wrappers for inline editing)
+    case "whop-hero":
+      return <WhopHeroSection section={section} />;
+    case "whop-value-prop":
+      return <WhopValuePropSection section={section} />;
+    case "whop-offer":
+      return <WhopOfferSection section={section} />;
+    case "whop-cta":
+      return <WhopCTASection section={section} />;
+    case "whop-comparison":
+      return <WhopComparisonSection section={section} />;
+    case "whop-creator":
+      return <WhopCreatorSection section={section} />;
+    case "whop-curriculum":
+      return <WhopCurriculumSection section={section} />;
+    case "whop-results":
+      return <WhopResultsSection section={section} />;
+    case "whop-testimonials":
+      return <WhopTestimonialsSection section={section} />;
+    case "whop-final-cta":
+      return <WhopFinalCTASection section={section} />;
+    // Glass 3D sections (with editor wrappers for inline editing)
+    case "glass-cta":
+      return <GlassCTASection section={section} />;
+    case "glass-features":
+      return <GlassFeaturesSection section={section} />;
+    case "glass-founders":
+      return <GlassFoundersSection section={section} />;
+    case "glass-testimonials":
+      return <GlassTestimonialsSection section={section} />;
+    case "glass-pricing":
+      return <GlassPricingSection section={section} />;
     default:
       return (
         <div className="py-16 px-8 text-center opacity-50">

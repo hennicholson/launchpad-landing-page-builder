@@ -21,6 +21,7 @@ import { MenuToggle, MenuToggleIcon } from "@/components/ui/menu-toggle";
 import { cn } from "@/lib/utils";
 import { SectionBackground } from "../SectionBackground";
 import { usePublishedContext } from "@/lib/published-context";
+import { useEditorStore } from "@/lib/store";
 
 // Shared props interface for all header variants
 interface HeaderVariantProps {
@@ -30,10 +31,10 @@ interface HeaderVariantProps {
   renderText?: BaseSectionProps["renderText"];
   renderImage?: BaseSectionProps["renderImage"];
   textColor: string;
-  bgColor: string;
+  customBgColor: string | undefined; // Section's custom background color (was: bgColor)
   accentColor: string;
   primaryColor: string;
-  backgroundColor: string;
+  pageThemeBgColor: string; // Page theme background color (was: backgroundColor)
   isPublished: boolean; // true = deployed page, false = editor preview
 }
 
@@ -175,6 +176,27 @@ function applyOpacity(color: string, opacity: number = 100): string {
   return color; // For other formats, return as-is
 }
 
+/**
+ * Resolves effective background color for header variants.
+ * Prefers custom section color, falls back to page theme.
+ */
+function resolveHeaderBgColor(
+  customBgColor: string | undefined,
+  pageThemeBgColor: string,
+  opacity: number
+): string {
+  // If no custom color set (undefined/null/empty), use page theme
+  if (!customBgColor) {
+    return applyOpacity(pageThemeBgColor, opacity);
+  }
+  // If explicitly set to transparent, return transparent
+  if (customBgColor === "transparent") {
+    return "transparent";
+  }
+  // Use custom color with opacity
+  return applyOpacity(customBgColor, opacity);
+}
+
 // ==================== DEFAULT VARIANT ====================
 function HeaderDefault(props: HeaderVariantProps) {
   const {
@@ -184,12 +206,16 @@ function HeaderDefault(props: HeaderVariantProps) {
     renderText,
     renderImage,
     textColor,
-    bgColor,
+    customBgColor,
+    pageThemeBgColor,
     accentColor,
     primaryColor,
   } = props;
   const { content } = section;
   const [mobileOpen, setMobileOpen] = useState(false);
+  const selectItem = useEditorStore((state) => state.selectItem);
+  const selectedItemId = useEditorStore((state) => state.selectedItemId);
+  const isEditorMode = !!renderText;
 
   return (
     <ShadcnWrapper colorScheme={colorScheme} textColor={textColor}>
@@ -219,23 +245,49 @@ function HeaderDefault(props: HeaderVariantProps) {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => (
-              <motion.a
-                key={index}
-                href={link.url}
-                className="text-sm font-medium uppercase tracking-wider transition-colors relative group"
-                style={{ color: `${textColor}99` }}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 + index * 0.05 }}
-              >
-                {link.label}
-                <span
-                  className="absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full"
-                  style={{ backgroundColor: accentColor }}
-                />
-              </motion.a>
-            ))}
+            {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => {
+              const linkId = link.id || `nav-link-${index}`;
+              const isSelected = isEditorMode && selectedItemId === linkId;
+              const linkStyle = link.styleOverrides?.label;
+              return (
+                <motion.a
+                  key={index}
+                  href={isEditorMode ? undefined : link.url}
+                  className={cn(
+                    "text-sm font-medium uppercase tracking-wider transition-colors relative group",
+                    isEditorMode && "cursor-pointer",
+                    isSelected && "ring-2 ring-[#FA4616] ring-offset-2 ring-offset-[#141212] rounded"
+                  )}
+                  style={{
+                    color: linkStyle?.color || `${textColor}99`,
+                    fontSize: linkStyle?.fontSize ? `${linkStyle.fontSize}px` : undefined,
+                    fontWeight: linkStyle?.fontWeight === 'bold' ? 700 : linkStyle?.fontWeight === 'semibold' ? 600 : linkStyle?.fontWeight === 'medium' ? 500 : undefined,
+                  }}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.1 + index * 0.05 }}
+                  onClick={isEditorMode ? (e) => {
+                    e.preventDefault();
+                    selectItem(section.id, linkId);
+                  } : undefined}
+                >
+                  {renderText
+                    ? renderText({
+                        value: link.label,
+                        sectionId: section.id,
+                        field: "label",
+                        itemId: linkId,
+                        inline: true,
+                        style: linkStyle?.color ? { color: linkStyle.color } : undefined,
+                      })
+                    : link.label}
+                  <span
+                    className="absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full"
+                    style={{ backgroundColor: accentColor }}
+                  />
+                </motion.a>
+              );
+            })}
 
             {/* CTA Button */}
             {content.showButton !== false && content.buttonText && (
@@ -250,7 +302,7 @@ function HeaderDefault(props: HeaderVariantProps) {
                   sectionId={section.id}
                   {...getButtonPropsFromContent(content)}
                   size={content.buttonSize ?? "md"}
-                  sectionBgColor={bgColor}
+                  sectionBgColor={customBgColor || pageThemeBgColor}
                   primaryColor={primaryColor}
                   accentColor={accentColor}
                   schemeTextColor={textColor}
@@ -280,17 +332,45 @@ function HeaderDefault(props: HeaderVariantProps) {
               }}
             >
               <div className="grid gap-y-2 overflow-y-auto px-4 pt-12 pb-5">
-                {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => (
-                  <a
-                    key={index}
-                    href={link.url}
-                    className="text-sm font-medium py-2 px-3 rounded-md transition-colors hover:bg-white/10"
-                    style={{ color: textColor }}
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    {link.label}
-                  </a>
-                ))}
+                {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => {
+                  const linkId = link.id || `nav-link-${index}`;
+                  const isSelected = isEditorMode && selectedItemId === linkId;
+                  const linkStyle = link.styleOverrides?.label;
+                  return (
+                    <a
+                      key={index}
+                      href={isEditorMode ? undefined : link.url}
+                      className={cn(
+                        "text-sm font-medium py-2 px-3 rounded-md transition-colors hover:bg-white/10",
+                        isSelected && "ring-2 ring-[#FA4616]"
+                      )}
+                      style={{
+                        color: linkStyle?.color || textColor,
+                        fontSize: linkStyle?.fontSize ? `${linkStyle.fontSize}px` : undefined,
+                        fontWeight: linkStyle?.fontWeight === 'bold' ? 700 : linkStyle?.fontWeight === 'semibold' ? 600 : linkStyle?.fontWeight === 'medium' ? 500 : undefined,
+                      }}
+                      onClick={(e) => {
+                        if (isEditorMode) {
+                          e.preventDefault();
+                          selectItem(section.id, linkId);
+                        } else {
+                          setMobileOpen(false);
+                        }
+                      }}
+                    >
+                      {renderText
+                        ? renderText({
+                            value: link.label,
+                            sectionId: section.id,
+                            field: "label",
+                            itemId: linkId,
+                            inline: true,
+                            style: linkStyle?.color ? { color: linkStyle.color } : undefined,
+                          })
+                        : link.label}
+                    </a>
+                  );
+                })}
               </div>
               <SheetFooter className="flex-col gap-2 p-4 border-t border-white/10">
                 {content.showButton !== false && content.buttonText && (
@@ -300,7 +380,7 @@ function HeaderDefault(props: HeaderVariantProps) {
                     sectionId={section.id}
                     {...getButtonPropsFromContent(content)}
                     size={content.buttonSize ?? "md"}
-                    sectionBgColor={bgColor}
+                    sectionBgColor={customBgColor || pageThemeBgColor}
                     primaryColor={primaryColor}
                     accentColor={accentColor}
                     schemeTextColor={textColor}
@@ -327,15 +407,18 @@ function Header2(props: HeaderVariantProps) {
     renderText,
     renderImage,
     textColor,
-    bgColor,
+    customBgColor,
     primaryColor,
     accentColor,
-    backgroundColor,
+    pageThemeBgColor,
     isPublished,
   } = props;
   const { content } = section;
   const [mobileOpen, setMobileOpen] = useState(false);
   const scrolled = useScroll(10);
+  const selectItem = useEditorStore((state) => state.selectItem);
+  const selectedItemId = useEditorStore((state) => state.selectedItemId);
+  const isEditorMode = !!renderText;
   const headerOpacity = content.headerBackgroundOpacity ?? 80; // Default 80% for this variant
   const headerPadding = content.headerPaddingY ?? 14;
 
@@ -363,9 +446,9 @@ function Header2(props: HeaderVariantProps) {
           ...getTopStyle(content.headerPosition, 0),
           backgroundColor:
             scrolled && !mobileOpen
-              ? applyOpacity(backgroundColor, headerOpacity)
+              ? resolveHeaderBgColor(customBgColor, pageThemeBgColor, headerOpacity)
               : mobileOpen
-              ? applyOpacity(backgroundColor, 90)
+              ? resolveHeaderBgColor(customBgColor, pageThemeBgColor, 90)
               : "transparent",
           backdropFilter: scrolled || headerOpacity < 100 ? "blur(12px)" : "none",
           WebkitBackdropFilter: scrolled || headerOpacity < 100 ? "blur(12px)" : "none",
@@ -394,16 +477,42 @@ function Header2(props: HeaderVariantProps) {
           </div>
 
           <div className="hidden items-center gap-2 md:flex">
-            {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => (
-              <a
-                key={index}
-                href={link.url}
-                className="px-3 py-2 text-sm rounded-md transition-colors hover:bg-white/10"
-                style={{ color: textColor }}
-              >
-                {link.label}
-              </a>
-            ))}
+            {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => {
+              const linkId = link.id || `nav-link-${index}`;
+              const isSelected = isEditorMode && selectedItemId === linkId;
+              const linkStyle = link.styleOverrides?.label;
+              return (
+                <a
+                  key={index}
+                  href={isEditorMode ? undefined : link.url}
+                  className={cn(
+                    "px-3 py-2 text-sm rounded-md transition-colors hover:bg-white/10",
+                    isEditorMode && "cursor-pointer",
+                    isSelected && "ring-2 ring-[#FA4616]"
+                  )}
+                  style={{
+                    color: linkStyle?.color || textColor,
+                    fontSize: linkStyle?.fontSize ? `${linkStyle.fontSize}px` : undefined,
+                    fontWeight: linkStyle?.fontWeight === 'bold' ? 700 : linkStyle?.fontWeight === 'semibold' ? 600 : linkStyle?.fontWeight === 'medium' ? 500 : undefined,
+                  }}
+                  onClick={isEditorMode ? (e) => {
+                    e.preventDefault();
+                    selectItem(section.id, linkId);
+                  } : undefined}
+                >
+                  {renderText
+                    ? renderText({
+                        value: link.label,
+                        sectionId: section.id,
+                        field: "label",
+                        itemId: linkId,
+                        inline: true,
+                        style: linkStyle?.color ? { color: linkStyle.color } : undefined,
+                      })
+                    : link.label}
+                </a>
+              );
+            })}
             {content.showButton !== false && content.buttonText && (
               <SectionButton
                 text={content.buttonText}
@@ -411,7 +520,7 @@ function Header2(props: HeaderVariantProps) {
                 sectionId={section.id}
                 {...getButtonPropsFromContent(content)}
                 size="sm"
-                sectionBgColor={bgColor}
+                sectionBgColor={customBgColor || pageThemeBgColor}
                 primaryColor={primaryColor}
                 accentColor={accentColor}
                 schemeTextColor={textColor}
@@ -444,7 +553,7 @@ function Header2(props: HeaderVariantProps) {
             mobileOpen ? "block" : "hidden"
           )}
           style={{
-            backgroundColor: `${backgroundColor}e6`,
+            backgroundColor: `${pageThemeBgColor}e6`,
             borderColor: `${textColor}10`,
           }}
         >
@@ -456,17 +565,45 @@ function Header2(props: HeaderVariantProps) {
             )}
           >
             <div className="grid gap-y-2">
-              {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => (
-                <a
-                  key={index}
-                  href={link.url}
-                  className="px-3 py-2 text-sm rounded-md transition-colors hover:bg-white/10"
-                  style={{ color: textColor }}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {link.label}
-                </a>
-              ))}
+              {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => {
+                const linkId = link.id || `nav-link-${index}`;
+                const isSelected = isEditorMode && selectedItemId === linkId;
+                const linkStyle = link.styleOverrides?.label;
+                return (
+                  <a
+                    key={index}
+                    href={isEditorMode ? undefined : link.url}
+                    className={cn(
+                      "px-3 py-2 text-sm rounded-md transition-colors hover:bg-white/10",
+                      isSelected && "ring-2 ring-[#FA4616]"
+                    )}
+                    style={{
+                      color: linkStyle?.color || textColor,
+                      fontSize: linkStyle?.fontSize ? `${linkStyle.fontSize}px` : undefined,
+                      fontWeight: linkStyle?.fontWeight === 'bold' ? 700 : linkStyle?.fontWeight === 'semibold' ? 600 : linkStyle?.fontWeight === 'medium' ? 500 : undefined,
+                    }}
+                    onClick={(e) => {
+                      if (isEditorMode) {
+                        e.preventDefault();
+                        selectItem(section.id, linkId);
+                      } else {
+                        setMobileOpen(false);
+                      }
+                    }}
+                  >
+                    {renderText
+                      ? renderText({
+                          value: link.label,
+                          sectionId: section.id,
+                          field: "label",
+                          itemId: linkId,
+                          inline: true,
+                          style: linkStyle?.color ? { color: linkStyle.color } : undefined,
+                        })
+                      : link.label}
+                  </a>
+                );
+              })}
             </div>
             <div className="flex flex-col gap-2">
               {content.showButton !== false && content.buttonText && (
@@ -476,7 +613,7 @@ function Header2(props: HeaderVariantProps) {
                   sectionId={section.id}
                   {...getButtonPropsFromContent(content)}
                   size="md"
-                  sectionBgColor={bgColor}
+                  sectionBgColor={customBgColor || pageThemeBgColor}
                   primaryColor={primaryColor}
                   accentColor={accentColor}
                   schemeTextColor={textColor}
@@ -502,16 +639,19 @@ function FloatingHeader(props: HeaderVariantProps) {
     renderText,
     renderImage,
     textColor,
-    bgColor,
+    customBgColor,
     primaryColor,
     accentColor,
-    backgroundColor,
+    pageThemeBgColor,
     isPublished,
   } = props;
   const { content } = section;
   const [mobileOpen, setMobileOpen] = useState(false);
   const headerOpacity = content.headerBackgroundOpacity ?? 80; // Default 80% for floating
   const headerPadding = content.headerPaddingY ?? 6;
+  const selectItem = useEditorStore((state) => state.selectItem);
+  const selectedItemId = useEditorStore((state) => state.selectedItemId);
+  const isEditorMode = !!renderText;
 
   return (
     <ShadcnWrapper colorScheme={colorScheme} textColor={textColor}>
@@ -519,7 +659,7 @@ function FloatingHeader(props: HeaderVariantProps) {
         className={cn(getPositionClasses(content.headerPosition, isPublished), "z-50 mx-auto w-full max-w-3xl rounded-lg border shadow")}
         style={{
           ...getTopStyle(content.headerPosition, 1.25),
-          backgroundColor: applyOpacity(backgroundColor, headerOpacity),
+          backgroundColor: resolveHeaderBgColor(customBgColor, pageThemeBgColor, headerOpacity),
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
           borderColor: `${textColor}10`,
@@ -543,16 +683,42 @@ function FloatingHeader(props: HeaderVariantProps) {
           </div>
 
           <div className="hidden items-center gap-1 lg:flex">
-            {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => (
-              <a
-                key={index}
-                href={link.url}
-                className="px-3 py-1.5 text-sm rounded-md transition-colors hover:bg-white/10"
-                style={{ color: textColor }}
-              >
-                {link.label}
-              </a>
-            ))}
+            {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => {
+              const linkId = link.id || `nav-link-${index}`;
+              const isSelected = isEditorMode && selectedItemId === linkId;
+              const linkStyle = link.styleOverrides?.label;
+              return (
+                <a
+                  key={index}
+                  href={isEditorMode ? undefined : link.url}
+                  className={cn(
+                    "px-3 py-1.5 text-sm rounded-md transition-colors hover:bg-white/10",
+                    isEditorMode && "cursor-pointer",
+                    isSelected && "ring-2 ring-[#FA4616]"
+                  )}
+                  style={{
+                    color: linkStyle?.color || textColor,
+                    fontSize: linkStyle?.fontSize ? `${linkStyle.fontSize}px` : undefined,
+                    fontWeight: linkStyle?.fontWeight === 'bold' ? 700 : linkStyle?.fontWeight === 'semibold' ? 600 : linkStyle?.fontWeight === 'medium' ? 500 : undefined,
+                  }}
+                  onClick={isEditorMode ? (e) => {
+                    e.preventDefault();
+                    selectItem(section.id, linkId);
+                  } : undefined}
+                >
+                  {renderText
+                    ? renderText({
+                        value: link.label,
+                        sectionId: section.id,
+                        field: "label",
+                        itemId: linkId,
+                        inline: true,
+                        style: linkStyle?.color ? { color: linkStyle.color } : undefined,
+                      })
+                    : link.label}
+                </a>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-2">
@@ -563,7 +729,7 @@ function FloatingHeader(props: HeaderVariantProps) {
                 sectionId={section.id}
                 {...getButtonPropsFromContent(content)}
                 size="sm"
-                sectionBgColor={bgColor}
+                sectionBgColor={customBgColor || pageThemeBgColor}
                 primaryColor={primaryColor}
                 accentColor={accentColor}
                 schemeTextColor={textColor}
@@ -588,22 +754,50 @@ function FloatingHeader(props: HeaderVariantProps) {
                 showClose={false}
                 className="gap-0"
                 style={{
-                  backgroundColor: `${backgroundColor}f2`,
+                  backgroundColor: `${pageThemeBgColor}f2`,
                   backdropFilter: "blur(12px)",
                 }}
               >
                 <div className="grid gap-y-2 overflow-y-auto px-4 pt-12 pb-5">
-                  {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => (
-                    <a
-                      key={index}
-                      href={link.url}
-                      className="px-3 py-2 text-sm rounded-md transition-colors hover:bg-white/10"
-                      style={{ color: textColor }}
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      {link.label}
-                    </a>
-                  ))}
+                  {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => {
+                    const linkId = link.id || `nav-link-${index}`;
+                    const isSelected = isEditorMode && selectedItemId === linkId;
+                    const linkStyle = link.styleOverrides?.label;
+                    return (
+                      <a
+                        key={index}
+                        href={isEditorMode ? undefined : link.url}
+                        className={cn(
+                          "px-3 py-2 text-sm rounded-md transition-colors hover:bg-white/10",
+                          isSelected && "ring-2 ring-[#FA4616]"
+                        )}
+                        style={{
+                          color: linkStyle?.color || textColor,
+                          fontSize: linkStyle?.fontSize ? `${linkStyle.fontSize}px` : undefined,
+                          fontWeight: linkStyle?.fontWeight === 'bold' ? 700 : linkStyle?.fontWeight === 'semibold' ? 600 : linkStyle?.fontWeight === 'medium' ? 500 : undefined,
+                        }}
+                        onClick={(e) => {
+                          if (isEditorMode) {
+                            e.preventDefault();
+                            selectItem(section.id, linkId);
+                          } else {
+                            setMobileOpen(false);
+                          }
+                        }}
+                      >
+                        {renderText
+                          ? renderText({
+                              value: link.label,
+                              sectionId: section.id,
+                              field: "label",
+                              itemId: linkId,
+                              inline: true,
+                              style: linkStyle?.color ? { color: linkStyle.color } : undefined,
+                            })
+                          : link.label}
+                      </a>
+                    );
+                  })}
                 </div>
                 <SheetFooter className="flex-col gap-2 p-4 border-t border-white/10">
                   {content.showButton !== false && content.buttonText && (
@@ -613,7 +807,7 @@ function FloatingHeader(props: HeaderVariantProps) {
                       sectionId={section.id}
                       {...getButtonPropsFromContent(content)}
                       size="md"
-                      sectionBgColor={bgColor}
+                      sectionBgColor={customBgColor || pageThemeBgColor}
                       primaryColor={primaryColor}
                       accentColor={accentColor}
                       schemeTextColor={textColor}
@@ -641,16 +835,19 @@ function SimpleHeader(props: HeaderVariantProps) {
     renderText,
     renderImage,
     textColor,
-    bgColor,
+    customBgColor,
     primaryColor,
     accentColor,
-    backgroundColor,
+    pageThemeBgColor,
     isPublished,
   } = props;
   const { content } = section;
   const [mobileOpen, setMobileOpen] = useState(false);
   const headerOpacity = content.headerBackgroundOpacity ?? 95; // Default 95% for simple
   const headerPadding = content.headerPaddingY ?? 14;
+  const selectItem = useEditorStore((state) => state.selectItem);
+  const selectedItemId = useEditorStore((state) => state.selectedItemId);
+  const isEditorMode = !!renderText;
 
   return (
     <ShadcnWrapper colorScheme={colorScheme} textColor={textColor}>
@@ -658,7 +855,7 @@ function SimpleHeader(props: HeaderVariantProps) {
         className={cn(getPositionClasses(content.headerPosition, isPublished), "z-50 w-full border-b")}
         style={{
           ...getTopStyle(content.headerPosition, 0),
-          backgroundColor: applyOpacity(backgroundColor, headerOpacity),
+          backgroundColor: resolveHeaderBgColor(customBgColor, pageThemeBgColor, headerOpacity),
           backdropFilter: headerOpacity < 100 ? "blur(12px)" : undefined,
           WebkitBackdropFilter: headerOpacity < 100 ? "blur(12px)" : undefined,
           borderColor: `${textColor}10`,
@@ -682,16 +879,42 @@ function SimpleHeader(props: HeaderVariantProps) {
           </div>
 
           <div className="hidden items-center gap-2 lg:flex">
-            {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => (
-              <a
-                key={index}
-                href={link.url}
-                className="px-3 py-2 text-sm rounded-md transition-colors hover:bg-white/10"
-                style={{ color: textColor }}
-              >
-                {link.label}
-              </a>
-            ))}
+            {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => {
+              const linkId = link.id || `nav-link-${index}`;
+              const isSelected = isEditorMode && selectedItemId === linkId;
+              const linkStyle = link.styleOverrides?.label;
+              return (
+                <a
+                  key={index}
+                  href={isEditorMode ? undefined : link.url}
+                  className={cn(
+                    "px-3 py-2 text-sm rounded-md transition-colors hover:bg-white/10",
+                    isEditorMode && "cursor-pointer",
+                    isSelected && "ring-2 ring-[#FA4616]"
+                  )}
+                  style={{
+                    color: linkStyle?.color || textColor,
+                    fontSize: linkStyle?.fontSize ? `${linkStyle.fontSize}px` : undefined,
+                    fontWeight: linkStyle?.fontWeight === 'bold' ? 700 : linkStyle?.fontWeight === 'semibold' ? 600 : linkStyle?.fontWeight === 'medium' ? 500 : undefined,
+                  }}
+                  onClick={isEditorMode ? (e) => {
+                    e.preventDefault();
+                    selectItem(section.id, linkId);
+                  } : undefined}
+                >
+                  {renderText
+                    ? renderText({
+                        value: link.label,
+                        sectionId: section.id,
+                        field: "label",
+                        itemId: linkId,
+                        inline: true,
+                        style: linkStyle?.color ? { color: linkStyle.color } : undefined,
+                      })
+                    : link.label}
+                </a>
+              );
+            })}
             {content.showButton !== false && content.buttonText && (
               <SectionButton
                 text={content.buttonText}
@@ -699,7 +922,7 @@ function SimpleHeader(props: HeaderVariantProps) {
                 sectionId={section.id}
                 {...getButtonPropsFromContent(content)}
                 size="md"
-                sectionBgColor={bgColor}
+                sectionBgColor={customBgColor || pageThemeBgColor}
                 primaryColor={primaryColor}
                 accentColor={accentColor}
                 schemeTextColor={textColor}
@@ -730,22 +953,50 @@ function SimpleHeader(props: HeaderVariantProps) {
               showClose={false}
               className="gap-0"
               style={{
-                backgroundColor: `${backgroundColor}f2`,
+                backgroundColor: `${pageThemeBgColor}f2`,
                 backdropFilter: "blur(12px)",
               }}
             >
               <div className="grid gap-y-2 overflow-y-auto px-4 pt-12 pb-5">
-                {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => (
-                  <a
-                    key={index}
-                    href={link.url}
-                    className="px-3 py-2 text-sm rounded-md transition-colors hover:bg-white/10"
-                    style={{ color: textColor }}
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    {link.label}
-                  </a>
-                ))}
+                {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => {
+                  const linkId = link.id || `nav-link-${index}`;
+                  const isSelected = isEditorMode && selectedItemId === linkId;
+                  const linkStyle = link.styleOverrides?.label;
+                  return (
+                    <a
+                      key={index}
+                      href={isEditorMode ? undefined : link.url}
+                      className={cn(
+                        "px-3 py-2 text-sm rounded-md transition-colors hover:bg-white/10",
+                        isSelected && "ring-2 ring-[#FA4616]"
+                      )}
+                      style={{
+                        color: linkStyle?.color || textColor,
+                        fontSize: linkStyle?.fontSize ? `${linkStyle.fontSize}px` : undefined,
+                        fontWeight: linkStyle?.fontWeight === 'bold' ? 700 : linkStyle?.fontWeight === 'semibold' ? 600 : linkStyle?.fontWeight === 'medium' ? 500 : undefined,
+                      }}
+                      onClick={(e) => {
+                        if (isEditorMode) {
+                          e.preventDefault();
+                          selectItem(section.id, linkId);
+                        } else {
+                          setMobileOpen(false);
+                        }
+                      }}
+                    >
+                      {renderText
+                        ? renderText({
+                            value: link.label,
+                            sectionId: section.id,
+                            field: "label",
+                            itemId: linkId,
+                            inline: true,
+                            style: linkStyle?.color ? { color: linkStyle.color } : undefined,
+                          })
+                        : link.label}
+                    </a>
+                  );
+                })}
               </div>
               <SheetFooter className="flex-col gap-2 p-4 border-t border-white/10">
                 {content.showButton !== false && content.buttonText && (
@@ -755,7 +1006,7 @@ function SimpleHeader(props: HeaderVariantProps) {
                     sectionId={section.id}
                     {...getButtonPropsFromContent(content)}
                     size="md"
-                    sectionBgColor={bgColor}
+                    sectionBgColor={customBgColor || pageThemeBgColor}
                     primaryColor={primaryColor}
                     accentColor={accentColor}
                     schemeTextColor={textColor}
@@ -782,10 +1033,10 @@ function HeaderWithSearch(props: HeaderVariantProps) {
     renderText,
     renderImage,
     textColor,
-    bgColor,
+    customBgColor,
     primaryColor,
     accentColor,
-    backgroundColor,
+    pageThemeBgColor,
     isPublished,
   } = props;
   const { content } = section;
@@ -793,6 +1044,9 @@ function HeaderWithSearch(props: HeaderVariantProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const headerOpacity = content.headerBackgroundOpacity ?? 95; // Default 95% for search header
   const headerPadding = content.headerPaddingY ?? 14;
+  const selectItem = useEditorStore((state) => state.selectItem);
+  const selectedItemId = useEditorStore((state) => state.selectedItemId);
+  const isEditorMode = !!renderText;
 
   // Keyboard shortcut for search
   useEffect(() => {
@@ -814,7 +1068,7 @@ function HeaderWithSearch(props: HeaderVariantProps) {
         className={cn(getPositionClasses(content.headerPosition, isPublished), "z-50 w-full border-b")}
         style={{
           ...getTopStyle(content.headerPosition, 0),
-          backgroundColor: applyOpacity(backgroundColor, headerOpacity),
+          backgroundColor: resolveHeaderBgColor(customBgColor, pageThemeBgColor, headerOpacity),
           backdropFilter: headerOpacity < 100 ? "blur(12px)" : undefined,
           WebkitBackdropFilter: headerOpacity < 100 ? "blur(12px)" : undefined,
           borderColor: `${textColor}10`,
@@ -839,16 +1093,42 @@ function HeaderWithSearch(props: HeaderVariantProps) {
 
           <div className="flex items-center gap-2">
             <div className="hidden items-center gap-1 lg:flex">
-              {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => (
-                <a
-                  key={index}
-                  href={link.url}
-                  className="px-3 py-2 text-sm rounded-md transition-colors hover:bg-white/10"
-                  style={{ color: textColor }}
-                >
-                  {link.label}
-                </a>
-              ))}
+              {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => {
+                const linkId = link.id || `nav-link-${index}`;
+                const isSelected = isEditorMode && selectedItemId === linkId;
+                const linkStyle = link.styleOverrides?.label;
+                return (
+                  <a
+                    key={index}
+                    href={isEditorMode ? undefined : link.url}
+                    className={cn(
+                      "px-3 py-2 text-sm rounded-md transition-colors hover:bg-white/10",
+                      isEditorMode && "cursor-pointer",
+                      isSelected && "ring-2 ring-[#FA4616]"
+                    )}
+                    style={{
+                      color: linkStyle?.color || textColor,
+                      fontSize: linkStyle?.fontSize ? `${linkStyle.fontSize}px` : undefined,
+                      fontWeight: linkStyle?.fontWeight === 'bold' ? 700 : linkStyle?.fontWeight === 'semibold' ? 600 : linkStyle?.fontWeight === 'medium' ? 500 : undefined,
+                    }}
+                    onClick={isEditorMode ? (e) => {
+                      e.preventDefault();
+                      selectItem(section.id, linkId);
+                    } : undefined}
+                  >
+                    {renderText
+                      ? renderText({
+                          value: link.label,
+                          sectionId: section.id,
+                          field: "label",
+                          itemId: linkId,
+                          inline: true,
+                          style: linkStyle?.color ? { color: linkStyle.color } : undefined,
+                        })
+                      : link.label}
+                  </a>
+                );
+              })}
             </div>
 
             {/* Search Button */}
@@ -883,22 +1163,50 @@ function HeaderWithSearch(props: HeaderVariantProps) {
                 showClose={false}
                 className="gap-0"
                 style={{
-                  backgroundColor: `${backgroundColor}f2`,
+                  backgroundColor: `${pageThemeBgColor}f2`,
                   backdropFilter: "blur(12px)",
                 }}
               >
                 <div className="grid gap-y-2 overflow-y-auto px-4 pt-12 pb-5">
-                  {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => (
-                    <a
-                      key={index}
-                      href={link.url}
-                      className="px-3 py-2 text-sm rounded-md transition-colors hover:bg-white/10"
-                      style={{ color: textColor }}
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      {link.label}
-                    </a>
-                  ))}
+                  {content.showLinks !== false && content.links?.map((link: NavLink, index: number) => {
+                    const linkId = link.id || `nav-link-${index}`;
+                    const isSelected = isEditorMode && selectedItemId === linkId;
+                    const linkStyle = link.styleOverrides?.label;
+                    return (
+                      <a
+                        key={index}
+                        href={isEditorMode ? undefined : link.url}
+                        className={cn(
+                          "px-3 py-2 text-sm rounded-md transition-colors hover:bg-white/10",
+                          isSelected && "ring-2 ring-[#FA4616]"
+                        )}
+                        style={{
+                          color: linkStyle?.color || textColor,
+                          fontSize: linkStyle?.fontSize ? `${linkStyle.fontSize}px` : undefined,
+                          fontWeight: linkStyle?.fontWeight === 'bold' ? 700 : linkStyle?.fontWeight === 'semibold' ? 600 : linkStyle?.fontWeight === 'medium' ? 500 : undefined,
+                        }}
+                        onClick={(e) => {
+                          if (isEditorMode) {
+                            e.preventDefault();
+                            selectItem(section.id, linkId);
+                          } else {
+                            setMobileOpen(false);
+                          }
+                        }}
+                      >
+                        {renderText
+                          ? renderText({
+                              value: link.label,
+                              sectionId: section.id,
+                              field: "label",
+                              itemId: linkId,
+                              inline: true,
+                              style: linkStyle?.color ? { color: linkStyle.color } : undefined,
+                            })
+                          : link.label}
+                      </a>
+                    );
+                  })}
                 </div>
                 <SheetFooter className="flex-col gap-2 p-4 border-t border-white/10">
                   {content.showButton !== false && content.buttonText && (
@@ -908,7 +1216,7 @@ function HeaderWithSearch(props: HeaderVariantProps) {
                       sectionId={section.id}
                       {...getButtonPropsFromContent(content)}
                       size="md"
-                      sectionBgColor={bgColor}
+                      sectionBgColor={customBgColor || pageThemeBgColor}
                       primaryColor={primaryColor}
                       accentColor={accentColor}
                       schemeTextColor={textColor}
@@ -1009,9 +1317,9 @@ export default function HeaderSectionBase({
   // Dynamic colors
   const accentColor = content.accentColor || colorScheme.accent;
   const textColor = content.textColor || colorScheme.text;
-  const bgColor = content.backgroundColor || "transparent";
+  const customBgColor = content.backgroundColor; // Section's custom background (can be undefined)
   const primaryColor = colorScheme.primary;
-  const backgroundColor = colorScheme.background;
+  const pageThemeBgColor = colorScheme.background; // Page theme background
 
   const sharedProps: HeaderVariantProps = {
     section,
@@ -1020,10 +1328,10 @@ export default function HeaderSectionBase({
     renderText,
     renderImage,
     textColor,
-    bgColor,
+    customBgColor,
     accentColor,
     primaryColor,
-    backgroundColor,
+    pageThemeBgColor,
     isPublished,
   };
 
@@ -1062,12 +1370,12 @@ export default function HeaderSectionBase({
         ...getTopStyle(content.headerPosition, 0),
         paddingTop: headerPadding,
         paddingBottom: headerPadding,
-        backgroundColor: bgColor === "transparent" ? "transparent" : applyOpacity(bgColor, headerOpacity),
+        backgroundColor: resolveHeaderBgColor(customBgColor, pageThemeBgColor, headerOpacity),
         backdropFilter: headerOpacity < 100 ? "blur(12px)" : undefined,
         WebkitBackdropFilter: headerOpacity < 100 ? "blur(12px)" : undefined,
       }}
     >
-      <SectionBackground effect={content.backgroundEffect} />
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       <HeaderDefault {...sharedProps} />
     </header>
   );

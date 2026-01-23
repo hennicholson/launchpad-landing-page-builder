@@ -68,7 +68,7 @@ export default function HomePage() {
               />
             </div>
           </div>
-          <p className="mt-8 text-white/60 text-lg font-medium animate-pulse">
+          <p className="mt-8 text-white/60 text-lg font-medium animate-pulse" style={{ marginTop: '2rem', color: 'rgba(255,255,255,0.6)', fontSize: '1.125rem', fontWeight: 500 }}>
             Launching...
           </p>
         </div>
@@ -90,16 +90,17 @@ export default function HomePage() {
       <header className="relative z-10 border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/launchpad-logo.png" alt="LaunchPad" className="h-8 w-auto" />
-            <span className="font-['Sora',sans-serif] text-2xl font-bold">
-              <span className="text-amber-500">Launch</span>
-              <span className="text-white">Pad</span>
+            <img src="/launchpad-logo.png" alt="LaunchPad" className="h-8 w-auto" style={{ height: '32px', width: 'auto' }} />
+            <span className="font-['Sora',sans-serif] text-2xl font-bold" style={{ fontFamily: "'Sora', sans-serif", fontSize: '1.5rem', fontWeight: 700 }}>
+              <span className="text-amber-500" style={{ color: '#f59e0b' }}>Launch</span>
+              <span className="text-white" style={{ color: '#ffffff' }}>Pad</span>
             </span>
           </div>
 
           <button
             onClick={handleNavigate}
             className="px-5 py-2.5 rounded-xl bg-white text-black text-sm font-semibold hover:bg-white/90 transition-colors"
+            style={{ padding: '0.625rem 1.25rem', borderRadius: '0.75rem', fontSize: '0.875rem', fontWeight: 600 }}
           >
             Open Dashboard
           </button>
@@ -110,34 +111,36 @@ export default function HomePage() {
       <main className="relative z-10">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 pt-24 pb-32">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-white/60 mb-8">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-white/60 mb-8" style={{ fontSize: '0.875rem', padding: '0.5rem 1rem', marginBottom: '2rem' }}>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" style={{ width: '0.5rem', height: '0.5rem' }} />
               AI-Powered Landing Pages
             </div>
 
-            <h1 className="font-['Sora',sans-serif] text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
+            <h1 className="font-['Sora',sans-serif] text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6" style={{ fontFamily: "'Sora', sans-serif", fontSize: 'clamp(3rem, 8vw, 4.5rem)', fontWeight: 700, letterSpacing: '-0.025em', marginBottom: '1.5rem', lineHeight: 1.1 }}>
               Build landing pages
               <br />
-              <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent" style={{ background: 'linear-gradient(to right, #fbbf24, #f97316, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 that convert
               </span>
             </h1>
 
-            <p className="text-xl text-white/50 mb-10 max-w-xl mx-auto leading-relaxed">
+            <p className="text-xl text-white/50 mb-10 max-w-xl mx-auto leading-relaxed" style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.5)', marginBottom: '2.5rem', maxWidth: '36rem', margin: '0 auto 2.5rem', lineHeight: 1.75 }}>
               Describe your vision and let AI create stunning, high-converting landing pages.
               Customize every detail. Deploy in seconds.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
               <button
                 onClick={handleNavigate}
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold text-lg hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-[1.02]"
+                style={{ padding: '1rem 2rem', borderRadius: '1rem', background: 'linear-gradient(to right, #f59e0b, #f97316)', color: '#000', fontWeight: 600, fontSize: '1.125rem' }}
               >
                 Start Building Free
               </button>
               <a
                 href="#how-it-works"
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-medium text-lg hover:bg-white/10 transition-all"
+                style={{ padding: '1rem 2rem', borderRadius: '1rem', fontSize: '1.125rem', fontWeight: 500 }}
               >
                 See How It Works
               </a>
@@ -191,16 +194,16 @@ export default function HomePage() {
 
               {/* Text Content */}
               <div className="flex-1 p-8 lg:p-12 flex flex-col justify-center">
-                <p className="text-xs uppercase tracking-[0.2em] text-gray-400 font-medium mb-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-gray-400 font-medium mb-4" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#9ca3af', fontWeight: 500, marginBottom: '1rem' }}>
                   behind the developer
                 </p>
-                <h2 className="font-['Sora',sans-serif] text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+                <h2 className="font-['Sora',sans-serif] text-3xl lg:text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: "'Sora', sans-serif", fontSize: 'clamp(1.875rem, 4vw, 2.25rem)', fontWeight: 700, color: '#111827', marginBottom: '1rem' }}>
                   Henry Nicholson
                 </h2>
-                <p className="text-gray-600 leading-relaxed mb-4">
+                <p className="text-gray-600 leading-relaxed mb-4" style={{ color: '#4b5563', lineHeight: 1.75, marginBottom: '1rem' }}>
                   Henry found a flaw stopping digital business owners from maximizing their revenue on Whop. So he built the solution.
                 </p>
-                <p className="font-['Sora',sans-serif] text-xl font-bold text-amber-500">
+                <p className="font-['Sora',sans-serif] text-xl font-bold text-amber-500" style={{ fontFamily: "'Sora', sans-serif", fontSize: '1.25rem', fontWeight: 700, color: '#f59e0b' }}>
                   Convert Convert Convert
                 </p>
               </div>
@@ -248,14 +251,14 @@ export default function HomePage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <p className="text-xs uppercase tracking-[0.2em] text-amber-500 font-medium mb-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-amber-500 font-medium mb-4" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.2em', color: '#f59e0b', fontWeight: 500, marginBottom: '1rem' }}>
               How It Works
             </p>
-            <h2 className="font-['Sora',sans-serif] text-3xl lg:text-5xl font-bold text-white mb-4">
+            <h2 className="font-['Sora',sans-serif] text-3xl lg:text-5xl font-bold text-white mb-4" style={{ fontFamily: "'Sora', sans-serif", fontSize: 'clamp(1.875rem, 5vw, 3rem)', fontWeight: 700, color: '#ffffff', marginBottom: '1rem' }}>
               Start with a template.{" "}
-              <span className="text-amber-500">Make it yours.</span>
+              <span className="text-amber-500" style={{ color: '#f59e0b' }}>Make it yours.</span>
             </h2>
-            <p className="text-white/50 text-lg max-w-2xl mx-auto">
+            <p className="text-white/50 text-lg max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '1.125rem', maxWidth: '42rem', margin: '0 auto' }}>
               Pick a conversion-optimized template, customize everything, and deploy to your Whop in minutes.
             </p>
           </motion.div>
@@ -293,10 +296,10 @@ export default function HomePage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className={`font-semibold mb-1 transition-colors ${activeStep === i ? "text-amber-500" : "text-white"}`}>
+                    <h3 className={`font-semibold mb-1 transition-colors ${activeStep === i ? "text-amber-500" : "text-white"}`} style={{ fontWeight: 600, marginBottom: '0.25rem', fontSize: '1rem' }}>
                       {step.title}
                     </h3>
-                    <p className="text-sm text-white/40">{step.desc}</p>
+                    <p className="text-sm text-white/40" style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.4)' }}>{step.desc}</p>
                   </div>
                 </motion.div>
               ))}
@@ -420,17 +423,17 @@ export default function HomePage() {
 
       {/* Deploy Domain Bar */}
       <div className="bg-[#0a0a0b] py-6 border-y border-white/5">
-        <div className="flex items-center justify-center gap-2 text-lg font-medium">
-          <span className="text-white/50">Deploy on:</span>
+        <div className="flex items-center justify-center gap-2 text-lg font-medium" style={{ fontSize: '1.125rem', fontWeight: 500 }}>
+          <span className="text-white/50" style={{ color: 'rgba(255,255,255,0.5)' }}>Deploy on:</span>
           <span className="inline-flex items-center">
-            <span className="h-7 overflow-hidden relative">
+            <span className="h-7 overflow-hidden relative" style={{ height: '1.75rem' }}>
               <span className="flex flex-col animate-slot">
                 {["fitnessby", "cryptoalpha", "tradingpros", "coachmax", "coursehub", "betwise", "fitnessby"].map((name, i) => (
-                  <span key={i} className="h-7 flex items-center text-white font-semibold">{name}</span>
+                  <span key={i} className="h-7 flex items-center text-white font-semibold" style={{ height: '1.75rem', fontWeight: 600, color: '#ffffff' }}>{name}</span>
                 ))}
               </span>
             </span>
-            <span className="text-amber-500">.onwhop.com</span>
+            <span className="text-amber-500" style={{ color: '#f59e0b' }}>.onwhop.com</span>
           </span>
         </div>
       </div>
@@ -445,11 +448,11 @@ export default function HomePage() {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <h2 className="font-['Sora',sans-serif] text-3xl lg:text-5xl font-bold text-white mb-4">
-                <span className="text-white">Whop</span> is where you sell.
+              <h2 className="font-['Sora',sans-serif] text-3xl lg:text-5xl font-bold text-white mb-4" style={{ fontFamily: "'Sora', sans-serif", fontSize: 'clamp(1.875rem, 5vw, 3rem)', fontWeight: 700, marginBottom: '1rem' }}>
+                <span className="text-white" style={{ color: '#ffffff' }}>Whop</span> is where you sell.
               </h2>
-              <h2 className="font-['Sora',sans-serif] text-3xl lg:text-5xl font-bold">
-                <span className="text-amber-500">LaunchPad</span> <span className="text-white">is where you convert.</span>
+              <h2 className="font-['Sora',sans-serif] text-3xl lg:text-5xl font-bold" style={{ fontFamily: "'Sora', sans-serif", fontSize: 'clamp(1.875rem, 5vw, 3rem)', fontWeight: 700 }}>
+                <span className="text-amber-500" style={{ color: '#f59e0b' }}>LaunchPad</span> <span className="text-white" style={{ color: '#ffffff' }}>is where you convert.</span>
               </h2>
             </motion.div>
             <motion.p
@@ -458,6 +461,7 @@ export default function HomePage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               viewport={{ once: true }}
               className="text-white/50 text-lg mt-6 max-w-2xl mx-auto"
+              style={{ color: 'rgba(255,255,255,0.5)', fontSize: '1.125rem', marginTop: '1.5rem', maxWidth: '42rem', margin: '1.5rem auto 0' }}
             >
               Templates built for every niche. Pick your industry and launch in minutes.
             </motion.p>
@@ -486,7 +490,7 @@ export default function HomePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d={category.icon} />
                   </svg>
                 </div>
-                <h3 className="font-['Sora',sans-serif] font-semibold text-lg text-white">{category.name}</h3>
+                <h3 className="font-['Sora',sans-serif] font-semibold text-lg text-white" style={{ fontFamily: "'Sora', sans-serif", fontWeight: 600, fontSize: '1.125rem', color: '#ffffff' }}>{category.name}</h3>
               </motion.div>
             ))}
           </div>
@@ -503,10 +507,10 @@ export default function HomePage() {
 
               <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="text-center md:text-left">
-                  <h3 className="font-['Sora',sans-serif] text-2xl md:text-3xl font-bold text-white mb-2">
+                  <h3 className="font-['Sora',sans-serif] text-2xl md:text-3xl font-bold text-white mb-2" style={{ fontFamily: "'Sora', sans-serif", fontSize: 'clamp(1.5rem, 3vw, 1.875rem)', fontWeight: 700, color: '#ffffff', marginBottom: '0.5rem' }}>
                     Ready to launch?
                   </h3>
-                  <p className="text-white/50 text-lg">
+                  <p className="text-white/50 text-lg" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '1.125rem' }}>
                     Your high-converting landing page is minutes away.
                   </p>
                 </div>
@@ -514,6 +518,7 @@ export default function HomePage() {
                 <button
                   onClick={handleNavigate}
                   className="group flex-shrink-0 px-8 py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-semibold text-lg hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-[1.02] flex items-center gap-2"
+                  style={{ padding: '1rem 2rem', borderRadius: '0.75rem', background: 'linear-gradient(to right, #f59e0b, #f97316)', color: '#000', fontWeight: 600, fontSize: '1.125rem' }}
                 >
                   Start Building
                   <span className="relative w-5 h-5">
@@ -536,12 +541,12 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/5 py-8">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex items-center justify-between">
-          <p className="text-sm text-white/30">
+          <p className="text-sm text-white/30" style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.3)' }}>
             &copy; {new Date().getFullYear()} Launchpad. Built with AI.
           </p>
-          <div className="flex items-center gap-6">
-            <a href="#" className="text-sm text-white/30 hover:text-white/60 transition-colors">Terms</a>
-            <a href="#" className="text-sm text-white/30 hover:text-white/60 transition-colors">Privacy</a>
+          <div className="flex items-center gap-6" style={{ gap: '1.5rem' }}>
+            <a href="#" className="text-sm text-white/30 hover:text-white/60 transition-colors" style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.3)' }}>Terms</a>
+            <a href="#" className="text-sm text-white/30 hover:text-white/60 transition-colors" style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.3)' }}>Privacy</a>
           </div>
         </div>
       </footer>

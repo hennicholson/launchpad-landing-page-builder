@@ -658,7 +658,7 @@ export default function VideoSectionBase({
         paddingBottom: variant === "fullscreen" ? 0 : paddingBottom,
       }}
     >
-      {variant !== "fullscreen" && <SectionBackground effect={content.backgroundEffect} />}
+      {variant !== "fullscreen" && <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />}
 
       {/* Variant conditional rendering */}
       {variant === "grid" && items && items.length > 0 ? (

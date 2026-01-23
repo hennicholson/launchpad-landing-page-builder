@@ -5,6 +5,8 @@ import type { BaseSectionProps } from "@/lib/shared-section-types";
 import type { SectionContent, SectionItem, GalleryVariant } from "@/lib/page-schema";
 import { SectionBackground } from "../SectionBackground";
 import { FocusRail, type FocusRailItem } from "@/components/ui/focus-rail";
+import { useEditorStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 // ==================== BENTO VARIANT ====================
 function BentoVariant({
@@ -14,6 +16,9 @@ function BentoVariant({
   accentColor,
   headingFont,
   renderImage,
+  isEditorMode,
+  selectedItemId,
+  selectItem,
 }: {
   items: SectionItem[];
   section: any;
@@ -21,6 +26,9 @@ function BentoVariant({
   accentColor: string;
   headingFont: string;
   renderImage?: any;
+  isEditorMode?: boolean;
+  selectedItemId?: string | null;
+  selectItem?: (sectionId: string, itemId: string) => void;
 }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-[200px]">
@@ -28,13 +36,25 @@ function BentoVariant({
         // Create varied grid sizes for bento effect
         const isLarge = index === 0 || index === 3;
         const isTall = index === 1 || index === 5;
+        const isSelected = isEditorMode && selectedItemId === item.id;
+
+        const handleClick = (e: React.MouseEvent) => {
+          if (!isEditorMode || !selectItem) return;
+          if (window.getSelection()?.toString()) return;
+          selectItem(section.id, item.id);
+        };
 
         return (
           <motion.div
             key={item.id}
-            className={`relative rounded-2xl overflow-hidden group cursor-pointer ${
-              isLarge ? "md:col-span-2 md:row-span-2" : ""
-            } ${isTall ? "row-span-2" : ""}`}
+            onClick={isEditorMode ? handleClick : undefined}
+            className={cn(
+              "relative rounded-2xl overflow-hidden group",
+              isEditorMode ? "cursor-pointer" : "cursor-default",
+              isLarge && "md:col-span-2 md:row-span-2",
+              isTall && "row-span-2",
+              isSelected && "ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent"
+            )}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -146,6 +166,11 @@ export default function GallerySectionBase({
 }: BaseSectionProps) {
   const { content, items } = section;
 
+  // Only enable selection in editor mode (when renderText exists)
+  const isEditorMode = !!renderText;
+  const selectItem = useEditorStore((state) => state.selectItem);
+  const selectedItemId = useEditorStore((state) => state.selectedItemId);
+
   // Dynamic colors
   const bgColor = content.backgroundColor || colorScheme.background;
   const textColor = content.textColor || colorScheme.text;
@@ -169,7 +194,7 @@ export default function GallerySectionBase({
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <SectionBackground effect={content.backgroundEffect} />
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         {/* Header */}
         <motion.div
@@ -250,6 +275,9 @@ export default function GallerySectionBase({
               accentColor={accentColor}
               headingFont={headingFont}
               renderImage={renderImage}
+              isEditorMode={isEditorMode}
+              selectedItemId={selectedItemId}
+              selectItem={selectItem}
             />
           )
         ) : (

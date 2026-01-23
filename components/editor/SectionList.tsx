@@ -260,6 +260,55 @@ const FEATURES_LAYOUTS: { variant: FeaturesVariant; label: string; icon: React.R
   },
 ];
 
+// Hero Layout variants with visual representations
+const HERO_LAYOUTS: { variant: any; label: string; icon: React.ReactNode }[] = [
+  {
+    variant: "default",
+    label: "Default",
+    icon: (
+      <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-1.5">
+        <div className="w-8 h-1 bg-current rounded opacity-60" />
+        <div className="w-6 h-0.5 bg-current rounded opacity-40" />
+        <div className="w-5 h-3 bg-current rounded-lg opacity-30 mt-0.5" />
+      </div>
+    ),
+  },
+  {
+    variant: "animated-preview",
+    label: "Animated",
+    icon: (
+      <div className="w-full h-full flex flex-col gap-0.5 p-1">
+        {/* Header bar */}
+        <div className="w-full h-1 bg-current rounded opacity-20" />
+        {/* Badge */}
+        <div className="self-center w-4 h-0.5 bg-blue-500 rounded-full opacity-60 mt-0.5" />
+        {/* Heading */}
+        <div className="w-8 h-1 bg-current rounded opacity-60 mx-auto" />
+        {/* Dual images */}
+        <div className="flex gap-0.5 mt-0.5">
+          <div className="flex-1 h-3 bg-current rounded opacity-30" />
+          <div className="flex-1 h-3 bg-current rounded opacity-20" />
+        </div>
+      </div>
+    ),
+  },
+  {
+    variant: "email-signup",
+    label: "Email Signup",
+    icon: (
+      <div className="w-full h-full flex flex-col items-center justify-center gap-1 p-1">
+        <div className="w-6 h-0.5 bg-current rounded opacity-50" />
+        {/* Form input */}
+        <div className="w-8 h-1.5 bg-current rounded-lg opacity-20 flex items-center justify-center">
+          <div className="w-3 h-0.5 bg-blue-500 rounded-full opacity-60" />
+        </div>
+        {/* Mockup widget */}
+        <div className="w-6 h-3 bg-current rounded-lg opacity-30 mt-0.5" />
+      </div>
+    ),
+  },
+];
+
 const SECTION_ICONS: Record<SectionType, React.ReactNode> = {
   hero: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -351,17 +400,126 @@ const SECTION_ICONS: Record<SectionType, React.ReactNode> = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
     </svg>
   ),
+  loader: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+    </svg>
+  ),
   blank: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
     </svg>
   ),
+  // Sales Funnel Section Icons
+  "value-proposition": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+    </svg>
+  ),
+  "offer-details": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+    </svg>
+  ),
+  "creator": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  ),
+  "detailed-features": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+    </svg>
+  ),
+  // Whop University Section Icons
+  "whop-hero": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+    </svg>
+  ),
+  "whop-value-prop": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+    </svg>
+  ),
+  "whop-offer": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+    </svg>
+  ),
+  "whop-cta": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+    </svg>
+  ),
+  "whop-comparison": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+    </svg>
+  ),
+  "whop-creator": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+    </svg>
+  ),
+  "whop-curriculum": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
+    </svg>
+  ),
+  "whop-results": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+    </svg>
+  ),
+  "whop-testimonials": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+    </svg>
+  ),
+  "whop-final-cta": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
+  // Glass 3D Section Icons
+  "glass-cta": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25" />
+    </svg>
+  ),
+  "glass-features": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+    </svg>
+  ),
+  "glass-founders": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+    </svg>
+  ),
+  "glass-testimonials": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+    </svg>
+  ),
+  "glass-pricing": (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+    </svg>
+  ),
 };
 
-const SECTION_TYPES: { type: SectionType; label: string }[] = [
+// Basic section types
+const BASIC_SECTION_TYPES: { type: SectionType; label: string }[] = [
   { type: "blank", label: "Blank Canvas" },
   { type: "header", label: "Header" },
   { type: "hero", label: "Hero" },
+  { type: "loader", label: "Loader" },
+  { type: "value-proposition", label: "Value Proposition" },
+  { type: "offer-details", label: "Offer Details" },
+  { type: "creator", label: "Creator/Expert" },
+  { type: "detailed-features", label: "Detailed Features" },
   { type: "features", label: "Features" },
   { type: "stats", label: "Stats" },
   { type: "logoCloud", label: "Logo Cloud" },
@@ -379,6 +537,38 @@ const SECTION_TYPES: { type: SectionType; label: string }[] = [
   { type: "gallery", label: "Gallery" },
   { type: "footer", label: "Footer" },
 ];
+
+// Whop University preset sections
+const WHOP_SECTION_TYPES: { type: SectionType; label: string }[] = [
+  { type: "whop-hero", label: "Hero Gradient" },
+  { type: "whop-value-prop", label: "Value Story" },
+  { type: "whop-offer", label: "Bento Offer" },
+  { type: "whop-cta", label: "Floating CTA" },
+  { type: "whop-comparison", label: "Comparison" },
+  { type: "whop-creator", label: "Creator Spotlight" },
+  { type: "whop-curriculum", label: "Curriculum" },
+  { type: "whop-results", label: "Results Gallery" },
+  { type: "whop-testimonials", label: "Testimonials 3D" },
+  { type: "whop-final-cta", label: "Final CTA" },
+];
+
+// Glass 3D preset sections
+const GLASS_SECTION_TYPES: { type: SectionType; label: string }[] = [
+  { type: "glass-cta", label: "Glass CTA" },
+  { type: "glass-features", label: "Glass Features" },
+  { type: "glass-founders", label: "Glass Founders" },
+  { type: "glass-testimonials", label: "Glass Testimonials" },
+  { type: "glass-pricing", label: "Glass Pricing" },
+];
+
+// All section types combined for compatibility
+const SECTION_TYPES: { type: SectionType; label: string }[] = [
+  ...BASIC_SECTION_TYPES,
+  ...WHOP_SECTION_TYPES,
+  ...GLASS_SECTION_TYPES,
+];
+
+type SectionCategory = 'basics' | 'whop' | 'glass';
 
 type TabType = 'sections' | 'elements';
 
@@ -522,7 +712,9 @@ export default function SectionList() {
   const [showHeaderLayoutPicker, setShowHeaderLayoutPicker] = useState(false);
   const [showTestimonialsLayoutPicker, setShowTestimonialsLayoutPicker] = useState(false);
   const [showFeaturesLayoutPicker, setShowFeaturesLayoutPicker] = useState(false);
+  const [showHeroLayoutPicker, setShowHeroLayoutPicker] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('sections');
+  const [sectionCategory, setSectionCategory] = useState<SectionCategory>('basics');
   const {
     page,
     selectedSectionId,
@@ -635,21 +827,31 @@ export default function SectionList() {
       setShowHeaderLayoutPicker(false);
       setShowTestimonialsLayoutPicker(false);
       setShowFeaturesLayoutPicker(false);
+      setShowHeroLayoutPicker(false);
     } else if (type === "header") {
       setShowHeaderLayoutPicker(true);
       setShowCTALayoutPicker(false);
       setShowTestimonialsLayoutPicker(false);
       setShowFeaturesLayoutPicker(false);
+      setShowHeroLayoutPicker(false);
     } else if (type === "testimonials") {
       setShowTestimonialsLayoutPicker(true);
       setShowCTALayoutPicker(false);
       setShowHeaderLayoutPicker(false);
       setShowFeaturesLayoutPicker(false);
+      setShowHeroLayoutPicker(false);
     } else if (type === "features") {
       setShowFeaturesLayoutPicker(true);
       setShowCTALayoutPicker(false);
       setShowHeaderLayoutPicker(false);
       setShowTestimonialsLayoutPicker(false);
+      setShowHeroLayoutPicker(false);
+    } else if (type === "hero") {
+      setShowHeroLayoutPicker(true);
+      setShowCTALayoutPicker(false);
+      setShowHeaderLayoutPicker(false);
+      setShowTestimonialsLayoutPicker(false);
+      setShowFeaturesLayoutPicker(false);
     } else {
       addSection(type);
       setShowAddMenu(false);
@@ -681,6 +883,13 @@ export default function SectionList() {
   const handleSelectFeaturesLayout = (variant: FeaturesVariant) => {
     addSection("features", undefined, { featuresVariant: variant });
     setShowFeaturesLayoutPicker(false);
+    setShowAddMenu(false);
+  };
+
+  // Handle selecting a Hero layout
+  const handleSelectHeroLayout = (variant: any) => {
+    addSection("hero", undefined, { heroVariant: variant });
+    setShowHeroLayoutPicker(false);
     setShowAddMenu(false);
   };
 
@@ -761,24 +970,89 @@ export default function SectionList() {
                       setShowHeaderLayoutPicker(false);
                       setShowTestimonialsLayoutPicker(false);
                     }} />
-                    <div className="absolute right-0 top-full mt-1 w-48 rounded-xl bg-[#1a1a1c] border border-white/10 shadow-xl z-20 py-1 overflow-hidden max-h-80 overflow-y-auto">
-                      {SECTION_TYPES.map(({ type, label }) => (
+                    <div className="absolute right-0 top-full mt-1 w-56 rounded-xl bg-[#1a1a1c] border border-white/10 shadow-xl z-20 overflow-hidden">
+                      {/* Category Tabs */}
+                      <div className="flex border-b border-white/10">
                         <button
-                          key={type}
-                          onClick={() => handleAddSection(type)}
-                          className={`w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2 ${
-                            (type === "cta" && showCTALayoutPicker) || (type === "header" && showHeaderLayoutPicker) || (type === "testimonials" && showTestimonialsLayoutPicker) ? "bg-white/5 text-white" : ""
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSectionCategory('basics');
+                          }}
+                          className={`flex-1 px-3 py-2 text-xs font-medium transition-colors relative ${
+                            sectionCategory === 'basics'
+                              ? 'text-white bg-white/5'
+                              : 'text-white/40 hover:text-white/60'
                           }`}
                         >
-                          {SECTION_ICONS[type]}
-                          {label}
-                          {(type === "cta" || type === "header" || type === "testimonials" || type === "features") && (
-                            <svg className="w-3 h-3 ml-auto opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                            </svg>
+                          Basics
+                          {sectionCategory === 'basics' && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D6FC51]" />
                           )}
                         </button>
-                      ))}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSectionCategory('whop');
+                          }}
+                          className={`flex-1 px-3 py-2 text-xs font-medium transition-colors relative ${
+                            sectionCategory === 'whop'
+                              ? 'text-white bg-white/5'
+                              : 'text-white/40 hover:text-white/60'
+                          }`}
+                        >
+                          <span className="flex items-center justify-center gap-1">
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            Whop
+                          </span>
+                          {sectionCategory === 'whop' && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FA4616]" />
+                          )}
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSectionCategory('glass');
+                          }}
+                          className={`flex-1 px-3 py-2 text-xs font-medium transition-colors relative ${
+                            sectionCategory === 'glass'
+                              ? 'text-white bg-white/5'
+                              : 'text-white/40 hover:text-white/60'
+                          }`}
+                        >
+                          <span className="flex items-center justify-center gap-1">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25" />
+                            </svg>
+                            Glass
+                          </span>
+                          {sectionCategory === 'glass' && (
+                            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#38bdf8]" />
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Section List */}
+                      <div className="py-1 max-h-64 overflow-y-auto">
+                        {(sectionCategory === 'basics' ? BASIC_SECTION_TYPES : sectionCategory === 'whop' ? WHOP_SECTION_TYPES : GLASS_SECTION_TYPES).map(({ type, label }) => (
+                          <button
+                            key={type}
+                            onClick={() => handleAddSection(type)}
+                            className={`w-full px-3 py-2 text-left text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors flex items-center gap-2 ${
+                              (type === "cta" && showCTALayoutPicker) || (type === "header" && showHeaderLayoutPicker) || (type === "testimonials" && showTestimonialsLayoutPicker) || (type === "hero" && showHeroLayoutPicker) ? "bg-white/5 text-white" : ""
+                            }`}
+                          >
+                            {SECTION_ICONS[type]}
+                            {label}
+                            {(type === "cta" || type === "header" || type === "testimonials" || type === "features" || type === "hero") && (
+                              <svg className="w-3 h-3 ml-auto opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                              </svg>
+                            )}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     {/* CTA Layout Picker Submenu */}
@@ -918,6 +1192,42 @@ export default function SectionList() {
                         </div>
                         <button
                           onClick={() => setShowFeaturesLayoutPicker(false)}
+                          className="w-full mt-3 py-1.5 text-[10px] text-white/40 hover:text-white/60 transition-colors"
+                        >
+                          ← Back to sections
+                        </button>
+                      </motion.div>
+                    )}
+
+                    {/* Hero Layout Picker Submenu */}
+                    {showHeroLayoutPicker && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 10 }}
+                        className="absolute left-full ml-1 top-0 w-56 rounded-xl bg-[#1a1a1c] border border-white/10 shadow-xl z-30 p-3"
+                      >
+                        <div className="text-xs font-medium text-white/50 mb-3 uppercase tracking-wider">
+                          Choose Hero Layout
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {HERO_LAYOUTS.map(({ variant, label, icon }) => (
+                            <button
+                              key={variant}
+                              onClick={() => handleSelectHeroLayout(variant)}
+                              className="group relative p-3 rounded-lg border border-white/10 hover:border-[#D6FC51]/50 hover:bg-white/5 transition-all text-center"
+                            >
+                              <div className="w-full h-10 text-white/40 group-hover:text-[#D6FC51] transition-colors mb-2">
+                                {icon}
+                              </div>
+                              <div className="text-[10px] font-medium text-white/60 group-hover:text-white/80 uppercase tracking-wide">
+                                {label}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => setShowHeroLayoutPicker(false)}
                           className="w-full mt-3 py-1.5 text-[10px] text-white/40 hover:text-white/60 transition-colors"
                         >
                           ← Back to sections

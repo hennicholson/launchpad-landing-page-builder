@@ -32,7 +32,7 @@ export default function BlankSectionBase({
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <SectionBackground effect={content.backgroundEffect} />
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       {/* Empty canvas area - users add elements here */}
       <div className="relative w-full h-full max-w-6xl mx-auto px-6 lg:px-8">
         {/* Optional heading and subheading */}

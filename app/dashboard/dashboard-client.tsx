@@ -79,6 +79,7 @@ export default function DashboardClient({ initialProjects, dashboardUser }: Prop
                 src="/launchpad-logo.png"
                 alt="LaunchPad"
                 className="h-10 w-auto"
+                style={{ height: '40px', width: 'auto' }}
               />
             </div>
 

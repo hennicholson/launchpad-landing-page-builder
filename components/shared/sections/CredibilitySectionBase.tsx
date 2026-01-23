@@ -36,7 +36,7 @@ export default function CredibilitySectionBase({
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <SectionBackground effect={content.backgroundEffect} />
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       {/* Background Image */}
       {content.showBackgroundImage !== false && content.backgroundImage && (
         <div className="absolute inset-0">

@@ -37,7 +37,7 @@ export default function ComparisonSectionBase({
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <SectionBackground effect={content.backgroundEffect} />
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       <div className="max-w-4xl mx-auto px-6 lg:px-8">
         {/* Header */}
         <motion.div
@@ -192,56 +192,40 @@ export default function ComparisonSectionBase({
                     {feature}
                   </div>
                   <div className="flex justify-center">
-                    <motion.div
-                      className="w-8 h-8 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: `${accentColor}20` }}
-                      whileHover={{ scale: 1.1 }}
+                    <svg
+                      className="w-6 h-6"
+                      style={{ color: accentColor }}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3}
                     >
-                      <svg
-                        className="w-5 h-5"
-                        style={{ color: accentColor }}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2.5}
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </motion.div>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
                   </div>
                   <div className="flex justify-center">
                     {competitor?.features?.includes(feature) ? (
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
+                      <svg
+                        className="w-6 h-6"
+                        style={{ color: `${textColor}40` }}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={3}
                       >
-                        <svg
-                          className="w-5 h-5"
-                          style={{ color: `${textColor}30` }}
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2.5}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
                     ) : (
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: "rgba(239,68,68,0.1)" }}
+                      <svg
+                        className="w-6 h-6"
+                        style={{ color: "#ef4444" }}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={3}
                       >
-                        <svg
-                          className="w-5 h-5"
-                          style={{ color: "#ef4444" }}
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2.5}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </div>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
                     )}
                   </div>
                 </div>
@@ -256,56 +240,41 @@ export default function ComparisonSectionBase({
                   </div>
                   <div className="flex justify-center gap-8">
                     <div className="flex flex-col items-center gap-1">
-                      <motion.div
-                        className="w-8 h-8 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: `${accentColor}20` }}
+                      <svg
+                        className="w-6 h-6"
+                        style={{ color: accentColor }}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={3}
                       >
-                        <svg
-                          className="w-5 h-5"
-                          style={{ color: accentColor }}
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2.5}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </motion.div>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
                       <span className="text-[10px] uppercase tracking-wider" style={{ color: `${textColor}40` }}>Us</span>
                     </div>
                     <div className="flex flex-col items-center gap-1">
                       {competitor?.features?.includes(feature) ? (
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
+                        <svg
+                          className="w-6 h-6"
+                          style={{ color: `${textColor}40` }}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={3}
                         >
-                          <svg
-                            className="w-5 h-5"
-                            style={{ color: `${textColor}30` }}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2.5}
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
                       ) : (
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: "rgba(239,68,68,0.1)" }}
+                        <svg
+                          className="w-6 h-6"
+                          style={{ color: "#ef4444" }}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={3}
                         >
-                          <svg
-                            className="w-5 h-5"
-                            style={{ color: "#ef4444" }}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2.5}
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </div>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                       )}
                       <span className="text-[10px] uppercase tracking-wider" style={{ color: `${textColor}40` }}>Others</span>
                     </div>

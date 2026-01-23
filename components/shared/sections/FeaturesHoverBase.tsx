@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import {
   IconTerminal2,
@@ -12,6 +14,8 @@ import {
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import { cn } from "@/lib/utils";
 import { SubheadingText } from "./SubheadingText";
+import { useEditorStore } from "@/lib/store";
+import { SectionBackground } from "../SectionBackground";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   terminal: IconTerminal2,
@@ -34,6 +38,9 @@ const Feature = ({
   sectionId,
   itemId,
   renderText,
+  isEditorMode,
+  isSelected,
+  onSelect,
 }: {
   title: string;
   description: string;
@@ -44,6 +51,9 @@ const Feature = ({
   sectionId: string;
   itemId: string;
   renderText?: BaseSectionProps["renderText"];
+  isEditorMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: () => void;
 }) => {
   const isTopRow = index < 4;
   const isLeftColumn = index % 4 === 0;
@@ -51,15 +61,24 @@ const Feature = ({
 
   const IconComponent = iconMap[icon] || IconTerminal2;
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (!isEditorMode || !onSelect) return;
+    if (window.getSelection()?.toString()) return;
+    onSelect();
+  };
+
   return (
     <div
+      onClick={isEditorMode ? handleClick : undefined}
       className={cn(
         "group relative flex flex-col py-10 lg:border-r lg:border-l dark:border-neutral-800 hover:bg-gradient-to-b transition-all duration-300",
         isTopRow
           ? "from-neutral-50 to-transparent dark:from-neutral-900/50 hover:from-neutral-100 dark:hover:from-neutral-900"
           : "from-transparent to-neutral-50 dark:to-neutral-900/50 hover:to-neutral-100 dark:hover:to-neutral-900",
         isLeftColumn && "lg:border-l-0",
-        isRightColumn && "lg:border-r-0"
+        isRightColumn && "lg:border-r-0",
+        isEditorMode && "cursor-pointer",
+        isSelected && "ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent"
       )}
       style={{
         borderColor: `${textColor}20`,
@@ -125,6 +144,11 @@ export default function FeaturesHoverBase({
 }: BaseSectionProps) {
   const { content, items } = section;
 
+  // Only enable selection in editor mode (when renderText exists)
+  const isEditorMode = !!renderText;
+  const selectItem = useEditorStore((state) => state.selectItem);
+  const selectedItemId = useEditorStore((state) => state.selectedItemId);
+
   // Extract styling
   const bgColor = content.backgroundColor || colorScheme.background;
   const textColor = content.textColor || colorScheme.text;
@@ -135,12 +159,14 @@ export default function FeaturesHoverBase({
 
   return (
     <section
+      className="relative overflow-hidden"
       style={{
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       {/* Heading Section */}
       {(content.showHeading !== false && content.heading) || (content.showSubheading !== false && content.subheading) ? (
         <div className="container mx-auto px-4 pb-10">
@@ -183,6 +209,9 @@ export default function FeaturesHoverBase({
               sectionId={section.id}
               itemId={item.id}
               renderText={renderText}
+              isEditorMode={isEditorMode}
+              isSelected={isEditorMode && selectedItemId === item.id}
+              onSelect={() => selectItem(section.id, item.id)}
             />
           ))}
         </div>

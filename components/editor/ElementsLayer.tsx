@@ -74,9 +74,13 @@ function AlignmentGuides() {
   );
 }
 
-export default function ElementsLayer({ section, previewWidth }: Props) {
+export default function ElementsLayer({ section, previewWidth: previewWidthProp }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { isPreviewMode, page, currentEditingBreakpoint } = useEditorStoreOrPublished();
+  const storeOrContext = useEditorStoreOrPublished();
+  const { isPreviewMode, page, currentEditingBreakpoint } = storeOrContext;
+
+  // Use previewWidth from props (editor mode) or context (published mode)
+  const previewWidth = previewWidthProp ?? (storeOrContext as { previewWidth?: number }).previewWidth;
 
   // Calculate scale factor for responsive preview
   const scaleFactor = useMemo(() => {

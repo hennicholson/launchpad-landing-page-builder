@@ -505,7 +505,7 @@ export default function CTASectionBase({
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <SectionBackground effect={content.backgroundEffect} />
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       {/* Background effects (not for banner) */}
       {variant !== "banner" && variant !== "minimal" && (
         <>

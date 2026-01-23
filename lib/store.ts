@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { LandingPage, PageSection, SectionType, SectionItem, ElementStyleOverride, PageElement, ElementType, ElementPosition, ElementContent, ElementGroup, Breakpoint, BreakpointOverride, CTAVariant, HeaderVariant, TestimonialVariant, FeaturesVariant } from "./page-schema";
+import type { LandingPage, PageSection, SectionType, SectionItem, ElementStyleOverride, PageElement, ElementType, ElementPosition, ElementContent, ElementGroup, Breakpoint, BreakpointOverride, CTAVariant, HeaderVariant, TestimonialVariant, FeaturesVariant, HeroVariant } from "./page-schema";
 import { createSection, generateId, defaultPage, THEME_PRESETS } from "./page-schema";
 import { setBreakpointOverride, setPositionAtBreakpoint, setContentAtBreakpoint } from "./breakpoint-utils";
 
@@ -54,6 +54,15 @@ type EditorState = {
   aiEditingSectionId: string | null;
   isAIGenerating: boolean;
 
+  // Rich text editor state
+  richTextEditor: {
+    isOpen: boolean;
+    sectionId: string | null;
+    field: string | null;
+    paragraphIndex: number | null;
+    initialContent: string;
+  };
+
   // Element style panel state
   elementStylePanel: ElementStylePanelData | null;
 
@@ -62,6 +71,9 @@ type EditorState = {
 
   // Element selection state (supports multi-select)
   selectedElementIds: Set<string>;
+
+  // Item selection state (for bento grid cards, etc.)
+  selectedItemId: string | null;
 
   // Alignment guides state (shown during drag)
   activeGuides: ActiveGuides | null;
@@ -79,7 +91,7 @@ type EditorState = {
   setPage: (page: LandingPage) => void;
   updateSection: (sectionId: string, updates: Partial<PageSection>) => void;
   updateSectionContent: (sectionId: string, content: Partial<PageSection["content"]>) => void;
-  addSection: (type: SectionType, afterId?: string, options?: { ctaVariant?: CTAVariant; headerVariant?: HeaderVariant; testimonialVariant?: TestimonialVariant; featuresVariant?: FeaturesVariant }) => void;
+  addSection: (type: SectionType, afterId?: string, options?: { ctaVariant?: CTAVariant; headerVariant?: HeaderVariant; testimonialVariant?: TestimonialVariant; featuresVariant?: FeaturesVariant; heroVariant?: HeroVariant }) => void;
   removeSection: (sectionId: string) => void;
   moveSection: (sectionId: string, direction: "up" | "down") => void;
   reorderSections: (sections: PageSection[]) => void;
@@ -94,6 +106,7 @@ type EditorState = {
   addItem: (sectionId: string) => void;
   updateItem: (sectionId: string, itemId: string, updates: Partial<SectionItem>) => void;
   removeItem: (sectionId: string, itemId: string) => void;
+  selectItem: (sectionId: string, itemId: string | null) => void;
 
   // State management
   markSaved: () => void;
@@ -111,6 +124,11 @@ type EditorState = {
   closeAIEdit: () => void;
   setAIGenerating: (isGenerating: boolean) => void;
   applyAISection: (sectionId: string, newSection: PageSection) => void;
+
+  // Rich text editor actions
+  openRichTextEditor: (sectionId: string, field: string, paragraphIndex: number, content: string) => void;
+  closeRichTextEditor: () => void;
+  updateRichTextContent: (sectionId: string, field: string, paragraphIndex: number, htmlContent: string) => void;
 
   // Element style panel actions
   openElementStylePanel: (data: ElementStylePanelData) => void;
@@ -200,9 +218,17 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   isPreviewMode: false,
   aiEditingSectionId: null,
   isAIGenerating: false,
+  richTextEditor: {
+    isOpen: false,
+    sectionId: null,
+    field: null,
+    paragraphIndex: null,
+    initialContent: '',
+  },
   elementStylePanel: null,
   rightPanelTab: 'settings',
   selectedElementIds: new Set<string>(),
+  selectedItemId: null,
   activeGuides: null,
   elementGroups: new Map<string, ElementGroup>(),
   isFullScreen: false,
@@ -324,8 +350,18 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       };
     }),
 
-  selectSection: (sectionId) =>
-    set({ selectedSectionId: sectionId, selectedElementIds: new Set<string>() }),
+  selectSection: (sectionId) => {
+    const { selectedItemId, page } = get();
+    const newSection = page.sections.find(s => s.id === sectionId);
+    const itemExists = newSection?.items?.some(i => i.id === selectedItemId);
+
+    set({
+      selectedSectionId: sectionId,
+      selectedElementIds: new Set<string>(),
+      elementStylePanel: null,
+      selectedItemId: itemExists ? selectedItemId : null,
+    });
+  },
 
   updateColorScheme: (colors) =>
     set((state) => ({
@@ -404,7 +440,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       isDirty: true,
     })),
 
-  removeItem: (sectionId, itemId) =>
+  removeItem: (sectionId, itemId) => {
+    const { selectedItemId } = get();
     set((state) => ({
       page: {
         ...state.page,
@@ -418,7 +455,18 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         ),
       },
       isDirty: true,
-    })),
+      // Clear selection if deleted item was selected
+      selectedItemId: selectedItemId === itemId ? null : selectedItemId,
+    }));
+  },
+
+  selectItem: (sectionId, itemId) => {
+    set({
+      selectedItemId: itemId,
+      // Also ensure the section is selected
+      selectedSectionId: itemId ? sectionId : get().selectedSectionId,
+    });
+  },
 
   markSaved: () =>
     set((state) => ({
@@ -487,6 +535,60 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       isDirty: true,
       aiEditingSectionId: null,
       isAIGenerating: false,
+    })),
+
+  openRichTextEditor: (sectionId, field, paragraphIndex, content) =>
+    set({
+      richTextEditor: {
+        isOpen: true,
+        sectionId,
+        field,
+        paragraphIndex,
+        initialContent: content,
+      },
+    }),
+
+  closeRichTextEditor: () =>
+    set({
+      richTextEditor: {
+        isOpen: false,
+        sectionId: null,
+        field: null,
+        paragraphIndex: null,
+        initialContent: '',
+      },
+    }),
+
+  updateRichTextContent: (sectionId, field, paragraphIndex, htmlContent) =>
+    set((state) => ({
+      page: {
+        ...state.page,
+        sections: state.page.sections.map((s) => {
+          if (s.id !== sectionId) return s;
+
+          const fieldValue = s.content[field];
+          if (Array.isArray(fieldValue)) {
+            const newArray = [...fieldValue];
+            newArray[paragraphIndex] = htmlContent;
+            return {
+              ...s,
+              content: {
+                ...s.content,
+                [field]: newArray,
+              },
+            };
+          }
+          return s;
+        }),
+      },
+      isDirty: true,
+      richTextEditor: {
+        isOpen: false,
+        sectionId: null,
+        field: null,
+        paragraphIndex: null,
+        initialContent: '',
+      },
     })),
 
   openElementStylePanel: (data) => set({ elementStylePanel: data, rightPanelTab: 'style' }),
@@ -566,7 +668,41 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   updateElementStyle: (sectionId, field, styles, itemId) =>
     set((state) => {
       if (itemId) {
-        // Update item's styleOverrides
+        // Check if it's a nav link (id starts with "nav-link-")
+        if (itemId.startsWith("nav-link-")) {
+          return {
+            page: {
+              ...state.page,
+              sections: state.page.sections.map((s) =>
+                s.id === sectionId
+                  ? {
+                      ...s,
+                      content: {
+                        ...s.content,
+                        links: (s.content.links as any[])?.map((link: any, index: number) => {
+                          const linkId = link.id || `nav-link-${index}`;
+                          return linkId === itemId
+                            ? {
+                                ...link,
+                                styleOverrides: {
+                                  ...(link.styleOverrides || {}),
+                                  [field]: {
+                                    ...(link.styleOverrides?.[field] || {}),
+                                    ...styles,
+                                  },
+                                },
+                              }
+                            : link;
+                        }),
+                      },
+                    }
+                  : s
+              ),
+            },
+            isDirty: true,
+          };
+        }
+        // Update regular item's styleOverrides
         return {
           page: {
             ...state.page,
@@ -1114,6 +1250,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       isPreviewMode: false,
       aiEditingSectionId: null,
       isAIGenerating: false,
+      richTextEditor: {
+        isOpen: false,
+        sectionId: null,
+        field: null,
+        paragraphIndex: null,
+        initialContent: '',
+      },
       elementStylePanel: null,
       rightPanelTab: 'settings',
       isFullScreen: false,

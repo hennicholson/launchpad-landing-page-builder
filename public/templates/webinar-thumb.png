@@ -1,0 +1,31 @@
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#ffffff"/>
+
+  <!-- Header -->
+  <rect y="0" width="400" height="40" fill="#f8fafc"/>
+  <rect x="20" y="12" width="90" height="16" rx="4" fill="#7c3aed"/>
+
+  <!-- Hero Section -->
+  <rect x="80" y="60" width="240" height="28" rx="4" fill="#7c3aed" opacity="0.9"/>
+  <rect x="100" y="96" width="200" height="12" rx="2" fill="#9ca3af"/>
+  <rect x="120" y="114" width="160" height="12" rx="2" fill="#9ca3af"/>
+
+  <!-- Countdown Timer -->
+  <rect x="100" y="140" width="50" height="40" rx="6" fill="#ec4899" opacity="0.2"/>
+  <rect x="160" y="140" width="50" height="40" rx="6" fill="#ec4899" opacity="0.2"/>
+  <rect x="220" y="140" width="50" height="40" rx="6" fill="#ec4899" opacity="0.2"/>
+  <rect x="280" y="140" width="50" height="40" rx="6" fill="#ec4899" opacity="0.2"/>
+
+  <!-- Speaker Section -->
+  <circle cx="120" cy="215" r="30" fill="#e5e7eb"/>
+  <rect x="160" y="195" width="180" height="14" rx="2" fill="#9ca3af"/>
+  <rect x="160" y="215" width="140" height="10" rx="2" fill="#d1d5db"/>
+  <rect x="160" y="230" width="120" height="10" rx="2" fill="#d1d5db"/>
+
+  <!-- CTA Button -->
+  <rect x="140" y="260" width="120" height="28" rx="6" fill="#7c3aed"/>
+
+  <!-- Label -->
+  <text x="200" y="290" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#6b7280">Webinar Registration</text>
+</svg>

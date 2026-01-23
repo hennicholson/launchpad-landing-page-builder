@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useEditorStore } from "@/lib/store";
 import SectionRenderer from "./SectionRenderer";
 import AIEditModal from "./AIEditModal";
+import RichTextEditorModal from "./RichTextEditorModal";
 import PaddingDragHandle from "./PaddingDragHandle";
 import ElementStylePanel from "./ElementStylePanel";
 import ElementsLayer from "./ElementsLayer";
@@ -39,7 +40,7 @@ const SECTION_CATEGORIES = {
 };
 
 // Display names for section types
-const SECTION_NAMES: Record<SectionType, string> = {
+const SECTION_NAMES: Partial<Record<SectionType, string>> = {
   blank: "Blank Canvas",
   header: "Header",
   footer: "Footer",
@@ -59,11 +60,22 @@ const SECTION_NAMES: Record<SectionType, string> = {
   cta: "Call to Action",
   pricing: "Pricing",
   offer: "Offer",
+  // Whop University section types
+  "whop-hero": "Whop Hero",
+  "whop-value-prop": "Value Story",
+  "whop-offer": "Bento Offer",
+  "whop-cta": "Floating CTA",
+  "whop-comparison": "Comparison Glow",
+  "whop-creator": "Creator Spotlight",
+  "whop-curriculum": "Curriculum",
+  "whop-results": "Results Gallery",
+  "whop-testimonials": "Testimonials 3D",
+  "whop-final-cta": "Final CTA",
 };
 
 // Default padding values for each section type (in pixels)
 // These match the original Tailwind classes that were used
-const DEFAULT_SECTION_PADDING: Record<SectionType, { top: number; bottom: number }> = {
+const DEFAULT_SECTION_PADDING: Partial<Record<SectionType, { top: number; bottom: number }>> = {
   blank: { top: 48, bottom: 48 },
   header: { top: 0, bottom: 0 }, // Headers handle their own padding
   footer: { top: 48, bottom: 64 }, // py-12 lg:py-16
@@ -83,6 +95,17 @@ const DEFAULT_SECTION_PADDING: Record<SectionType, { top: number; bottom: number
   cta: { top: 96, bottom: 160 }, // py-24 lg:py-40
   pricing: { top: 96, bottom: 128 }, // py-24 lg:py-32
   offer: { top: 96, bottom: 128 }, // py-24 lg:py-32
+  // Whop University section types (60-100px industry standard)
+  "whop-hero": { top: 80, bottom: 80 },
+  "whop-value-prop": { top: 80, bottom: 96 },
+  "whop-offer": { top: 80, bottom: 96 },
+  "whop-cta": { top: 64, bottom: 80 },
+  "whop-comparison": { top: 80, bottom: 96 },
+  "whop-creator": { top: 80, bottom: 96 },
+  "whop-curriculum": { top: 80, bottom: 96 },
+  "whop-results": { top: 80, bottom: 96 },
+  "whop-testimonials": { top: 80, bottom: 96 },
+  "whop-final-cta": { top: 80, bottom: 96 },
 };
 
 // Get effective padding for a section (custom or default)
@@ -542,6 +565,9 @@ export default function Canvas() {
 
       {/* AI Edit Modal */}
       <AIEditModal />
+
+      {/* Rich Text Editor Modal */}
+      <RichTextEditorModal />
 
       {/* Element Style Panel (right-click on text elements) */}
       <ElementStylePanel />

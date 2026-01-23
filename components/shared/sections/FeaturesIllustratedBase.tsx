@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,6 +7,8 @@ import { Target, CalendarCheck, Sparkles } from "lucide-react";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import { cn } from "@/lib/utils";
 import { SubheadingText } from "./SubheadingText";
+import { useEditorStore } from "@/lib/store";
+import { SectionBackground } from "../SectionBackground";
 
 const MeetingIllustration = () => {
   return (
@@ -101,6 +105,11 @@ export default function FeaturesIllustratedBase({
 }: BaseSectionProps) {
   const { content, items } = section;
 
+  // Only enable selection in editor mode (when renderText exists)
+  const isEditorMode = !!renderText;
+  const selectItem = useEditorStore((state) => state.selectItem);
+  const selectedItemId = useEditorStore((state) => state.selectedItemId);
+
   // Extract styling
   const bgColor = content.backgroundColor || colorScheme.background;
   const textColor = content.textColor || colorScheme.text;
@@ -117,13 +126,15 @@ export default function FeaturesIllustratedBase({
 
   return (
     <section
+      className="relative overflow-hidden"
       style={{
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <div className="container mx-auto px-4">
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
+      <div className="container relative z-10 mx-auto px-4">
         {/* Heading Section */}
         {(content.showHeading !== false && content.heading) || (content.showSubheading !== false && content.subheading) ? (
           <div className="mb-16 text-center">
@@ -157,11 +168,23 @@ export default function FeaturesIllustratedBase({
             {items.map((item) => {
               const Icon = iconMap[item.icon || "target"] || Target;
               const Illustration = illustrationMap[item.illustrationType || "meeting"] || MeetingIllustration;
+              const isSelected = isEditorMode && selectedItemId === item.id;
+
+              const handleCardClick = (e: React.MouseEvent) => {
+                if (!isEditorMode) return;
+                if (window.getSelection()?.toString()) return;
+                selectItem(section.id, item.id);
+              };
 
               return (
                 <div
                   key={item.id}
-                  className="group flex flex-col overflow-hidden rounded-lg border bg-card transition-shadow hover:shadow-lg"
+                  onClick={isEditorMode ? handleCardClick : undefined}
+                  className={cn(
+                    "group flex flex-col overflow-hidden rounded-lg border bg-card transition-shadow hover:shadow-lg",
+                    isEditorMode && "cursor-pointer",
+                    isSelected && "ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent"
+                  )}
                 >
                   <Illustration />
                   <div className="flex flex-1 flex-col p-6">

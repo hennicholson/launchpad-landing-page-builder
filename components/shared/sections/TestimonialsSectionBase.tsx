@@ -6,6 +6,8 @@ import type { SectionItem, TestimonialVariant } from "@/lib/page-schema";
 import { ScrollColumn } from "../primitives/ScrollColumn";
 import { Testimonials, type TestimonialCardProps } from "@/components/ui/twitter-testimonial-cards";
 import { SectionBackground } from "../SectionBackground";
+import { useEditorStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 // CSS variables wrapper for shadcn component theming
 function ShadcnWrapper({
@@ -194,7 +196,7 @@ export default function TestimonialsSectionBase({
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <SectionBackground effect={content.backgroundEffect} />
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         {/* Header */}
         <motion.div

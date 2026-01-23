@@ -17,6 +17,8 @@ type Props = {
   style?: React.CSSProperties;
   // If true, use resolveElementStyle to compute styles automatically
   useElementStyles?: boolean;
+  // If true, renders wrapper as <span> instead of <div> to avoid hydration issues when used inside <p> tags
+  inline?: boolean;
 };
 
 export default function EditableText({
@@ -30,6 +32,7 @@ export default function EditableText({
   multiline = false,
   style,
   useElementStyles = false,
+  inline = false,
 }: Props) {
   const { editingField, setEditingField, updateFieldValue, isPreviewMode, selectSection, openElementStylePanel, page } =
     useEditorStoreOrPublished();
@@ -118,11 +121,15 @@ export default function EditableText({
     );
   }
 
+  // Use span elements when inline to avoid hydration issues with <div> inside <p>
+  const WrapperElement = inline ? "span" : "div";
+  const MotionElement = inline ? motion.span : motion.div;
+
   return (
-    <div className="relative group inline">
+    <WrapperElement className="relative group inline">
       <AnimatePresence mode="wait">
         {isEditing ? (
-          <motion.div
+          <MotionElement
             key="input"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -155,9 +162,9 @@ export default function EditableText({
                 placeholder={placeholder}
               />
             )}
-          </motion.div>
+          </MotionElement>
         ) : (
-          <motion.div
+          <MotionElement
             key="text"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -191,9 +198,9 @@ export default function EditableText({
                 </svg>
               </span>
             </Component>
-          </motion.div>
+          </MotionElement>
         )}
       </AnimatePresence>
-    </div>
+    </WrapperElement>
   );
 }

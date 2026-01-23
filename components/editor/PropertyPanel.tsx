@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useEditorStore, useSelectedSection } from "@/lib/store";
-import type { SectionType, LayoutType, NavLink, StatsVariant, CTAVariant, HeaderVariant, HeaderPosition, TestimonialVariant, BackgroundEffect, AnimationPreset, HeadingStyle, ElementStyleOverride, ButtonVariant, ButtonSize, FontWeight as ButtonFontWeight, ShadowSize, SectionContent, FeaturesVariant, SubheadingAnimation, SubheadingSize, SubheadingWeight, ProcessVariant } from "@/lib/page-schema";
+import { cn } from "@/lib/utils";
+import type { SectionType, LayoutType, NavLink, StatsVariant, CTAVariant, HeaderVariant, HeaderPosition, TestimonialVariant, BackgroundEffect, AnimationPreset, HeadingStyle, ElementStyleOverride, ButtonVariant, ButtonSize, FontWeight as ButtonFontWeight, ShadowSize, SectionContent, FeaturesVariant, SubheadingAnimation, SubheadingSize, SubheadingWeight, ProcessVariant, SectionItem } from "@/lib/page-schema";
 import { THEME_PRESETS } from "@/lib/page-schema";
 import { IconPicker } from "./IconPicker";
 import { ANIMATION_PRESET_LABELS, ANIMATION_PRESET_DESCRIPTIONS } from "@/lib/animation-presets";
 import { getElementStyleOverride } from "@/lib/style-utils";
+import { normalizeColorToHex } from "@/lib/utils/colorUtils";
 import ElementSettingsPanel from "./ElementSettingsPanel";
+import { Switch } from "@/components/ui/switch";
 import {
   Type,
   Bold,
@@ -86,6 +89,18 @@ function getItemsLabel(sectionType: SectionType): string {
     case "process": return "Process Steps";
     case "comparison": return "Comparison Items";
     case "founders": return "Team Members";
+    // Whop University section types
+    case "whop-offer": return "Offer Items";
+    case "whop-testimonials": return "Testimonials";
+    case "whop-curriculum": return "Modules";
+    case "whop-results": return "Results";
+    case "whop-comparison": return "Comparison Columns";
+    case "whop-creator": return "Creators";
+    case "whop-final-cta": return "Trust Badges";
+    case "glass-features": return "Features";
+    case "glass-founders": return "Team Members";
+    case "glass-testimonials": return "Testimonials";
+    case "glass-pricing": return "Pricing Tiers";
     default: return "Items";
   }
 }
@@ -267,6 +282,47 @@ export default function PropertyPanel() {
   } = useEditorStore();
 
   const selectedSection = useSelectedSection();
+  const selectedItemId = useEditorStore((state) => state.selectedItemId);
+
+  // Create refs for all items (for auto-scroll on selection)
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Auto-scroll to selected item when it changes
+  useEffect(() => {
+    if (selectedItemId && itemRefs.current.has(selectedItemId)) {
+      const element = itemRefs.current.get(selectedItemId);
+      if (element) {
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'nearest',
+          });
+        }, 100);
+      }
+    }
+  }, [selectedItemId]);
+
+  // Helper function to update metadata for bento grid items
+  const updateMetadata = useCallback((sectionId: string, itemId: string, updates: any) => {
+    const item = selectedSection?.items?.find((i) => i.id === itemId);
+    if (!item) return;
+
+    const current = getMetadata(item);
+    const updated = { ...current, ...updates };
+
+    // Remove undefined values to keep JSON clean
+    Object.keys(updated).forEach((key) => {
+      if (updated[key] === undefined || updated[key] === "") {
+        delete updated[key];
+      }
+    });
+
+    updateItem(sectionId, itemId, {
+      metadata: Object.keys(updated).length > 0 ? JSON.stringify(updated) : undefined,
+    });
+  }, [selectedSection, updateItem]);
 
   // Get current section and item for style panel
   const styleSection = useMemo(() => {
@@ -276,7 +332,22 @@ export default function PropertyPanel() {
 
   const styleItem = useMemo(() => {
     if (!elementStylePanel?.itemId || !styleSection) return undefined;
-    return styleSection.items?.find((i) => i.id === elementStylePanel.itemId);
+    // Check regular items first
+    const regularItem = styleSection.items?.find((i) => i.id === elementStylePanel.itemId);
+    if (regularItem) return regularItem;
+    // Check nav links (for header sections)
+    const links = styleSection.content.links as NavLink[] | undefined;
+    if (links) {
+      const navLinkIndex = links.findIndex((l: NavLink, idx: number) =>
+        (l.id || `nav-link-${idx}`) === elementStylePanel.itemId
+      );
+      if (navLinkIndex !== -1) {
+        const navLink = links[navLinkIndex];
+        // Return nav link as SectionItem-compatible object
+        return { id: elementStylePanel.itemId, styleOverrides: navLink.styleOverrides } as SectionItem;
+      }
+    }
+    return undefined;
   }, [styleSection, elementStylePanel?.itemId]);
 
   // Get current style override
@@ -975,10 +1046,59 @@ export default function PropertyPanel() {
               onChange={(v) => updateSectionContent(selectedSectionId, { logoUrl: v })}
               placeholder="https://..."
             />
-            <NavLinksEditor
-              links={selectedSection.content.links || []}
-              onChange={(links) => updateSectionContent(selectedSectionId, { links })}
-            />
+            <ItemsSection label="Navigation Links">
+              {(selectedSection.content.links || []).map((link: NavLink, index: number) => {
+                const linkId = link.id || `nav-link-${index}`;
+                return (
+                  <ItemCard
+                    key={linkId}
+                    ref={(el) => {
+                      if (el) itemRefs.current.set(linkId, el);
+                      else itemRefs.current.delete(linkId);
+                    }}
+                    index={index}
+                    isSelected={selectedItemId === linkId}
+                    onRemove={() => {
+                      const newLinks = [...(selectedSection.content.links || [])];
+                      newLinks.splice(index, 1);
+                      updateSectionContent(selectedSectionId, { links: newLinks });
+                    }}
+                  >
+                    <TextInput
+                      label="Label"
+                      value={link.label}
+                      onChange={(v) => {
+                        const newLinks = [...(selectedSection.content.links || [])];
+                        newLinks[index] = { ...newLinks[index], label: v };
+                        updateSectionContent(selectedSectionId, { links: newLinks });
+                      }}
+                    />
+                    <TextInput
+                      label="URL"
+                      value={link.url}
+                      onChange={(v) => {
+                        const newLinks = [...(selectedSection.content.links || [])];
+                        newLinks[index] = { ...newLinks[index], url: v };
+                        updateSectionContent(selectedSectionId, { links: newLinks });
+                      }}
+                    />
+                  </ItemCard>
+                );
+              })}
+              <button
+                onClick={() => {
+                  const newLinks = [...(selectedSection.content.links || []), {
+                    id: `nav-link-${Date.now()}`,
+                    label: "New Link",
+                    url: "#"
+                  }];
+                  updateSectionContent(selectedSectionId, { links: newLinks });
+                }}
+                className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10"
+              >
+                + Add Link
+              </button>
+            </ItemsSection>
             {/* Search placeholder - only for header-with-search variant */}
             {selectedSection.content.headerVariant === "header-with-search" && (
               <TextInput
@@ -1011,55 +1131,404 @@ export default function PropertyPanel() {
         {/* ==================== HERO SECTION ==================== */}
         {sectionType === "hero" && (
           <>
-            <TextInput
-              label="Badge"
-              value={selectedSection.content.badge || ""}
-              onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
-              placeholder="For Creators & Agencies"
-            />
-            <TextInput
-              label="Heading"
-              value={selectedSection.content.heading || ""}
-              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
-            />
-            <TextInput
-              label="Accent Heading (2nd color)"
-              value={selectedSection.content.accentHeading || ""}
-              onChange={(v) => updateSectionContent(selectedSectionId, { accentHeading: v })}
-            />
-            <TextAreaInput
-              label="Subheading"
-              value={selectedSection.content.subheading || ""}
-              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <TextInput
-                label="Button Text"
-                value={selectedSection.content.buttonText || ""}
-                onChange={(v) => updateSectionContent(selectedSectionId, { buttonText: v })}
-              />
-              <TextInput
-                label="Button Link"
-                value={selectedSection.content.buttonLink || ""}
-                onChange={(v) => updateSectionContent(selectedSectionId, { buttonLink: v })}
-              />
+            {/* Hero Variant Selector */}
+            <div className="space-y-2 border-b border-white/5 pb-4 mb-4">
+              <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                Hero Style
+              </label>
+              <select
+                value={selectedSection.content.heroVariant || "default"}
+                onChange={(e) => {
+                  updateSectionContent(selectedSectionId, {
+                    heroVariant: e.target.value as any
+                  });
+                }}
+                className="w-full px-3 py-2 rounded-md bg-black/20 border border-white/10 text-sm text-white hover:border-white/20 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+              >
+                <option value="default">Default</option>
+                <option value="animated-preview">Animated Preview</option>
+                <option value="email-signup">Email Signup</option>
+                <option value="sales-funnel">Sales Funnel</option>
+              </select>
             </div>
-            <SectionButtonSettings
-              content={selectedSection.content}
-              onUpdate={(updates) => updateSectionContent(selectedSectionId, updates)}
-            />
-            <TextInput
-              label="Video URL"
-              value={selectedSection.content.videoUrl || ""}
-              onChange={(v) => updateSectionContent(selectedSectionId, { videoUrl: v })}
-              placeholder="https://youtube.com/embed/..."
-            />
-            <ArrayEditor
-              label="Brand Names (Marquee)"
-              items={selectedSection.content.brands || []}
-              onChange={(brands) => updateSectionContent(selectedSectionId, { brands })}
-              placeholder="Brand Name"
-            />
+
+{/* Variant-Specific Controls */}
+            {(() => {
+              const variant = selectedSection.content.heroVariant || "default";
+
+              // DEFAULT VARIANT
+              if (variant === "default") {
+                return (
+                  <>
+                    <TextInput
+                      label="Badge"
+                      value={selectedSection.content.badge || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+                      placeholder="For Creators & Agencies"
+                    />
+                    <TextInput
+                      label="Heading"
+                      value={selectedSection.content.heading || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+                    />
+                    <TextInput
+                      label="Accent Heading (2nd color)"
+                      value={selectedSection.content.accentHeading || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { accentHeading: v })}
+                    />
+                    <TextAreaInput
+                      label="Subheading"
+                      value={selectedSection.content.subheading || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <TextInput
+                        label="Button Text"
+                        value={selectedSection.content.buttonText || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { buttonText: v })}
+                      />
+                      <TextInput
+                        label="Button Link"
+                        value={selectedSection.content.buttonLink || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { buttonLink: v })}
+                      />
+                    </div>
+                    <SectionButtonSettings
+                      content={selectedSection.content}
+                      onUpdate={(updates) => updateSectionContent(selectedSectionId, updates)}
+                    />
+                    <TextInput
+                      label="Video URL"
+                      value={selectedSection.content.videoUrl || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { videoUrl: v })}
+                      placeholder="https://youtube.com/embed/..."
+                    />
+                    <ArrayEditor
+                      label="Brand Names (Marquee)"
+                      items={selectedSection.content.brands || []}
+                      onChange={(brands) => updateSectionContent(selectedSectionId, { brands })}
+                      placeholder="Brand Name"
+                    />
+                  </>
+                );
+              }
+
+              // ANIMATED-PREVIEW VARIANT
+              if (variant === "animated-preview") {
+                return (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <TextInput
+                        label="Announcement Text"
+                        value={selectedSection.content.announcementText || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { announcementText: v })}
+                        placeholder="New Features"
+                      />
+                      <TextInput
+                        label="Announcement Link"
+                        value={selectedSection.content.announcementLink || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { announcementLink: v })}
+                        placeholder="/features"
+                      />
+                    </div>
+                    <TextInput
+                      label="Heading"
+                      value={selectedSection.content.heading || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+                    />
+                    <TextAreaInput
+                      label="Subheading"
+                      value={selectedSection.content.subheading || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <TextInput
+                        label="Primary Button Text"
+                        value={selectedSection.content.primaryButtonText || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { primaryButtonText: v })}
+                      />
+                      <TextInput
+                        label="Primary Button Link"
+                        value={selectedSection.content.primaryButtonLink || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { primaryButtonLink: v })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <TextInput
+                        label="Secondary Button Text"
+                        value={selectedSection.content.secondaryButtonText || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { secondaryButtonText: v })}
+                      />
+                      <TextInput
+                        label="Secondary Button Link"
+                        value={selectedSection.content.secondaryButtonLink || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { secondaryButtonLink: v })}
+                      />
+                    </div>
+                    <TextInput
+                      label="Light Mode Preview Image"
+                      value={selectedSection.content.appPreviewImageLight || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { appPreviewImageLight: v })}
+                      placeholder="/app-light.jpg"
+                    />
+                    <TextInput
+                      label="Dark Mode Preview Image"
+                      value={selectedSection.content.appPreviewImageDark || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { appPreviewImageDark: v })}
+                      placeholder="/app-dark.jpg"
+                    />
+                    <ArrayEditor
+                      label="Brand Names (Logo Cloud)"
+                      items={selectedSection.content.brands || []}
+                      onChange={(brands) => updateSectionContent(selectedSectionId, { brands })}
+                      placeholder="Brand Name"
+                    />
+
+                    {/* Primary Button Visibility Toggle */}
+                    <div className="flex items-center justify-between py-2">
+                      <label className="text-sm text-gray-300 font-medium">Show Primary Button</label>
+                      <input
+                        type="checkbox"
+                        checked={selectedSection.content.showButton !== false}
+                        onChange={(e) =>
+                          updateSectionContent(selectedSectionId, {
+                            showButton: e.target.checked,
+                          })
+                        }
+                        className="w-4 h-4 rounded border-white/20 bg-white/5 text-[#D6FC51] focus:ring-[#D6FC51] focus:ring-offset-0"
+                      />
+                    </div>
+
+                    {/* Primary Button Styling */}
+                    <SectionButtonSettings
+                      content={selectedSection.content}
+                      onUpdate={(updates) => updateSectionContent(selectedSectionId, updates)}
+                      prefix="button"
+                    />
+
+                    {/* Secondary Button Visibility Toggle */}
+                    <div className="flex items-center justify-between py-2 mt-4">
+                      <label className="text-sm text-gray-300 font-medium">Show Secondary Button</label>
+                      <input
+                        type="checkbox"
+                        checked={selectedSection.content.showSecondaryButton !== false}
+                        onChange={(e) =>
+                          updateSectionContent(selectedSectionId, {
+                            showSecondaryButton: e.target.checked,
+                          })
+                        }
+                        className="w-4 h-4 rounded border-white/20 bg-white/5 text-[#D6FC51] focus:ring-[#D6FC51] focus:ring-offset-0"
+                      />
+                    </div>
+
+                    {/* Secondary Button Styling */}
+                    <SectionButtonSettings
+                      content={selectedSection.content}
+                      onUpdate={(updates) => updateSectionContent(selectedSectionId, updates)}
+                      prefix="secondaryButton"
+                    />
+                  </>
+                );
+              }
+
+              // EMAIL-SIGNUP VARIANT
+              if (variant === "email-signup") {
+                return (
+                  <>
+                    <TextInput
+                      label="Heading"
+                      value={selectedSection.content.heading || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+                    />
+                    <TextAreaInput
+                      label="Subheading"
+                      value={selectedSection.content.subheading || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+                    />
+
+                    <CollapsibleSection title="Form Settings" defaultOpen>
+                      <div className="grid grid-cols-2 gap-3">
+                        <TextInput
+                          label="Placeholder"
+                          value={selectedSection.content.formPlaceholder || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { formPlaceholder: v })}
+                          placeholder="Your email..."
+                        />
+                        <TextInput
+                          label="Button Text"
+                          value={selectedSection.content.formButtonText || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { formButtonText: v })}
+                          placeholder="Get Started"
+                        />
+                      </div>
+                      <TextInput
+                        label="Form Action URL"
+                        value={selectedSection.content.formAction || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { formAction: v })}
+                        placeholder="/api/subscribe"
+                      />
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Mockup Widget" defaultOpen>
+                      <TextInput
+                        label="Widget Title"
+                        value={selectedSection.content.mockupTitle || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { mockupTitle: v })}
+                        placeholder="Steps"
+                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <TextInput
+                          label="Current Value"
+                          value={selectedSection.content.mockupCurrentValue || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { mockupCurrentValue: v })}
+                          placeholder="8,081"
+                        />
+                        <TextInput
+                          label="Current Label"
+                          value={selectedSection.content.mockupCurrentLabel || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { mockupCurrentLabel: v })}
+                          placeholder="Steps/day"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <TextInput
+                          label="Previous Value"
+                          value={selectedSection.content.mockupPreviousValue || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { mockupPreviousValue: v })}
+                          placeholder="5,412"
+                        />
+                        <TextInput
+                          label="Previous Label"
+                          value={selectedSection.content.mockupPreviousLabel || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { mockupPreviousLabel: v })}
+                          placeholder="Steps/day"
+                        />
+                      </div>
+                      <TextAreaInput
+                        label="Description"
+                        value={selectedSection.content.mockupDescription || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { mockupDescription: v })}
+                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <TextInput
+                          label="Current Year"
+                          value={selectedSection.content.mockupCurrentYear || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { mockupCurrentYear: v })}
+                          placeholder="2024"
+                        />
+                        <TextInput
+                          label="Previous Year"
+                          value={selectedSection.content.mockupPreviousYear || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { mockupPreviousYear: v })}
+                          placeholder="2023"
+                        />
+                      </div>
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Logo Cloud">
+                      <ArrayEditor
+                        label="Brand Names"
+                        items={selectedSection.content.brands || []}
+                        onChange={(brands) => updateSectionContent(selectedSectionId, { brands })}
+                        placeholder="Brand Name"
+                      />
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                          Scroll Speed
+                        </label>
+                        <input
+                          type="range"
+                          min="0.5"
+                          max="3"
+                          step="0.1"
+                          value={selectedSection.content.logoScrollSpeed || 1.0}
+                          onChange={(e) => updateSectionContent(selectedSectionId, { logoScrollSpeed: parseFloat(e.target.value) })}
+                          className="w-full"
+                        />
+                        <p className="text-xs text-white/50">
+                          {selectedSection.content.logoScrollSpeed || 1.0}x
+                        </p>
+                      </div>
+                    </CollapsibleSection>
+                  </>
+                );
+              }
+
+              // SALES-FUNNEL VARIANT
+              if (variant === "sales-funnel") {
+                return (
+                  <>
+                    <TextInput
+                      label="Top Title (Above Headline)"
+                      value={selectedSection.content.topTitle || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { topTitle: v })}
+                      placeholder="For [Target Audience] That Want To..."
+                    />
+                    <TextInput
+                      label="Heading"
+                      value={selectedSection.content.heading || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+                    />
+                    <TextAreaInput
+                      label="Subheading"
+                      value={selectedSection.content.subheading || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+                    />
+                    <TextInput
+                      label="Hero Image URL"
+                      value={selectedSection.content.imageUrl || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { imageUrl: v })}
+                      placeholder="https://..."
+                    />
+                    <CollapsibleSection title="CTA Button" defaultOpen>
+                      <TextInput
+                        label="Button Text"
+                        value={selectedSection.content.ctaText || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { ctaText: v })}
+                        placeholder="YES! DOWNLOAD NOW!"
+                      />
+                      <TextInput
+                        label="Button URL"
+                        value={selectedSection.content.ctaUrl || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { ctaUrl: v })}
+                        placeholder="#"
+                      />
+                      <TextInput
+                        label="Price Text (Below Button)"
+                        value={selectedSection.content.ctaSecondaryText || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { ctaSecondaryText: v })}
+                        placeholder="Only $47 - one time payment"
+                      />
+                    </CollapsibleSection>
+                    <CollapsibleSection title="Trust Badge" defaultOpen>
+                      <TextInput
+                        label="Badge Text"
+                        value={selectedSection.content.badge || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+                        placeholder="365 DAYS MONEY BACK GUARANTEE"
+                      />
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                          Badge Icon
+                        </label>
+                        <select
+                          value={selectedSection.content.badgeIcon || "checkmark"}
+                          onChange={(e) => updateSectionContent(selectedSectionId, { badgeIcon: e.target.value })}
+                          className="w-full px-3 py-2 rounded-md bg-black/20 border border-white/10 text-sm text-white hover:border-white/20 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                        >
+                          <option value="checkmark">Checkmark ✓</option>
+                          <option value="shield">Shield 🛡</option>
+                          <option value="star">Star ⭐</option>
+                          <option value="none">None</option>
+                        </select>
+                      </div>
+                    </CollapsibleSection>
+                  </>
+                );
+              }
+
+              return null;
+            })()}
           </>
         )}
 
@@ -1080,7 +1549,15 @@ export default function PropertyPanel() {
               {selectedSection.items?.map((item, index) => (
                 <ItemCard
                   key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
                   index={index}
+                  isSelected={selectedItemId === item.id}
                   onRemove={() => removeItem(selectedSectionId, item.id)}
                 >
                   <TextInput
@@ -1322,7 +1799,15 @@ export default function PropertyPanel() {
               {selectedSection.items?.map((item, index) => (
                 <ItemCard
                   key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
                   index={index}
+                  isSelected={selectedItemId === item.id}
                   onRemove={() => removeItem(selectedSectionId, item.id)}
                 >
                   <TextInput
@@ -1401,7 +1886,19 @@ export default function PropertyPanel() {
                 </div>
                 <ItemsSection label="Features">
                   {selectedSection.items?.map((item, index) => (
-                    <ItemCard key={item.id} index={index} onRemove={() => removeItem(selectedSectionId, item.id)}>
+                    <ItemCard
+                      key={item.id}
+                      ref={(el) => {
+                        if (el) {
+                          itemRefs.current.set(item.id, el);
+                        } else {
+                          itemRefs.current.delete(item.id);
+                        }
+                      }}
+                      index={index}
+                      isSelected={selectedItemId === item.id}
+                      onRemove={() => removeItem(selectedSectionId, item.id)}
+                    >
                       <TextInput label="Title" value={item.title || ""} onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })} />
                       <TextAreaInput label="Description" value={item.description || ""} onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })} rows={2} />
                       <div className="space-y-2">
@@ -1434,7 +1931,19 @@ export default function PropertyPanel() {
                 <TextInput label="Subheading" value={selectedSection.content.subheading || ""} onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })} />
                 <ItemsSection label="Features">
                   {selectedSection.items?.map((item, index) => (
-                    <ItemCard key={item.id} index={index} onRemove={() => removeItem(selectedSectionId, item.id)}>
+                    <ItemCard
+                      key={item.id}
+                      ref={(el) => {
+                        if (el) {
+                          itemRefs.current.set(item.id, el);
+                        } else {
+                          itemRefs.current.delete(item.id);
+                        }
+                      }}
+                      index={index}
+                      isSelected={selectedItemId === item.id}
+                      onRemove={() => removeItem(selectedSectionId, item.id)}
+                    >
                       <TextInput label="Title" value={item.title || ""} onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })} />
                       <TextAreaInput label="Description" value={item.description || ""} onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })} rows={2} />
                       <div className="space-y-2">
@@ -1464,23 +1973,451 @@ export default function PropertyPanel() {
                 <TextInput label="Subheading" value={selectedSection.content.subheading || ""} onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })} />
                 <ColorInput label="Background Color" value={selectedSection.content.backgroundColor || "#0a1628"} onChange={(v) => updateSectionContent(selectedSectionId, { backgroundColor: v })} />
                 <ItemsSection label="Features">
-                  {selectedSection.items?.map((item, index) => (
-                    <ItemCard key={item.id} index={index} onRemove={() => removeItem(selectedSectionId, item.id)}>
-                      <TextInput label="Title" value={item.title || ""} onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })} />
-                      <TextAreaInput label="Description" value={item.description || ""} onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })} rows={2} />
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Grid Size</label>
-                        <select value={item.gridClass || "md:col-span-1"} onChange={(e) => updateItem(selectedSectionId, item.id, { gridClass: e.target.value })} className="w-full px-2 py-1.5 rounded bg-black/20 border border-white/5 text-xs text-white focus:outline-none">
-                          <option value="md:col-span-1 md:row-span-1">1x1 (Small)</option>
-                          <option value="md:col-span-2 md:row-span-1">2x1 (Wide)</option>
-                          <option value="md:col-span-1 md:row-span-2">1x2 (Tall)</option>
-                          <option value="md:col-span-2 md:row-span-2">2x2 (Large)</option>
-                          <option value="md:col-span-3 md:row-span-1">3x1 (Extra Wide)</option>
-                          <option value="md:col-span-4 md:row-span-2">4x2 (Hero)</option>
-                        </select>
-                      </div>
-                    </ItemCard>
-                  ))}
+                  {selectedSection.items?.map((item, index) => {
+                    const metadata = getMetadata(item);
+                    const hasImage = !!item.imageUrl;
+
+                    return (
+                      <ItemCard
+                        key={item.id}
+                        ref={(el) => {
+                          if (el) {
+                            itemRefs.current.set(item.id, el);
+                          } else {
+                            itemRefs.current.delete(item.id);
+                          }
+                        }}
+                        index={index}
+                        isSelected={selectedItemId === item.id}
+                        onRemove={() => removeItem(selectedSectionId, item.id)}
+                      >
+                        {/* Basic Settings */}
+                        <TextInput
+                          label="Title"
+                          value={item.title || ""}
+                          onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })}
+                        />
+
+                        <TextAreaInput
+                          label="Description"
+                          value={item.description || ""}
+                          onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })}
+                          rows={2}
+                        />
+
+                        {/* Grid Size */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                            Grid Size
+                          </label>
+                          <select
+                            value={item.gridClass || "md:col-span-1"}
+                            onChange={(e) => updateItem(selectedSectionId, item.id, { gridClass: e.target.value })}
+                            className="w-full px-2 py-1.5 rounded bg-black/20 border border-white/5 text-xs text-white focus:outline-none"
+                          >
+                            <option value="md:col-span-1 md:row-span-1">1x1 (Small)</option>
+                            <option value="md:col-span-2 md:row-span-1">2x1 (Wide)</option>
+                            <option value="md:col-span-1 md:row-span-2">1x2 (Tall)</option>
+                            <option value="md:col-span-2 md:row-span-2">2x2 (Large)</option>
+                            <option value="md:col-span-3 md:row-span-1">3x1 (Extra Wide)</option>
+                            <option value="md:col-span-4 md:row-span-2">4x2 (Hero)</option>
+                          </select>
+                        </div>
+
+                        {/* Card Variant */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                            Card Variant
+                          </label>
+                          <select
+                            value={metadata.variant || "feature"}
+                            onChange={(e) =>
+                              updateMetadata(selectedSectionId, item.id, { variant: e.target.value })
+                            }
+                            className="w-full px-2 py-1.5 rounded bg-black/20 border border-white/5 text-xs text-white focus:outline-none"
+                          >
+                            <option value="integration">Integration (buttons, icons, badges)</option>
+                            <option value="stat">Stat (large number + label)</option>
+                            <option value="metric">Metric (centered, huge text)</option>
+                            <option value="feature">Feature (default)</option>
+                          </select>
+                        </div>
+
+                        {/* Image URL */}
+                        <TextInput
+                          label="Image URL"
+                          value={item.imageUrl || ""}
+                          onChange={(v) => updateItem(selectedSectionId, item.id, { imageUrl: v })}
+                          placeholder="https://images.unsplash.com/..."
+                        />
+
+                        {/* Image Styling (conditional) */}
+                        {hasImage && (
+                          <CollapsibleSection title="Image Styling">
+                            <RangeSlider
+                              label="Blur"
+                              value={metadata.imageBlur || 0}
+                              onChange={(v) => updateMetadata(selectedSectionId, item.id, { imageBlur: v })}
+                              min={0}
+                              max={20}
+                              step={1}
+                              unit="px"
+                            />
+
+                            <RangeSlider
+                              label="Brightness"
+                              value={metadata.imageBrightness || 100}
+                              onChange={(v) => updateMetadata(selectedSectionId, item.id, { imageBrightness: v })}
+                              min={0}
+                              max={100}
+                              step={5}
+                              unit="%"
+                            />
+
+                            <ColorInput
+                              label="Overlay Color"
+                              value={metadata.imageOverlay || "#000000"}
+                              onChange={(v) => updateMetadata(selectedSectionId, item.id, { imageOverlay: v })}
+                            />
+
+                            <RangeSlider
+                              label="Overlay Opacity"
+                              value={metadata.imageOverlayOpacity || 60}
+                              onChange={(v) =>
+                                updateMetadata(selectedSectionId, item.id, { imageOverlayOpacity: v })
+                              }
+                              min={0}
+                              max={100}
+                              step={5}
+                              unit="%"
+                            />
+
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                                Effect
+                              </label>
+                              <select
+                                value={metadata.imageEffect || "none"}
+                                onChange={(e) =>
+                                  updateMetadata(selectedSectionId, item.id, { imageEffect: e.target.value })
+                                }
+                                className="w-full px-2 py-1.5 rounded bg-black/20 border border-white/5 text-xs text-white focus:outline-none"
+                              >
+                                <option value="none">None</option>
+                                <option value="parallax">Parallax (scroll effect)</option>
+                                <option value="zoom">Zoom (hover effect)</option>
+                              </select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                                Position
+                              </label>
+                              <select
+                                value={metadata.imagePosition || "center"}
+                                onChange={(e) =>
+                                  updateMetadata(selectedSectionId, item.id, { imagePosition: e.target.value })
+                                }
+                                className="w-full px-2 py-1.5 rounded bg-black/20 border border-white/5 text-xs text-white focus:outline-none"
+                              >
+                                <option value="top">Top</option>
+                                <option value="center">Center</option>
+                                <option value="bottom">Bottom</option>
+                              </select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                                Fit
+                              </label>
+                              <select
+                                value={metadata.imageFit || "cover"}
+                                onChange={(e) =>
+                                  updateMetadata(selectedSectionId, item.id, { imageFit: e.target.value })
+                                }
+                                className="w-full px-2 py-1.5 rounded bg-black/20 border border-white/5 text-xs text-white focus:outline-none"
+                              >
+                                <option value="cover">Cover (fill)</option>
+                                <option value="contain">Contain (fit)</option>
+                              </select>
+                            </div>
+                          </CollapsibleSection>
+                        )}
+
+                        {/* Background Pattern */}
+                        <CollapsibleSection title="Background Pattern">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                              Pattern Type
+                            </label>
+                            <select
+                              value={metadata.cardBackground || "none"}
+                              onChange={(e) =>
+                                updateMetadata(selectedSectionId, item.id, { cardBackground: e.target.value })
+                              }
+                              className="w-full px-2 py-1.5 rounded bg-black/20 border border-white/5 text-xs text-white focus:outline-none"
+                            >
+                              <option value="none">None</option>
+                              <option value="gradient">Gradient</option>
+                              <option value="mesh">Mesh</option>
+                              <option value="noise">Noise</option>
+                              <option value="dots">Dots</option>
+                              <option value="grid">Grid</option>
+                            </select>
+                          </div>
+
+                          {(metadata.cardBackground === "gradient" ||
+                            metadata.cardBackground === "mesh") && (
+                            <>
+                              <ColorInput
+                                label="Gradient From"
+                                value={metadata.gradientFrom || "#4F46E5"}
+                                onChange={(v) => updateMetadata(selectedSectionId, item.id, { gradientFrom: v })}
+                              />
+                              <ColorInput
+                                label="Gradient To"
+                                value={metadata.gradientTo || "#7C3AED"}
+                                onChange={(v) => updateMetadata(selectedSectionId, item.id, { gradientTo: v })}
+                              />
+                            </>
+                          )}
+                        </CollapsibleSection>
+
+                        {/* Variant-Specific Settings */}
+                        <CollapsibleSection title="Variant Settings">
+                          {/* Integration variant */}
+                          {metadata.variant === "integration" && (
+                            <>
+                              <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                                  Show Icon
+                                </label>
+                                <Switch
+                                  checked={metadata.showIcon || false}
+                                  onCheckedChange={(checked) =>
+                                    updateMetadata(selectedSectionId, item.id, { showIcon: checked })
+                                  }
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                                  Show Badge
+                                </label>
+                                <Switch
+                                  checked={metadata.showBadge || false}
+                                  onCheckedChange={(checked) =>
+                                    updateMetadata(selectedSectionId, item.id, { showBadge: checked })
+                                  }
+                                />
+                              </div>
+
+                              {metadata.showBadge && (
+                                <TextInput
+                                  label="Badge Text"
+                                  value={metadata.badgeText || ""}
+                                  onChange={(v) => updateMetadata(selectedSectionId, item.id, { badgeText: v })}
+                                  placeholder="New"
+                                />
+                              )}
+
+                              <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                                  Show Switch
+                                </label>
+                                <Switch
+                                  checked={metadata.showSwitch || false}
+                                  onCheckedChange={(checked) =>
+                                    updateMetadata(selectedSectionId, item.id, { showSwitch: checked })
+                                  }
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                                  Show Button
+                                </label>
+                                <Switch
+                                  checked={metadata.showButton || false}
+                                  onCheckedChange={(checked) =>
+                                    updateMetadata(selectedSectionId, item.id, { showButton: checked })
+                                  }
+                                />
+                              </div>
+
+                              {metadata.showButton && (
+                                <TextInput
+                                  label="Button Text"
+                                  value={metadata.buttonText || ""}
+                                  onChange={(v) => updateMetadata(selectedSectionId, item.id, { buttonText: v })}
+                                  placeholder="Configure"
+                                />
+                              )}
+                            </>
+                          )}
+
+                          {/* Stat variant */}
+                          {metadata.variant === "stat" && (
+                            <>
+                              <TextInput
+                                label="Stat Value"
+                                value={metadata.statValue || ""}
+                                onChange={(v) => updateMetadata(selectedSectionId, item.id, { statValue: v })}
+                                placeholder="99%"
+                              />
+                              <TextInput
+                                label="Stat Label"
+                                value={metadata.statLabel || ""}
+                                onChange={(v) => updateMetadata(selectedSectionId, item.id, { statLabel: v })}
+                                placeholder="UPTIME"
+                              />
+
+                              <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                                  Show Badge
+                                </label>
+                                <Switch
+                                  checked={metadata.showBadge || false}
+                                  onCheckedChange={(checked) =>
+                                    updateMetadata(selectedSectionId, item.id, { showBadge: checked })
+                                  }
+                                />
+                              </div>
+
+                              {metadata.showBadge && (
+                                <TextInput
+                                  label="Badge Text"
+                                  value={metadata.badgeText || ""}
+                                  onChange={(v) => updateMetadata(selectedSectionId, item.id, { badgeText: v })}
+                                  placeholder="Live"
+                                />
+                              )}
+
+                              <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                                  Show Icon
+                                </label>
+                                <Switch
+                                  checked={metadata.showIcon || false}
+                                  onCheckedChange={(checked) =>
+                                    updateMetadata(selectedSectionId, item.id, { showIcon: checked })
+                                  }
+                                />
+                              </div>
+                            </>
+                          )}
+
+                          {/* Metric variant */}
+                          {metadata.variant === "metric" && (
+                            <>
+                              <TextInput
+                                label="Stat Value"
+                                value={metadata.statValue || ""}
+                                onChange={(v) => updateMetadata(selectedSectionId, item.id, { statValue: v })}
+                                placeholder="1M+"
+                              />
+
+                              <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                                  Dot Pattern
+                                </label>
+                                <Switch
+                                  checked={metadata.dotPattern || false}
+                                  onCheckedChange={(checked) =>
+                                    updateMetadata(selectedSectionId, item.id, { dotPattern: checked })
+                                  }
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                                  Show Icon
+                                </label>
+                                <Switch
+                                  checked={metadata.showIcon || false}
+                                  onCheckedChange={(checked) =>
+                                    updateMetadata(selectedSectionId, item.id, { showIcon: checked })
+                                  }
+                                />
+                              </div>
+                            </>
+                          )}
+
+                          {/* Feature variant */}
+                          {metadata.variant === "feature" && (
+                            <p className="text-[10px] text-white/30 italic">
+                              No additional settings for feature variant
+                            </p>
+                          )}
+                        </CollapsibleSection>
+
+                        {/* Advanced Settings */}
+                        <CollapsibleSection title="Advanced">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                              Entrance Animation
+                            </label>
+                            <select
+                              value={metadata.entranceAnimation || "fade"}
+                              onChange={(e) =>
+                                updateMetadata(selectedSectionId, item.id, { entranceAnimation: e.target.value })
+                              }
+                              className="w-full px-2 py-1.5 rounded bg-black/20 border border-white/5 text-xs text-white focus:outline-none"
+                            >
+                              <option value="fade">Fade</option>
+                              <option value="slide">Slide</option>
+                              <option value="scale">Scale</option>
+                              <option value="flip">Flip</option>
+                              <option value="bounce">Bounce</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                              Animation Delay (ms)
+                            </label>
+                            <input
+                              type="number"
+                              value={metadata.animationDelay || 0}
+                              onChange={(e) =>
+                                updateMetadata(selectedSectionId, item.id, {
+                                  animationDelay: Number(e.target.value),
+                                })
+                              }
+                              className="w-full px-2 py-1.5 rounded bg-black/20 border border-white/5 text-xs text-white focus:outline-none"
+                              min={0}
+                              max={2000}
+                              step={100}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                              Hover Border Glow
+                            </label>
+                            <Switch
+                              checked={metadata.hoverBorderGlow || false}
+                              onCheckedChange={(checked) =>
+                                updateMetadata(selectedSectionId, item.id, { hoverBorderGlow: checked })
+                              }
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                              Highlighted
+                            </label>
+                            <Switch
+                              checked={metadata.highlighted || false}
+                              onCheckedChange={(checked) =>
+                                updateMetadata(selectedSectionId, item.id, { highlighted: checked })
+                              }
+                            />
+                          </div>
+                        </CollapsibleSection>
+                      </ItemCard>
+                    );
+                  })}
                   <button onClick={() => addItem(selectedSectionId)} className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors">+ Add Feature</button>
                 </ItemsSection>
               </>
@@ -1495,7 +2432,19 @@ export default function PropertyPanel() {
                   {selectedSection.items?.map((item, index) => {
                     const meta = item.metadata ? JSON.parse(item.metadata) : {};
                     return (
-                      <ItemCard key={item.id} index={index} onRemove={() => removeItem(selectedSectionId, item.id)}>
+                      <ItemCard
+                      key={item.id}
+                      ref={(el) => {
+                        if (el) {
+                          itemRefs.current.set(item.id, el);
+                        } else {
+                          itemRefs.current.delete(item.id);
+                        }
+                      }}
+                      index={index}
+                      isSelected={selectedItemId === item.id}
+                      onRemove={() => removeItem(selectedSectionId, item.id)}
+                    >
                         <TextInput label="Name" value={item.title || ""} onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })} />
                         <TextInput label="Email" value={item.description || ""} onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })} />
                         <TextInput label="Avatar URL" value={item.imageUrl || ""} onChange={(v) => updateItem(selectedSectionId, item.id, { imageUrl: v })} />
@@ -1573,7 +2522,15 @@ export default function PropertyPanel() {
               {selectedSection.items?.map((item, index) => (
                 <ItemCard
                   key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
                   index={index}
+                  isSelected={selectedItemId === item.id}
                   onRemove={() => removeItem(selectedSectionId, item.id)}
                 >
                   <TextInput
@@ -1641,7 +2598,15 @@ export default function PropertyPanel() {
               {selectedSection.items?.map((item, index) => (
                 <ItemCard
                   key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
                   index={index}
+                  isSelected={selectedItemId === item.id}
                   onRemove={() => removeItem(selectedSectionId, item.id)}
                 >
                   <TextInput
@@ -1703,7 +2668,15 @@ export default function PropertyPanel() {
               {selectedSection.items?.map((item, index) => (
                 <ItemCard
                   key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
                   index={index}
+                  isSelected={selectedItemId === item.id}
                   onRemove={() => removeItem(selectedSectionId, item.id)}
                 >
                   <TextInput
@@ -1860,7 +2833,15 @@ export default function PropertyPanel() {
               {selectedSection.items?.map((item, index) => (
                 <ItemCard
                   key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
                   index={index}
+                  isSelected={selectedItemId === item.id}
                   onRemove={() => removeItem(selectedSectionId, item.id)}
                 >
                   <TextInput
@@ -2031,7 +3012,15 @@ export default function PropertyPanel() {
               {selectedSection.items?.map((item, index) => (
                 <ItemCard
                   key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
                   index={index}
+                  isSelected={selectedItemId === item.id}
                   onRemove={() => removeItem(selectedSectionId, item.id)}
                 >
                   <TextInput
@@ -2094,7 +3083,15 @@ export default function PropertyPanel() {
               {selectedSection.items?.map((item, index) => (
                 <ItemCard
                   key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
                   index={index}
+                  isSelected={selectedItemId === item.id}
                   onRemove={() => removeItem(selectedSectionId, item.id)}
                 >
                   <TextInput
@@ -2138,7 +3135,15 @@ export default function PropertyPanel() {
               {selectedSection.items?.map((item, index) => (
                 <ItemCard
                   key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
                   index={index}
+                  isSelected={selectedItemId === item.id}
                   onRemove={() => removeItem(selectedSectionId, item.id)}
                 >
                   <TextInput
@@ -2186,7 +3191,15 @@ export default function PropertyPanel() {
               {selectedSection.items?.map((item, index) => (
                 <ItemCard
                   key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
                   index={index}
+                  isSelected={selectedItemId === item.id}
                   onRemove={() => removeItem(selectedSectionId, item.id)}
                 >
                   <TextInput
@@ -2269,7 +3282,15 @@ export default function PropertyPanel() {
               {selectedSection.items?.map((item, index) => (
                 <ItemCard
                   key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
                   index={index}
+                  isSelected={selectedItemId === item.id}
                   onRemove={() => removeItem(selectedSectionId, item.id)}
                 >
                   <TextInput
@@ -2340,6 +3361,1193 @@ export default function PropertyPanel() {
                 </span>
               </div>
             </div>
+          </>
+        )}
+
+        {/* ==================== WHOP HERO SECTION ==================== */}
+        {sectionType === "whop-hero" && (
+          <>
+            <TextInput
+              label="Badge"
+              value={selectedSection.content.badge || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+              placeholder="e.g., #1 Course"
+            />
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextInput
+              label="Accent Heading"
+              value={selectedSection.content.accentHeading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { accentHeading: v })}
+              placeholder="Highlighted text"
+            />
+            <TextAreaInput
+              label="Subheading"
+              value={selectedSection.content.subheading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <TextInput
+                label="Button Text"
+                value={selectedSection.content.buttonText || ""}
+                onChange={(v) => updateSectionContent(selectedSectionId, { buttonText: v })}
+              />
+              <TextInput
+                label="Button Link"
+                value={selectedSection.content.buttonLink || ""}
+                onChange={(v) => updateSectionContent(selectedSectionId, { buttonLink: v })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <TextInput
+                label="Secondary Button"
+                value={selectedSection.content.secondaryButtonText || ""}
+                onChange={(v) => updateSectionContent(selectedSectionId, { secondaryButtonText: v })}
+              />
+              <TextInput
+                label="Secondary Link"
+                value={selectedSection.content.secondaryButtonLink || ""}
+                onChange={(v) => updateSectionContent(selectedSectionId, { secondaryButtonLink: v })}
+              />
+            </div>
+            <TextInput
+              label="Hero Image URL"
+              value={selectedSection.content.imageUrl || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { imageUrl: v })}
+            />
+            <div className="border-t border-white/5 pt-4 mt-4">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide mb-3">
+                Creator Info
+              </label>
+              <div className="space-y-3">
+                <TextInput
+                  label="Creator Name"
+                  value={selectedSection.content.creatorName || ""}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { creatorName: v })}
+                />
+                <TextInput
+                  label="Creator Role"
+                  value={selectedSection.content.creatorRole || ""}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { creatorRole: v })}
+                />
+                <TextInput
+                  label="Creator Image URL"
+                  value={selectedSection.content.creatorImageUrl || ""}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { creatorImageUrl: v })}
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ==================== WHOP VALUE PROPOSITION SECTION ==================== */}
+        {sectionType === "whop-value-prop" && (
+          <>
+            <TextInput
+              label="Badge"
+              value={selectedSection.content.badge || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+            />
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextAreaInput
+              label="Body"
+              value={selectedSection.content.body || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { body: v })}
+              rows={4}
+            />
+            <TextAreaInput
+              label="Pull Quote"
+              value={selectedSection.content.pullQuote || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { pullQuote: v })}
+              rows={2}
+            />
+            <TextInput
+              label="Solution Teaser"
+              value={selectedSection.content.solutionTeaser || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { solutionTeaser: v })}
+            />
+            <ArrayEditor
+              label="Pain Points"
+              items={selectedSection.content.painPoints || []}
+              onChange={(painPoints) => updateSectionContent(selectedSectionId, { painPoints })}
+              placeholder="Add pain point"
+            />
+          </>
+        )}
+
+        {/* ==================== WHOP OFFER SECTION ==================== */}
+        {sectionType === "whop-offer" && (
+          <>
+            <TextInput
+              label="Badge"
+              value={selectedSection.content.badge || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+            />
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextAreaInput
+              label="Subheading"
+              value={selectedSection.content.subheading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+            />
+            <ArrayEditor
+              label="Features List"
+              items={selectedSection.content.features || []}
+              onChange={(features) => updateSectionContent(selectedSectionId, { features })}
+              placeholder="Add feature"
+            />
+            <ItemsSection label="Offer Items">
+              {selectedSection.items?.map((item, index) => (
+                <ItemCard
+                  key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
+                  index={index}
+                  isSelected={selectedItemId === item.id}
+                  onRemove={() => removeItem(selectedSectionId, item.id)}
+                >
+                  <TextInput
+                    label="Title"
+                    value={item.title || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })}
+                  />
+                  <TextAreaInput
+                    label="Description"
+                    value={item.description || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })}
+                    rows={2}
+                  />
+                  <TextInput
+                    label="Icon"
+                    value={item.icon || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { icon: v })}
+                    placeholder="e.g., 🎯"
+                  />
+                  <TextInput
+                    label="Image URL"
+                    value={item.imageUrl || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { imageUrl: v })}
+                  />
+                </ItemCard>
+              ))}
+              <button
+                onClick={() => addItem(selectedSectionId)}
+                className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+              >
+                + Add Item
+              </button>
+            </ItemsSection>
+          </>
+        )}
+
+        {/* ==================== WHOP CTA SECTION ==================== */}
+        {sectionType === "whop-cta" && (
+          <>
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextAreaInput
+              label="Subheading"
+              value={selectedSection.content.subheading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <TextInput
+                label="Button Text"
+                value={selectedSection.content.buttonText || ""}
+                onChange={(v) => updateSectionContent(selectedSectionId, { buttonText: v })}
+              />
+              <TextInput
+                label="Button Link"
+                value={selectedSection.content.buttonLink || ""}
+                onChange={(v) => updateSectionContent(selectedSectionId, { buttonLink: v })}
+              />
+            </div>
+            <TextInput
+              label="Creator Name"
+              value={selectedSection.content.creatorName || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { creatorName: v })}
+            />
+            <TextInput
+              label="Creator Image URL"
+              value={selectedSection.content.creatorImageUrl || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { creatorImageUrl: v })}
+            />
+            <TextInput
+              label="Trust Text"
+              value={selectedSection.content.trustText || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { trustText: v })}
+              placeholder="e.g., Join 10,000+ students"
+            />
+          </>
+        )}
+
+        {/* ==================== WHOP COMPARISON SECTION ==================== */}
+        {sectionType === "whop-comparison" && (
+          <>
+            <TextInput
+              label="Badge"
+              value={selectedSection.content.badge || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+            />
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextAreaInput
+              label="Subheading"
+              value={selectedSection.content.subheading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+            />
+            <ItemsSection label="Comparison Columns">
+              {selectedSection.items?.map((item, index) => (
+                <ItemCard
+                  key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
+                  index={index}
+                  isSelected={selectedItemId === item.id}
+                  onRemove={() => removeItem(selectedSectionId, item.id)}
+                >
+                  <TextInput
+                    label="Column Title"
+                    value={item.title || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })}
+                  />
+                  <ArrayEditor
+                    label="Features"
+                    items={item.features || []}
+                    onChange={(features) => updateItem(selectedSectionId, item.id, { features })}
+                    placeholder="Add feature"
+                  />
+                </ItemCard>
+              ))}
+              <button
+                onClick={() => addItem(selectedSectionId)}
+                className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+              >
+                + Add Column
+              </button>
+            </ItemsSection>
+          </>
+        )}
+
+        {/* ==================== WHOP CREATOR SECTION ==================== */}
+        {sectionType === "whop-creator" && (
+          <>
+            <TextInput
+              label="Badge"
+              value={selectedSection.content.badge || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+            />
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextAreaInput
+              label="Subheading"
+              value={selectedSection.content.subheading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+            />
+            <TextInput
+              label="Credential Badge"
+              value={selectedSection.content.credentialBadge || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { credentialBadge: v })}
+              placeholder="e.g., Featured Creator"
+            />
+            <ArrayEditor
+              label="Credentials"
+              items={selectedSection.content.credentials || []}
+              onChange={(credentials) => updateSectionContent(selectedSectionId, { credentials })}
+              placeholder="Add credential"
+            />
+            <StatsEditor
+              stats={selectedSection.content.stats || [
+                { value: 15000, suffix: "+", label: "Students" },
+                { value: 10, prefix: "$", suffix: "M+", label: "Revenue Generated" },
+                { value: 50, suffix: "+", label: "Hours of Content" },
+              ]}
+              onChange={(stats) => updateSectionContent(selectedSectionId, { stats })}
+            />
+            <ItemsSection label="Creator Info">
+              {selectedSection.items?.map((item, index) => (
+                <ItemCard
+                  key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
+                  index={index}
+                  isSelected={selectedItemId === item.id}
+                  onRemove={() => removeItem(selectedSectionId, item.id)}
+                >
+                  <TextInput
+                    label="Name"
+                    value={item.title || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })}
+                  />
+                  <TextInput
+                    label="Role"
+                    value={item.role || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { role: v })}
+                  />
+                  <TextAreaInput
+                    label="Description"
+                    value={item.description || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })}
+                    rows={2}
+                  />
+                  <TextInput
+                    label="Image URL"
+                    value={item.imageUrl || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { imageUrl: v })}
+                  />
+                </ItemCard>
+              ))}
+              <button
+                onClick={() => addItem(selectedSectionId)}
+                className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+              >
+                + Add Creator
+              </button>
+            </ItemsSection>
+          </>
+        )}
+
+        {/* ==================== WHOP CURRICULUM SECTION ==================== */}
+        {sectionType === "whop-curriculum" && (
+          <>
+            <TextInput
+              label="Badge"
+              value={selectedSection.content.badge || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+            />
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextAreaInput
+              label="Subheading"
+              value={selectedSection.content.subheading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+            />
+            <TextInput
+              label="Course Image URL"
+              value={selectedSection.content.imageUrl || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { imageUrl: v })}
+            />
+            <ArrayEditor
+              label="Highlights"
+              items={selectedSection.content.highlights || []}
+              onChange={(highlights) => updateSectionContent(selectedSectionId, { highlights })}
+              placeholder="Add highlight"
+            />
+            <ItemsSection label="Modules">
+              {selectedSection.items?.map((item, index) => (
+                <ItemCard
+                  key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
+                  index={index}
+                  isSelected={selectedItemId === item.id}
+                  onRemove={() => removeItem(selectedSectionId, item.id)}
+                >
+                  <TextInput
+                    label="Title"
+                    value={item.title || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })}
+                  />
+                  <TextInput
+                    label="Duration"
+                    value={item.duration || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { duration: v })}
+                    placeholder="e.g., 2 hours"
+                  />
+                  <TextAreaInput
+                    label="Description"
+                    value={item.description || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })}
+                    rows={2}
+                  />
+                  <TextInput
+                    label="Icon"
+                    value={item.icon || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { icon: v })}
+                    placeholder="e.g., 📚"
+                  />
+                  <ArrayEditor
+                    label="Lessons"
+                    items={item.lessons || item.features || []}
+                    onChange={(lessons) => updateItem(selectedSectionId, item.id, { lessons })}
+                    placeholder="Add lesson"
+                  />
+                </ItemCard>
+              ))}
+              <button
+                onClick={() => addItem(selectedSectionId)}
+                className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+              >
+                + Add Module
+              </button>
+            </ItemsSection>
+          </>
+        )}
+
+        {/* ==================== WHOP RESULTS SECTION ==================== */}
+        {sectionType === "whop-results" && (
+          <>
+            <TextInput
+              label="Badge"
+              value={selectedSection.content.badge || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+            />
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextAreaInput
+              label="Subheading"
+              value={selectedSection.content.subheading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+            />
+            <TextInput
+              label="Summary"
+              value={selectedSection.content.summary || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { summary: v })}
+            />
+            <ItemsSection label="Results">
+              {selectedSection.items?.map((item, index) => (
+                <ItemCard
+                  key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
+                  index={index}
+                  isSelected={selectedItemId === item.id}
+                  onRemove={() => removeItem(selectedSectionId, item.id)}
+                >
+                  <TextInput
+                    label="Title"
+                    value={item.title || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })}
+                  />
+                  <TextInput
+                    label="Result"
+                    value={item.result || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { result: v })}
+                    placeholder="e.g., +500% Growth"
+                  />
+                  <TextAreaInput
+                    label="Description"
+                    value={item.description || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })}
+                    rows={2}
+                  />
+                  <TextInput
+                    label="Image URL"
+                    value={item.imageUrl || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { imageUrl: v })}
+                  />
+                </ItemCard>
+              ))}
+              <button
+                onClick={() => addItem(selectedSectionId)}
+                className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+              >
+                + Add Result
+              </button>
+            </ItemsSection>
+          </>
+        )}
+
+        {/* ==================== WHOP TESTIMONIALS SECTION ==================== */}
+        {sectionType === "whop-testimonials" && (
+          <>
+            <TextInput
+              label="Badge"
+              value={selectedSection.content.badge || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+            />
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextAreaInput
+              label="Subheading"
+              value={selectedSection.content.subheading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+            />
+            <TextInput
+              label="Trust Summary"
+              value={selectedSection.content.trustSummary || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { trustSummary: v })}
+              placeholder="e.g., Join 5,000+ happy students"
+            />
+            <ItemsSection label="Testimonials">
+              {selectedSection.items?.map((item, index) => (
+                <ItemCard
+                  key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
+                  index={index}
+                  isSelected={selectedItemId === item.id}
+                  onRemove={() => removeItem(selectedSectionId, item.id)}
+                >
+                  <TextAreaInput
+                    label="Quote"
+                    value={item.quote || item.description || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { quote: v, description: v })}
+                    rows={3}
+                  />
+                  <TextInput
+                    label="Result"
+                    value={item.result || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { result: v })}
+                    placeholder="e.g., Made $10k/month"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <TextInput
+                      label="Name"
+                      value={item.name || item.title || ""}
+                      onChange={(v) => updateItem(selectedSectionId, item.id, { name: v, title: v })}
+                    />
+                    <TextInput
+                      label="Role"
+                      value={item.role || ""}
+                      onChange={(v) => updateItem(selectedSectionId, item.id, { role: v })}
+                    />
+                  </div>
+                  <TextInput
+                    label="Avatar URL"
+                    value={item.imageUrl || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { imageUrl: v })}
+                  />
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-white/50">Rating:</label>
+                    <select
+                      value={item.rating || 5}
+                      onChange={(e) => updateItem(selectedSectionId, item.id, { rating: parseInt(e.target.value) })}
+                      className="px-2 py-1 rounded bg-white/5 border border-white/10 text-xs text-white"
+                    >
+                      {[1, 2, 3, 4, 5].map((r) => (
+                        <option key={r} value={r}>{r} stars</option>
+                      ))}
+                    </select>
+                  </div>
+                </ItemCard>
+              ))}
+              <button
+                onClick={() => addItem(selectedSectionId)}
+                className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+              >
+                + Add Testimonial
+              </button>
+            </ItemsSection>
+          </>
+        )}
+
+        {/* ==================== WHOP FINAL CTA SECTION ==================== */}
+        {sectionType === "whop-final-cta" && (
+          <>
+            <TextInput
+              label="Badge"
+              value={selectedSection.content.badge || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+            />
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextAreaInput
+              label="Subheading"
+              value={selectedSection.content.subheading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+            />
+            <div className="border-t border-white/5 pt-4 mt-4">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide mb-3">
+                Pricing
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <TextInput
+                  label="Original Price"
+                  value={selectedSection.content.originalPrice || ""}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { originalPrice: v })}
+                  placeholder="e.g., 997"
+                />
+                <TextInput
+                  label="Sale Price"
+                  value={selectedSection.content.price || ""}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { price: v })}
+                />
+              </div>
+              <TextInput
+                label="Price Period"
+                value={selectedSection.content.pricePeriod || ""}
+                onChange={(v) => updateSectionContent(selectedSectionId, { pricePeriod: v })}
+                placeholder="e.g., /month or one-time"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <TextInput
+                label="Button Text"
+                value={selectedSection.content.buttonText || ""}
+                onChange={(v) => updateSectionContent(selectedSectionId, { buttonText: v })}
+              />
+              <TextInput
+                label="Button Link"
+                value={selectedSection.content.buttonLink || ""}
+                onChange={(v) => updateSectionContent(selectedSectionId, { buttonLink: v })}
+              />
+            </div>
+            <TextInput
+              label="Social Proof"
+              value={selectedSection.content.socialProof || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { socialProof: v })}
+              placeholder="e.g., 10,000+ students enrolled"
+            />
+            <div className="border-t border-white/5 pt-4 mt-4">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide mb-3">
+                Creator Info
+              </label>
+              <div className="space-y-3">
+                <TextInput
+                  label="Creator Name"
+                  value={selectedSection.content.creatorName || ""}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { creatorName: v })}
+                />
+                <TextInput
+                  label="Creator Role"
+                  value={selectedSection.content.creatorRole || ""}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { creatorRole: v })}
+                />
+                <TextInput
+                  label="Creator Image URL"
+                  value={selectedSection.content.creatorImageUrl || ""}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { creatorImageUrl: v })}
+                />
+              </div>
+            </div>
+            <ItemsSection label="Trust Badges">
+              {selectedSection.items?.map((item, index) => (
+                <ItemCard
+                  key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
+                  index={index}
+                  isSelected={selectedItemId === item.id}
+                  onRemove={() => removeItem(selectedSectionId, item.id)}
+                >
+                  <TextInput
+                    label="Icon"
+                    value={item.icon || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { icon: v })}
+                    placeholder="e.g., 🔒"
+                  />
+                  <TextInput
+                    label="Label"
+                    value={item.label || item.title || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { label: v, title: v })}
+                  />
+                </ItemCard>
+              ))}
+              <button
+                onClick={() => addItem(selectedSectionId)}
+                className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+              >
+                + Add Trust Badge
+              </button>
+            </ItemsSection>
+          </>
+        )}
+
+        {/* ==================== GLASS CTA SECTION ==================== */}
+        {sectionType === "glass-cta" && (
+          <>
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextAreaInput
+              label="Subheading"
+              value={selectedSection.content.subheading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <TextInput
+                label="Button Text"
+                value={selectedSection.content.buttonText || ""}
+                onChange={(v) => updateSectionContent(selectedSectionId, { buttonText: v })}
+              />
+              <TextInput
+                label="Button Link"
+                value={selectedSection.content.buttonLink || ""}
+                onChange={(v) => updateSectionContent(selectedSectionId, { buttonLink: v })}
+              />
+            </div>
+            <div className="border-t border-white/5 pt-4 mt-4">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide mb-3">
+                Colors
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                <ColorInput
+                  label="Background"
+                  value={selectedSection.content.backgroundColor || "#141212"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { backgroundColor: v })}
+                />
+                <ColorInput
+                  label="Text"
+                  value={selectedSection.content.textColor || "#FCF6F5"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { textColor: v })}
+                />
+                <ColorInput
+                  label="Accent"
+                  value={selectedSection.content.accentColor || "#FA4616"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { accentColor: v })}
+                />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ==================== GLASS FEATURES SECTION ==================== */}
+        {sectionType === "glass-features" && (
+          <>
+            <TextInput
+              label="Badge"
+              value={selectedSection.content.badge || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+            />
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextAreaInput
+              label="Subheading"
+              value={selectedSection.content.subheading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+            />
+            <div className="border-t border-white/5 pt-4 mt-4">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide mb-3">
+                Colors
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                <ColorInput
+                  label="Background"
+                  value={selectedSection.content.backgroundColor || "#141212"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { backgroundColor: v })}
+                />
+                <ColorInput
+                  label="Text"
+                  value={selectedSection.content.textColor || "#FCF6F5"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { textColor: v })}
+                />
+                <ColorInput
+                  label="Accent"
+                  value={selectedSection.content.accentColor || "#FA4616"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { accentColor: v })}
+                />
+              </div>
+            </div>
+            <ItemsSection label="Features">
+              {selectedSection.items?.map((item, index) => (
+                <ItemCard
+                  key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
+                  index={index}
+                  isSelected={selectedItemId === item.id}
+                  onRemove={() => removeItem(selectedSectionId, item.id)}
+                >
+                  <TextInput
+                    label="Icon"
+                    value={item.icon || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { icon: v })}
+                    placeholder="e.g., 🚀"
+                  />
+                  <TextInput
+                    label="Title"
+                    value={item.title || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })}
+                  />
+                  <TextAreaInput
+                    label="Description"
+                    value={item.description || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })}
+                    rows={2}
+                  />
+                </ItemCard>
+              ))}
+              <button
+                onClick={() => addItem(selectedSectionId)}
+                className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+              >
+                + Add Feature
+              </button>
+            </ItemsSection>
+          </>
+        )}
+
+        {/* ==================== GLASS FOUNDERS SECTION ==================== */}
+        {sectionType === "glass-founders" && (
+          <>
+            <TextInput
+              label="Badge"
+              value={selectedSection.content.badge || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+            />
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextAreaInput
+              label="Subheading"
+              value={selectedSection.content.subheading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+            />
+            <div className="border-t border-white/5 pt-4 mt-4">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide mb-3">
+                Colors
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                <ColorInput
+                  label="Background"
+                  value={selectedSection.content.backgroundColor || "#141212"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { backgroundColor: v })}
+                />
+                <ColorInput
+                  label="Text"
+                  value={selectedSection.content.textColor || "#FCF6F5"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { textColor: v })}
+                />
+                <ColorInput
+                  label="Accent"
+                  value={selectedSection.content.accentColor || "#FA4616"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { accentColor: v })}
+                />
+              </div>
+            </div>
+            <ItemsSection label="Team Members">
+              {selectedSection.items?.map((item, index) => (
+                <ItemCard
+                  key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
+                  index={index}
+                  isSelected={selectedItemId === item.id}
+                  onRemove={() => removeItem(selectedSectionId, item.id)}
+                >
+                  <TextInput
+                    label="Name"
+                    value={item.title || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })}
+                  />
+                  <TextInput
+                    label="Role"
+                    value={item.role || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { role: v })}
+                  />
+                  <TextAreaInput
+                    label="Bio"
+                    value={item.bio || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { bio: v })}
+                    rows={2}
+                  />
+                  <TextInput
+                    label="Image URL"
+                    value={item.imageUrl || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { imageUrl: v })}
+                  />
+                  <TextInput
+                    label="Label Badge"
+                    value={item.label || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { label: v })}
+                    placeholder="e.g., Serial Entrepreneur"
+                  />
+                  <ArrayEditor
+                    label="Feature Badges"
+                    items={item.features || []}
+                    onChange={(features) => updateItem(selectedSectionId, item.id, { features })}
+                    placeholder="Add badge (e.g., YC Alumni)"
+                  />
+                </ItemCard>
+              ))}
+              <button
+                onClick={() => addItem(selectedSectionId)}
+                className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+              >
+                + Add Team Member
+              </button>
+            </ItemsSection>
+          </>
+        )}
+
+        {/* ==================== GLASS TESTIMONIALS SECTION ==================== */}
+        {sectionType === "glass-testimonials" && (
+          <>
+            <TextInput
+              label="Badge"
+              value={selectedSection.content.badge || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+            />
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextAreaInput
+              label="Subheading"
+              value={selectedSection.content.subheading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+            />
+            <div className="border-t border-white/5 pt-4 mt-4">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide mb-3">
+                Colors
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                <ColorInput
+                  label="Background"
+                  value={selectedSection.content.backgroundColor || "#141212"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { backgroundColor: v })}
+                />
+                <ColorInput
+                  label="Text"
+                  value={selectedSection.content.textColor || "#FCF6F5"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { textColor: v })}
+                />
+                <ColorInput
+                  label="Accent"
+                  value={selectedSection.content.accentColor || "#FA4616"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { accentColor: v })}
+                />
+              </div>
+            </div>
+            <ItemsSection label="Testimonials">
+              {selectedSection.items?.map((item, index) => (
+                <ItemCard
+                  key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
+                  index={index}
+                  isSelected={selectedItemId === item.id}
+                  onRemove={() => removeItem(selectedSectionId, item.id)}
+                >
+                  <TextAreaInput
+                    label="Quote"
+                    value={item.description || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })}
+                    rows={3}
+                  />
+                  <TextInput
+                    label="Author"
+                    value={item.author || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { author: v })}
+                  />
+                  <TextInput
+                    label="Role"
+                    value={item.role || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { role: v })}
+                  />
+                  <TextInput
+                    label="Result Badge"
+                    value={item.title || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })}
+                    placeholder="e.g., $50K MRR"
+                  />
+                  <TextInput
+                    label="Image URL"
+                    value={item.imageUrl || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { imageUrl: v })}
+                  />
+                  <NumberInput
+                    label="Rating (1-5)"
+                    value={item.rating || 5}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { rating: v })}
+                    min={1}
+                    max={5}
+                  />
+                </ItemCard>
+              ))}
+              <button
+                onClick={() => addItem(selectedSectionId)}
+                className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+              >
+                + Add Testimonial
+              </button>
+            </ItemsSection>
+          </>
+        )}
+
+        {/* ==================== GLASS PRICING SECTION ==================== */}
+        {sectionType === "glass-pricing" && (
+          <>
+            <TextInput
+              label="Badge"
+              value={selectedSection.content.badge || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+            />
+            <TextInput
+              label="Heading"
+              value={selectedSection.content.heading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+            />
+            <TextAreaInput
+              label="Subheading"
+              value={selectedSection.content.subheading || ""}
+              onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+            />
+            <div className="border-t border-white/5 pt-4 mt-4">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide mb-3">
+                Colors
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                <ColorInput
+                  label="Background"
+                  value={selectedSection.content.backgroundColor || "#141212"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { backgroundColor: v })}
+                />
+                <ColorInput
+                  label="Text"
+                  value={selectedSection.content.textColor || "#FCF6F5"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { textColor: v })}
+                />
+                <ColorInput
+                  label="Accent"
+                  value={selectedSection.content.accentColor || "#FA4616"}
+                  onChange={(v) => updateSectionContent(selectedSectionId, { accentColor: v })}
+                />
+              </div>
+            </div>
+            <ItemsSection label="Pricing Tiers">
+              {selectedSection.items?.map((item, index) => (
+                <ItemCard
+                  key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
+                  index={index}
+                  isSelected={selectedItemId === item.id}
+                  onRemove={() => removeItem(selectedSectionId, item.id)}
+                >
+                  <TextInput
+                    label="Plan Name"
+                    value={item.title || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })}
+                  />
+                  <TextInput
+                    label="Price"
+                    value={item.price || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { price: v })}
+                    placeholder="e.g., $29/mo"
+                  />
+                  <TextInput
+                    label="Description"
+                    value={item.description || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })}
+                  />
+                  <ArrayEditor
+                    label="Features"
+                    items={item.features || []}
+                    onChange={(features) => updateItem(selectedSectionId, item.id, { features })}
+                    placeholder="Add feature"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <TextInput
+                      label="Button Text"
+                      value={item.buttonText || ""}
+                      onChange={(v) => updateItem(selectedSectionId, item.id, { buttonText: v })}
+                    />
+                    <TextInput
+                      label="Button Link"
+                      value={item.buttonLink || ""}
+                      onChange={(v) => updateItem(selectedSectionId, item.id, { buttonLink: v })}
+                    />
+                  </div>
+                  <VisibilityToggle
+                    label="Popular Badge"
+                    checked={item.popular || false}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { popular: v })}
+                  />
+                </ItemCard>
+              ))}
+              <button
+                onClick={() => addItem(selectedSectionId)}
+                className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+              >
+                + Add Pricing Tier
+              </button>
+            </ItemsSection>
           </>
         )}
 
@@ -2580,17 +4788,163 @@ export default function PropertyPanel() {
             className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
           >
             <option value="none">None</option>
-            <option value="elegant-shapes">Elegant Shapes</option>
-            <option value="background-circles">Animated Circles</option>
-            <option value="background-paths">Floating Paths</option>
-            <option value="glow">Glow Effect</option>
-            <option value="shooting-stars">Shooting Stars</option>
-            <option value="stars-background">Starry Night</option>
-            <option value="wavy-background">Wavy Lines</option>
+            <optgroup label="Premium Effects">
+              <option value="aurora">Aurora (Northern Lights)</option>
+              <option value="spotlight">Spotlight</option>
+              <option value="background-beams">Background Beams</option>
+              <option value="meteors">Meteors</option>
+              <option value="sparkles">Sparkles</option>
+            </optgroup>
+            <optgroup label="Classic Effects">
+              <option value="elegant-shapes">Elegant Shapes</option>
+              <option value="background-circles">Animated Circles</option>
+              <option value="background-paths">Floating Paths</option>
+              <option value="glow">Glow Effect</option>
+              <option value="shooting-stars">Shooting Stars</option>
+              <option value="stars-background">Starry Night</option>
+              <option value="wavy-background">Wavy Lines</option>
+            </optgroup>
           </select>
           <p className="text-xs text-white/30">
             Animated background effects work best on dark sections
           </p>
+
+          {/* Aurora Configuration */}
+          {selectedSection.content.backgroundEffect === "aurora" && (
+            <div className="pt-3 space-y-3 border-t border-white/5">
+              <label className="block text-xs font-medium text-white/40 uppercase tracking-wide">
+                Aurora Settings
+              </label>
+
+              {/* Primary Color */}
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-white/50">Primary Color</span>
+                <input
+                  type="color"
+                  value={selectedSection.content.backgroundConfig?.primaryColor || "#3b82f6"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, {
+                    backgroundConfig: {
+                      ...selectedSection.content.backgroundConfig,
+                      primaryColor: e.target.value,
+                    },
+                  })}
+                  className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
+                />
+              </div>
+
+              {/* Secondary Color */}
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-white/50">Secondary Color</span>
+                <input
+                  type="color"
+                  value={selectedSection.content.backgroundConfig?.secondaryColor || "#8b5cf6"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, {
+                    backgroundConfig: {
+                      ...selectedSection.content.backgroundConfig,
+                      secondaryColor: e.target.value,
+                    },
+                  })}
+                  className="w-8 h-8 rounded cursor-pointer border-0 bg-transparent"
+                />
+              </div>
+
+              {/* Animation Speed */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white/50">Animation Speed</span>
+                  <span className="text-xs text-white/30 capitalize">
+                    {selectedSection.content.backgroundConfig?.speed || "medium"}
+                  </span>
+                </div>
+                <select
+                  value={selectedSection.content.backgroundConfig?.speed || "medium"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, {
+                    backgroundConfig: {
+                      ...selectedSection.content.backgroundConfig,
+                      speed: e.target.value as "slow" | "medium" | "fast",
+                    },
+                  })}
+                  className="w-full px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                >
+                  <option value="slow">Slow (120s)</option>
+                  <option value="medium">Medium (60s)</option>
+                  <option value="fast">Fast (30s)</option>
+                </select>
+              </div>
+
+              {/* Intensity */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white/50">Intensity</span>
+                  <span className="text-xs text-white/30">
+                    {selectedSection.content.backgroundConfig?.intensity || 50}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="100"
+                  value={selectedSection.content.backgroundConfig?.intensity || 50}
+                  onChange={(e) => updateSectionContent(selectedSectionId, {
+                    backgroundConfig: {
+                      ...selectedSection.content.backgroundConfig,
+                      intensity: parseInt(e.target.value),
+                    },
+                  })}
+                  className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500"
+                />
+              </div>
+
+              {/* Blur Amount */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white/50">Blur Amount</span>
+                  <span className="text-xs text-white/30">
+                    {selectedSection.content.backgroundConfig?.blurAmount || 10}px
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="30"
+                  value={selectedSection.content.backgroundConfig?.blurAmount || 10}
+                  onChange={(e) => updateSectionContent(selectedSectionId, {
+                    backgroundConfig: {
+                      ...selectedSection.content.backgroundConfig,
+                      blurAmount: parseInt(e.target.value),
+                    },
+                  })}
+                  className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500"
+                />
+              </div>
+
+              {/* Show Radial Gradient */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-white/50">Radial Gradient Mask</span>
+                <button
+                  onClick={() => updateSectionContent(selectedSectionId, {
+                    backgroundConfig: {
+                      ...selectedSection.content.backgroundConfig,
+                      showRadialGradient: !(selectedSection.content.backgroundConfig?.showRadialGradient ?? true),
+                    },
+                  })}
+                  className={`w-10 h-5 rounded-full transition-colors ${
+                    (selectedSection.content.backgroundConfig?.showRadialGradient ?? true)
+                      ? "bg-amber-500"
+                      : "bg-white/20"
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                      (selectedSection.content.backgroundConfig?.showRadialGradient ?? true)
+                        ? "translate-x-5"
+                        : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Header Position - only for header sections */}
@@ -2659,6 +5013,725 @@ export default function PropertyPanel() {
             </div>
           </div>
         )}
+
+        {/* Loader Section Controls */}
+        {selectedSection.type === "loader" && (
+          <div className="pt-4 border-t border-white/5 space-y-4">
+            <h3 className="text-xs font-semibold text-white/70 uppercase tracking-wide">
+              Loader Settings
+            </h3>
+
+            {/* Logo URL */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Logo URL
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.logoUrl || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { logoUrl: e.target.value })}
+                placeholder="https://example.com/logo.png"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+              <p className="text-xs text-white/30">
+                Supports PNG, JPG, SVG, and GIF images
+              </p>
+            </div>
+
+            {/* Logo Size */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Logo Size
+              </label>
+              <select
+                value={selectedSection.content.logoSize || "medium"}
+                onChange={(e) => updateSectionContent(selectedSectionId, { logoSize: e.target.value as "small" | "medium" | "large" | "custom" })}
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              >
+                <option value="small">Small (80px)</option>
+                <option value="medium">Medium (120px)</option>
+                <option value="large">Large (180px)</option>
+                <option value="custom">Custom Size</option>
+              </select>
+            </div>
+
+            {/* Custom Logo Size (shown when custom is selected) */}
+            {selectedSection.content.logoSize === "custom" && (
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                  Custom Logo Width
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="40"
+                    max="400"
+                    value={selectedSection.content.customLogoSize || 120}
+                    onChange={(e) => updateSectionContent(selectedSectionId, { customLogoSize: Number(e.target.value) })}
+                    className="flex-1 accent-amber-500"
+                  />
+                  <span className="text-xs text-white/50 w-14 text-right">
+                    {selectedSection.content.customLogoSize || 120}px
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Heading */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Heading
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.heading || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { heading: e.target.value })}
+                placeholder="Welcome"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+            </div>
+
+            {/* Button Text */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Button Text
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.buttonText || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { buttonText: e.target.value })}
+                placeholder="Enter"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+            </div>
+
+            {/* Button Link */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Button Link
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.buttonLink || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { buttonLink: e.target.value })}
+                placeholder="#content or https://example.com"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+              <p className="text-xs text-white/30">
+                Use #id for smooth scroll or URL for navigation
+              </p>
+            </div>
+
+            {/* Button Variant */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Button Variant
+              </label>
+              <select
+                value={selectedSection.content.buttonVariant || "primary"}
+                onChange={(e) => updateSectionContent(selectedSectionId, { buttonVariant: e.target.value as ButtonVariant })}
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              >
+                <option value="primary">Primary</option>
+                <option value="secondary">Secondary</option>
+                <option value="outline">Outline</option>
+                <option value="ghost">Ghost</option>
+              </select>
+            </div>
+
+            {/* Background Color */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Background Color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={selectedSection.content.backgroundColor || "#0a0a0a"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { backgroundColor: e.target.value })}
+                  className="h-10 w-16 rounded-lg bg-white/5 border border-white/10 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.backgroundColor || "#0a0a0a"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { backgroundColor: e.target.value })}
+                  placeholder="#0a0a0a"
+                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              </div>
+            </div>
+
+            {/* Text Color */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Text Color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={selectedSection.content.textColor || "#ffffff"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { textColor: e.target.value })}
+                  className="h-10 w-16 rounded-lg bg-white/5 border border-white/10 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.textColor || "#ffffff"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { textColor: e.target.value })}
+                  placeholder="#ffffff"
+                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              </div>
+            </div>
+
+            {/* Background Effect */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Background Effect
+              </label>
+              <select
+                value={selectedSection.content.backgroundEffect || "none"}
+                onChange={(e) => updateSectionContent(selectedSectionId, { backgroundEffect: e.target.value as BackgroundEffect })}
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              >
+                <option value="none">None</option>
+                <option value="aurora">Aurora</option>
+                <option value="meteors">Meteors</option>
+                <option value="grid">Grid</option>
+                <option value="gradient">Gradient</option>
+              </select>
+            </div>
+
+            {/* Transition Animation */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Transition Animation
+              </label>
+              <select
+                value={selectedSection.content.transitionAnimation || "fade"}
+                onChange={(e) => updateSectionContent(selectedSectionId, { transitionAnimation: e.target.value as "fade" | "slide" | "zoom" })}
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              >
+                <option value="fade">Fade Out</option>
+                <option value="slide">Slide Up</option>
+                <option value="zoom">Zoom In</option>
+              </select>
+              <p className="text-xs text-white/30">
+                Animation when entering the site
+              </p>
+            </div>
+
+            {/* Transition Duration */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Transition Duration
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="0.3"
+                  max="2.0"
+                  step="0.1"
+                  value={selectedSection.content.transitionDuration || 0.8}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { transitionDuration: Number(e.target.value) })}
+                  className="flex-1 accent-amber-500"
+                />
+                <span className="text-xs text-white/50 w-12 text-right">
+                  {selectedSection.content.transitionDuration || 0.8}s
+                </span>
+              </div>
+              <p className="text-xs text-white/30">
+                Speed of the exit animation
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Value Proposition Section Controls */}
+        {selectedSection.type === "value-proposition" && (
+          <div className="pt-4 border-t border-white/5 space-y-4">
+            <h3 className="text-xs font-semibold text-white/70 uppercase tracking-wide">
+              Value Proposition Settings
+            </h3>
+
+            {/* Badge */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedSection.content.showBadge ?? true}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { showBadge: e.target.checked })}
+                  className="rounded border-white/10 bg-white/5 text-amber-500 focus:ring-amber-500/50"
+                />
+                <span className="text-xs font-medium text-white/50 uppercase tracking-wide">
+                  Show Badge
+                </span>
+              </label>
+              {selectedSection.content.showBadge !== false && (
+                <input
+                  type="text"
+                  value={selectedSection.content.badge || ""}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { badge: e.target.value })}
+                  placeholder="VALUE PROPOSITION"
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              )}
+            </div>
+
+            {/* Heading */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Heading
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.heading || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { heading: e.target.value })}
+                placeholder="Here's How It Works"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+            </div>
+
+            {/* Body Paragraphs */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Body Paragraphs (3-5 recommended)
+              </label>
+              <p className="text-xs text-white/30">
+                Edit paragraphs directly in the preview
+              </p>
+            </div>
+
+            {/* Background Color */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Background Color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={selectedSection.content.backgroundColor || "#ffffff"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { backgroundColor: e.target.value })}
+                  className="h-10 w-16 rounded-lg bg-white/5 border border-white/10 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.backgroundColor || "#ffffff"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { backgroundColor: e.target.value })}
+                  placeholder="#ffffff"
+                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              </div>
+            </div>
+
+            {/* Text Color */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Text Color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={selectedSection.content.textColor || "#111827"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { textColor: e.target.value })}
+                  className="h-10 w-16 rounded-lg bg-white/5 border border-white/10 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.textColor || "#111827"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { textColor: e.target.value })}
+                  placeholder="#111827"
+                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Offer Details Section Controls */}
+        {selectedSection.type === "offer-details" && (
+          <div className="pt-4 border-t border-white/5 space-y-4">
+            <h3 className="text-xs font-semibold text-white/70 uppercase tracking-wide">
+              Offer Details Settings
+            </h3>
+
+            {/* Badge */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedSection.content.showBadge ?? true}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { showBadge: e.target.checked })}
+                  className="rounded border-white/10 bg-white/5 text-amber-500 focus:ring-amber-500/50"
+                />
+                <span className="text-xs font-medium text-white/50 uppercase tracking-wide">
+                  Show Badge
+                </span>
+              </label>
+              {selectedSection.content.showBadge !== false && (
+                <input
+                  type="text"
+                  value={selectedSection.content.badge || ""}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { badge: e.target.value })}
+                  placeholder="THE OFFER"
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              )}
+            </div>
+
+            {/* Heading */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Heading
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.heading || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { heading: e.target.value })}
+                placeholder="What You Get"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Description
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.description || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { description: e.target.value })}
+                placeholder="Everything included in your purchase:"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+            </div>
+
+            {/* Featured Image URL */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Featured Image URL
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.featuredImageUrl || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { featuredImageUrl: e.target.value })}
+                placeholder="https://example.com/product-image.png"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+              <p className="text-xs text-white/30">
+                Large product mockup or screenshot
+              </p>
+            </div>
+
+            {/* Background Color */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Background Color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={selectedSection.content.backgroundColor || "#ffffff"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { backgroundColor: e.target.value })}
+                  className="h-10 w-16 rounded-lg bg-white/5 border border-white/10 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.backgroundColor || "#ffffff"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { backgroundColor: e.target.value })}
+                  placeholder="#ffffff"
+                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              </div>
+            </div>
+
+            {/* Text Color */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Text Color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={selectedSection.content.textColor || "#111827"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { textColor: e.target.value })}
+                  className="h-10 w-16 rounded-lg bg-white/5 border border-white/10 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.textColor || "#111827"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { textColor: e.target.value })}
+                  placeholder="#111827"
+                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              </div>
+            </div>
+
+            {/* Items List Note */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Feature Items (6-10 recommended)
+              </label>
+              <p className="text-xs text-white/30">
+                Manage items in the Items tab below
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Creator Section Controls */}
+        {selectedSection.type === "creator" && (
+          <div className="pt-4 border-t border-white/5 space-y-4">
+            <h3 className="text-xs font-semibold text-white/70 uppercase tracking-wide">
+              Creator/Expert Settings
+            </h3>
+
+            {/* Heading */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Section Heading
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.heading || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { heading: e.target.value })}
+                placeholder="Meet Your Instructor"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+            </div>
+
+            {/* Creator Photo URL */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Creator Photo URL
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.creatorPhotoUrl || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { creatorPhotoUrl: e.target.value })}
+                placeholder="https://example.com/photo.jpg"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+              <p className="text-xs text-white/30">
+                Professional photo or lifestyle shot
+              </p>
+            </div>
+
+            {/* Creator Name */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Creator Name
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.creatorName || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { creatorName: e.target.value })}
+                placeholder="Your Name"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+            </div>
+
+            {/* Creator Role */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Creator Title/Role
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.creatorRole || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { creatorRole: e.target.value })}
+                placeholder="Expert & Founder"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+            </div>
+
+            {/* Creator Bio */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Creator Bio (3-6 paragraphs)
+              </label>
+              <textarea
+                value={selectedSection.content.creatorBio || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { creatorBio: e.target.value })}
+                placeholder="Share your story here. Explain who you are, what you've accomplished, and why you're qualified to help your audience.
+
+Build trust by sharing your experience, credentials, and personal journey. Make it authentic and relatable.
+
+Connect with your audience on an emotional level. Show them you understand their challenges because you've been there too."
+                rows={8}
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+              <p className="text-xs text-white/30">
+                Separate paragraphs with blank lines (double Enter)
+              </p>
+            </div>
+
+            {/* Background Color */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Background Color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={selectedSection.content.backgroundColor || "#ffffff"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { backgroundColor: e.target.value })}
+                  className="h-10 w-16 rounded-lg bg-white/5 border border-white/10 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.backgroundColor || "#ffffff"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { backgroundColor: e.target.value })}
+                  placeholder="#ffffff"
+                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              </div>
+            </div>
+
+            {/* Text Color */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Text Color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={selectedSection.content.textColor || "#111827"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { textColor: e.target.value })}
+                  className="h-10 w-16 rounded-lg bg-white/5 border border-white/10 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.textColor || "#111827"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { textColor: e.target.value })}
+                  placeholder="#111827"
+                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              </div>
+            </div>
+
+            {/* Credentials Note */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Credentials List (optional)
+              </label>
+              <p className="text-xs text-white/30">
+                Edit credentials directly in the schema if needed
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Detailed Features Section Controls */}
+        {selectedSection.type === "detailed-features" && (
+          <div className="pt-4 border-t border-white/5 space-y-4">
+            <h3 className="text-xs font-semibold text-white/70 uppercase tracking-wide">
+              Detailed Features Settings
+            </h3>
+
+            {/* Heading */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Heading
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.heading || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { heading: e.target.value })}
+                placeholder="What's Inside"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+            </div>
+
+            {/* Intro Text */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Intro Text
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.introText || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { introText: e.target.value })}
+                placeholder="Here's everything you'll get access to:"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+              <p className="text-xs text-white/30">
+                Brief introduction before the feature list
+              </p>
+            </div>
+
+            {/* Featured Image URL */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Featured Image URL
+              </label>
+              <input
+                type="text"
+                value={selectedSection.content.featuredImageUrl || ""}
+                onChange={(e) => updateSectionContent(selectedSectionId, { featuredImageUrl: e.target.value })}
+                placeholder="https://example.com/product-dashboard.png"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              />
+              <p className="text-xs text-white/30">
+                Large product dashboard or feature overview image
+              </p>
+            </div>
+
+            {/* Background Color */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Background Color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={selectedSection.content.backgroundColor || "#ffffff"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { backgroundColor: e.target.value })}
+                  className="h-10 w-16 rounded-lg bg-white/5 border border-white/10 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.backgroundColor || "#ffffff"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { backgroundColor: e.target.value })}
+                  placeholder="#ffffff"
+                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              </div>
+            </div>
+
+            {/* Text Color */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Text Color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={selectedSection.content.textColor || "#111827"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { textColor: e.target.value })}
+                  className="h-10 w-16 rounded-lg bg-white/5 border border-white/10 cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={selectedSection.content.textColor || "#111827"}
+                  onChange={(e) => updateSectionContent(selectedSectionId, { textColor: e.target.value })}
+                  placeholder="#111827"
+                  className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                />
+              </div>
+            </div>
+
+            {/* Items List Note */}
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                Feature Items (8-12 recommended)
+              </label>
+              <p className="text-xs text-white/30">
+                Manage detailed features in the Items tab below
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
       )}
@@ -2667,6 +5740,84 @@ export default function PropertyPanel() {
 }
 
 // ==================== HELPER COMPONENTS ====================
+
+// Collapsible section component for organizing settings
+function CollapsibleSection({
+  title,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="border-t border-white/5 pt-3">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between text-xs text-white/60 hover:text-white/80 transition-colors mb-2"
+      >
+        <span className="font-medium uppercase tracking-wider">{title}</span>
+        <svg
+          className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {isOpen && <div className="space-y-3">{children}</div>}
+    </div>
+  );
+}
+
+// Range slider component for numeric inputs
+function RangeSlider({
+  label,
+  value,
+  onChange,
+  min = 0,
+  max = 100,
+  step = 1,
+  unit = "",
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+  unit?: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+        {label}: {value}{unit}
+      </label>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+      />
+    </div>
+  );
+}
+
+// Helper function to get metadata from item
+function getMetadata(item: SectionItem): any {
+  try {
+    return item.metadata ? JSON.parse(item.metadata) : {};
+  } catch {
+    return {};
+  }
+}
 
 function TextInput({
   label,
@@ -2931,6 +6082,89 @@ function NavLinksEditor({
   );
 }
 
+// Stats Editor for Creator Spotlight section
+function StatsEditor({
+  stats,
+  onChange,
+}: {
+  stats: Array<{ value: number; label: string; prefix?: string; suffix?: string }>;
+  onChange: (stats: typeof stats) => void;
+}) {
+  const addStat = () => {
+    onChange([...stats, { value: 100, label: "New Stat", suffix: "+" }]);
+  };
+
+  const removeStat = (index: number) => {
+    onChange(stats.filter((_, i) => i !== index));
+  };
+
+  const updateStat = (index: number, updates: Partial<typeof stats[0]>) => {
+    const newStats = [...stats];
+    newStats[index] = { ...newStats[index], ...updates };
+    onChange(newStats);
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+        Stats
+      </label>
+      <div className="space-y-3">
+        {stats.map((stat, index) => (
+          <div key={index} className="p-3 rounded-lg bg-white/5 space-y-2">
+            <div className="flex gap-2 items-center">
+              <input
+                type="number"
+                value={stat.value}
+                onChange={(e) => updateStat(index, { value: parseInt(e.target.value) || 0 })}
+                placeholder="Value"
+                className="w-20 px-2 py-1.5 rounded bg-white/5 border border-white/10 text-xs text-white focus:outline-none focus:border-white/30"
+              />
+              <input
+                type="text"
+                value={stat.label}
+                onChange={(e) => updateStat(index, { label: e.target.value })}
+                placeholder="Label"
+                className="flex-1 px-2 py-1.5 rounded bg-white/5 border border-white/10 text-xs text-white focus:outline-none focus:border-white/30"
+              />
+              <button
+                onClick={() => removeStat(index)}
+                className="p-1 rounded hover:bg-red-500/20 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5 text-white/40 hover:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={stat.prefix || ""}
+                onChange={(e) => updateStat(index, { prefix: e.target.value })}
+                placeholder="Prefix ($)"
+                className="w-24 px-2 py-1.5 rounded bg-white/5 border border-white/10 text-xs text-white focus:outline-none focus:border-white/30"
+              />
+              <input
+                type="text"
+                value={stat.suffix || ""}
+                onChange={(e) => updateStat(index, { suffix: e.target.value })}
+                placeholder="Suffix (+, M+)"
+                className="flex-1 px-2 py-1.5 rounded bg-white/5 border border-white/10 text-xs text-white focus:outline-none focus:border-white/30"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={addStat}
+        className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+      >
+        + Add Stat
+      </button>
+    </div>
+  );
+}
+
 function ItemsSection({
   label,
   children,
@@ -2948,19 +6182,29 @@ function ItemsSection({
   );
 }
 
-function ItemCard({
-  index,
-  children,
-  onRemove,
-}: {
+const ItemCard = React.forwardRef<HTMLDivElement, {
   index: number;
   children: React.ReactNode;
   onRemove: () => void;
-}) {
+  isSelected?: boolean;
+}>(({ index, children, onRemove, isSelected = false }, ref) => {
   return (
-    <div className="p-3 rounded-lg bg-white/5 border border-white/10 space-y-3">
+    <div
+      ref={ref}
+      className={cn(
+        "p-3 rounded-lg border space-y-3 scroll-mt-4 transition-all duration-200",
+        isSelected
+          ? "bg-blue-500/10 border-blue-500/50 ring-2 ring-blue-500/30 shadow-lg"
+          : "bg-white/5 border-white/10"
+      )}
+    >
       <div className="flex items-center justify-between">
-        <span className="text-xs text-white/40">Item {index + 1}</span>
+        <span className={cn(
+          "text-xs uppercase tracking-wider font-medium",
+          isSelected ? "text-blue-400" : "text-white/40"
+        )}>
+          Item {index + 1}
+        </span>
         <button
           onClick={onRemove}
           className="p-1 rounded hover:bg-red-500/20 transition-colors"
@@ -2973,7 +6217,8 @@ function ItemCard({
       {children}
     </div>
   );
-}
+});
+ItemCard.displayName = "ItemCard";
 
 function VisibilityToggle({
   label,
@@ -3040,9 +6285,11 @@ const BUTTON_SIZES: { value: ButtonSize; label: string }[] = [
 function SectionButtonSettings({
   content,
   onUpdate,
+  prefix = "button",
 }: {
   content: SectionContent;
   onUpdate: (updates: Partial<SectionContent>) => void;
+  prefix?: string;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -3073,9 +6320,9 @@ function SectionButtonSettings({
               Style
             </label>
             <select
-              value={content.buttonVariant || 'primary'}
-              onChange={(e) => onUpdate({ buttonVariant: e.target.value as ButtonVariant })}
-              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+              value={(content[`${prefix}Variant` as keyof SectionContent] as string) || 'primary'}
+              onChange={(e) => onUpdate({ [`${prefix}Variant`]: e.target.value as ButtonVariant })}
+              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-1 focus:ring-amber-500/50"
             >
               {BUTTON_VARIANTS.map((v) => (
                 <option key={v.value} value={v.value}>{v.label}</option>
@@ -3092,9 +6339,9 @@ function SectionButtonSettings({
               {BUTTON_SIZES.map((s) => (
                 <button
                   key={s.value}
-                  onClick={() => onUpdate({ buttonSize: s.value })}
+                  onClick={() => onUpdate({ [`${prefix}Size`]: s.value })}
                   className={`px-2 py-1.5 rounded text-xs font-medium transition-colors ${
-                    (content.buttonSize || 'lg') === s.value
+                    (content[`${prefix}Size` as keyof SectionContent] || 'lg') === s.value
                       ? 'bg-[#D6FC51] text-black'
                       : 'bg-white/5 text-white/60 hover:bg-white/10'
                   }`}
@@ -3109,13 +6356,19 @@ function SectionButtonSettings({
           <div className="grid grid-cols-2 gap-2">
             <ColorInput
               label="Background"
-              value={content.buttonBgColor || '#D6FC51'}
-              onChange={(v) => onUpdate({ buttonBgColor: v })}
+              value={(content[`${prefix}BgColor` as keyof SectionContent] as string) || '#D6FC51'}
+              onChange={(v) => {
+                const normalized = normalizeColorToHex(v, '#D6FC51');
+                onUpdate({ [`${prefix}BgColor`]: normalized });
+              }}
             />
             <ColorInput
               label="Text"
-              value={content.buttonTextColor || '#000000'}
-              onChange={(v) => onUpdate({ buttonTextColor: v })}
+              value={(content[`${prefix}TextColor` as keyof SectionContent] as string) || '#000000'}
+              onChange={(v) => {
+                const normalized = normalizeColorToHex(v, '#000000');
+                onUpdate({ [`${prefix}TextColor`]: normalized });
+              }}
             />
           </div>
 
@@ -3130,17 +6383,20 @@ function SectionButtonSettings({
                   type="range"
                   min={0}
                   max={4}
-                  value={content.buttonBorderWidth ?? 0}
-                  onChange={(e) => onUpdate({ buttonBorderWidth: parseInt(e.target.value) })}
+                  value={(content[`${prefix}BorderWidth` as keyof SectionContent] as number) ?? 0}
+                  onChange={(e) => onUpdate({ [`${prefix}BorderWidth`]: parseInt(e.target.value) })}
                   className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#D6FC51]"
                 />
-                <span className="text-[10px] text-white/40 w-6 text-right">{content.buttonBorderWidth ?? 0}px</span>
+                <span className="text-[10px] text-white/40 w-6 text-right">{(content[`${prefix}BorderWidth` as keyof SectionContent] as number) ?? 0}px</span>
               </div>
             </div>
             <ColorInput
               label="Border Color"
-              value={content.buttonBorderColor || '#ffffff'}
-              onChange={(v) => onUpdate({ buttonBorderColor: v })}
+              value={(content[`${prefix}BorderColor` as keyof SectionContent] as string) || '#ffffff'}
+              onChange={(v) => {
+                const normalized = normalizeColorToHex(v, '#ffffff');
+                onUpdate({ [`${prefix}BorderColor`]: normalized });
+              }}
             />
           </div>
 
@@ -3154,11 +6410,11 @@ function SectionButtonSettings({
                 type="range"
                 min={0}
                 max={50}
-                value={content.buttonBorderRadius ?? 12}
-                onChange={(e) => onUpdate({ buttonBorderRadius: parseInt(e.target.value) })}
+                value={(content[`${prefix}BorderRadius` as keyof SectionContent] as number) ?? 12}
+                onChange={(e) => onUpdate({ [`${prefix}BorderRadius`]: parseInt(e.target.value) })}
                 className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#D6FC51]"
               />
-              <span className="text-[10px] text-white/40 w-8 text-right">{content.buttonBorderRadius ?? 12}px</span>
+              <span className="text-[10px] text-white/40 w-8 text-right">{(content[`${prefix}BorderRadius` as keyof SectionContent] as number) ?? 12}px</span>
             </div>
           </div>
 
@@ -3166,17 +6422,17 @@ function SectionButtonSettings({
           <div className="grid grid-cols-2 gap-2">
             <NumberInput
               label="Padding X"
-              value={content.buttonPaddingX}
+              value={content[`${prefix}PaddingX` as keyof SectionContent] as number}
               min={8}
               max={64}
-              onChange={(v) => onUpdate({ buttonPaddingX: v })}
+              onChange={(v) => onUpdate({ [`${prefix}PaddingX`]: v })}
             />
             <NumberInput
               label="Padding Y"
-              value={content.buttonPaddingY}
+              value={content[`${prefix}PaddingY` as keyof SectionContent] as number}
               min={4}
               max={32}
-              onChange={(v) => onUpdate({ buttonPaddingY: v })}
+              onChange={(v) => onUpdate({ [`${prefix}PaddingY`]: v })}
             />
           </div>
 
@@ -3184,18 +6440,18 @@ function SectionButtonSettings({
           <div className="grid grid-cols-2 gap-2">
             <NumberInput
               label="Font Size"
-              value={content.buttonFontSize}
+              value={content[`${prefix}FontSize` as keyof SectionContent] as number}
               min={10}
               max={24}
-              onChange={(v) => onUpdate({ buttonFontSize: v })}
+              onChange={(v) => onUpdate({ [`${prefix}FontSize`]: v })}
             />
             <div className="space-y-1.5">
               <label className="block text-[10px] font-medium text-white/40 uppercase tracking-wide">
                 Font Weight
               </label>
               <select
-                value={content.buttonFontWeight || 'semibold'}
-                onChange={(e) => onUpdate({ buttonFontWeight: e.target.value as FontWeight })}
+                value={(content[`${prefix}FontWeight` as keyof SectionContent] as string) || 'semibold'}
+                onChange={(e) => onUpdate({ [`${prefix}FontWeight`]: e.target.value as FontWeight })}
                 className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
               >
                 <option value="normal">Normal</option>
@@ -3215,9 +6471,9 @@ function SectionButtonSettings({
               {(['none', 'sm', 'md', 'lg'] as ShadowSize[]).map((s) => (
                 <button
                   key={s}
-                  onClick={() => onUpdate({ buttonShadow: s })}
+                  onClick={() => onUpdate({ [`${prefix}Shadow`]: s })}
                   className={`px-2 py-1.5 rounded text-xs font-medium transition-colors capitalize ${
-                    (content.buttonShadow || 'none') === s
+                    (content[`${prefix}Shadow` as keyof SectionContent] || 'none') === s
                       ? 'bg-[#D6FC51] text-black'
                       : 'bg-white/5 text-white/60 hover:bg-white/10'
                   }`}

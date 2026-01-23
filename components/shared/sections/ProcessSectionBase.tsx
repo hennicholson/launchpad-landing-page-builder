@@ -5,6 +5,8 @@ import type { BaseSectionProps } from "@/lib/shared-section-types";
 import type { SectionItem } from "@/lib/page-schema";
 import SectionButton, { getButtonPropsFromContent } from "./SectionButton";
 import { SectionBackground } from "../SectionBackground";
+import { useEditorStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 // Simple icon component for step numbers
 function StepIcon({ icon, accentColor }: { icon?: string; accentColor: string }) {
@@ -53,6 +55,11 @@ export default function ProcessSectionBase({
 }: BaseSectionProps) {
   const { content, items } = section;
 
+  // Only enable selection in editor mode (when renderText exists)
+  const isEditorMode = !!renderText;
+  const selectItem = useEditorStore((state) => state.selectItem);
+  const selectedItemId = useEditorStore((state) => state.selectedItemId);
+
   // Dynamic colors
   const bgColor = content.backgroundColor || colorScheme.background;
   const textColor = content.textColor || colorScheme.text;
@@ -74,7 +81,7 @@ export default function ProcessSectionBase({
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <SectionBackground effect={content.backgroundEffect} />
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       {/* Background decoration */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-[200px] opacity-10"
@@ -131,13 +138,24 @@ export default function ProcessSectionBase({
             <div className="space-y-12 lg:space-y-24">
               {items.map((item: SectionItem, index: number) => {
                 const isEven = index % 2 === 0;
+                const isSelected = isEditorMode && selectedItemId === item.id;
+
+                const handleClick = (e: React.MouseEvent) => {
+                  if (!isEditorMode) return;
+                  if (window.getSelection()?.toString()) return;
+                  selectItem(section.id, item.id);
+                };
 
                 return (
                   <motion.div
                     key={item.id}
-                    className={`relative flex flex-col lg:flex-row items-start lg:items-center gap-8 ${
-                      isEven ? "lg:flex-row" : "lg:flex-row-reverse"
-                    }`}
+                    onClick={isEditorMode ? handleClick : undefined}
+                    className={cn(
+                      "relative flex flex-col lg:flex-row items-start lg:items-center gap-8",
+                      isEven ? "lg:flex-row" : "lg:flex-row-reverse",
+                      isEditorMode && "cursor-pointer",
+                      isSelected && "ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent rounded-2xl"
+                    )}
                     initial={{ opacity: 0, y: 40 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: "-50px" }}

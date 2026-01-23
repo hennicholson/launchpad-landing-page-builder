@@ -34,7 +34,7 @@ export default function FooterSectionBase({
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <SectionBackground effect={content.backgroundEffect} />
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       {/* Top border */}
       <div
         className="absolute top-0 left-0 right-0 h-px"

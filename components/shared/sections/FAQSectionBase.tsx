@@ -35,7 +35,7 @@ export default function FAQSectionBase({
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <SectionBackground effect={content.backgroundEffect} />
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       {/* Subtle background pattern */}
       <div
         className="absolute inset-0 opacity-[0.02]"

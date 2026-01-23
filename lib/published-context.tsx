@@ -1,7 +1,9 @@
 "use client";
 
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo, useState, useEffect } from "react";
 import type { LandingPage, PageSection, ElementGroup, Breakpoint } from "./page-schema";
+import { DEFAULT_DESIGN_WIDTH } from "./page-schema";
+import { getCurrentBreakpoint } from "./breakpoint-utils";
 import type { ActiveGuides, ElementStylePanelData } from "./store";
 
 // Minimal state needed for editor components to render in published/preview mode
@@ -27,6 +29,9 @@ type PublishedContextType = {
   // Full-screen and breakpoint state (for compatibility with editor components)
   isFullScreen: false;
   currentEditingBreakpoint: Breakpoint;
+
+  // Viewport width for responsive scaling in published mode
+  previewWidth: number;
 
   // Stubbed action functions (no-ops in published mode)
   selectSection: (id: string | null) => void;
@@ -72,6 +77,24 @@ export function PublishedProvider({
   children: React.ReactNode;
   pageData: LandingPage;
 }) {
+  // Track viewport width for responsive scaling
+  const [viewportWidth, setViewportWidth] = useState<number>(
+    typeof window !== 'undefined' ? window.innerWidth : DEFAULT_DESIGN_WIDTH
+  );
+
+  // Listen for viewport resize
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportWidth(window.innerWidth);
+    };
+
+    // Set initial value on mount
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Memoize the context value to prevent unnecessary re-renders
   const value = useMemo<PublishedContextType>(() => ({
     // Page data
@@ -92,9 +115,13 @@ export function PublishedProvider({
     isSaving: false as const,
     isGenerating: false as const,
 
-    // Full-screen and breakpoint state
+    // Full-screen and breakpoint state - dynamically computed based on viewport
     isFullScreen: false as const,
-    currentEditingBreakpoint: 'desktop' as Breakpoint,
+    currentEditingBreakpoint: getCurrentBreakpoint(viewportWidth),
+
+    // Viewport width for responsive scaling
+    // Cap at design width to prevent scaling UP on large screens
+    previewWidth: Math.min(viewportWidth, pageData.designCanvasWidth || DEFAULT_DESIGN_WIDTH),
 
     // All actions are no-ops in published mode
     selectSection: noop,
@@ -126,7 +153,7 @@ export function PublishedProvider({
     moveElementAtBreakpoint: noop,
     updateElementContentAtBreakpoint: noop,
     clearElementBreakpointOverrides: noop,
-  }), [pageData]);
+  }), [pageData, viewportWidth]);
 
   return (
     <PublishedContext.Provider value={value}>

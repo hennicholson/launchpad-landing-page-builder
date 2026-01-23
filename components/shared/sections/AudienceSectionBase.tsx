@@ -35,7 +35,7 @@ export default function AudienceSectionBase({
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <SectionBackground effect={content.backgroundEffect} />
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       {/* Subtle background gradient */}
       <div
         className="absolute inset-0 pointer-events-none"

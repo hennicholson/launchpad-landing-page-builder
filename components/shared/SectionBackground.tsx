@@ -1,6 +1,7 @@
 "use client";
 
-import type { BackgroundEffect } from "@/lib/page-schema";
+import { cn } from "@/lib/utils";
+import type { BackgroundEffect, BackgroundConfig } from "@/lib/page-schema";
 import {
   ElegantShapesBackground,
   BackgroundCirclesBackground,
@@ -10,9 +11,15 @@ import {
   StarsBackground,
   WavyBackground,
 } from "@/components/ui/backgrounds";
+import { AuroraBackground } from "@/components/ui/aurora-background";
+import { MeteorsBackground } from "@/components/ui/meteors";
+import { SparklesBackground } from "@/components/ui/sparkles-background";
+import { Spotlight } from "@/components/ui/spotlight";
+import { BackgroundBeams } from "@/components/ui/background-beams";
 
 export interface SectionBackgroundProps {
   effect?: BackgroundEffect;
+  config?: BackgroundConfig;
   className?: string;
 }
 
@@ -22,7 +29,7 @@ export interface SectionBackgroundProps {
  * within a relative container with overflow-hidden.
  * Backgrounds fill the entire section container (including padding areas).
  */
-export function SectionBackground({ effect, className }: SectionBackgroundProps) {
+export function SectionBackground({ effect, config, className }: SectionBackgroundProps) {
   if (!effect || effect === "none") {
     return null;
   }
@@ -42,6 +49,46 @@ export function SectionBackground({ effect, className }: SectionBackgroundProps)
       return <StarsBackground className={className} />;
     case "wavy-background":
       return <WavyBackground className={className} />;
+    // Aceternity UI effects
+    case "aurora":
+      return (
+        <AuroraBackground
+          className={cn("overflow-hidden pointer-events-none", className)}
+          primaryColor={config?.primaryColor}
+          secondaryColor={config?.secondaryColor}
+          speed={config?.speed}
+          blurAmount={config?.blurAmount}
+          opacity={config?.intensity}
+          showRadialGradient={config?.showRadialGradient ?? true}
+        >
+          <div />
+        </AuroraBackground>
+      );
+    case "spotlight":
+      return (
+        <div className={cn("absolute inset-0 overflow-hidden pointer-events-none", className)}>
+          <Spotlight
+            className="-top-40 left-0 md:left-60 md:-top-20"
+            fill={config?.primaryColor || "white"}
+          />
+        </div>
+      );
+    case "background-beams":
+      return (
+        <div className={cn("absolute inset-0 overflow-hidden pointer-events-none", className)}>
+          <BackgroundBeams className="opacity-50" />
+        </div>
+      );
+    case "meteors":
+      return <MeteorsBackground className={className} />;
+    case "sparkles":
+      return (
+        <SparklesBackground
+          className={className}
+          particleColor={config?.primaryColor || "#FFC700"}
+          particleDensity={config?.intensity ? Math.round(config.intensity / 3) : 30}
+        />
+      );
     default:
       return null;
   }

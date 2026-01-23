@@ -6,9 +6,12 @@ import type { StatsVariant, SectionItem } from "@/lib/page-schema";
 import type { BaseSectionProps, RenderTextProps } from "@/lib/shared-section-types";
 import { useCountUp, parseStatValue } from "../hooks/useCountUp";
 import { SectionBackground } from "../SectionBackground";
+import { useEditorStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 // ==================== CARD VARIANT ====================
 function StatCardVariant({
+  itemId,
   value,
   label,
   suffix = "",
@@ -18,7 +21,11 @@ function StatCardVariant({
   headingFont,
   index,
   inView,
+  isEditorMode,
+  isSelected,
+  onSelect,
 }: {
+  itemId: string;
   value: number;
   label: string;
   suffix?: string;
@@ -28,12 +35,26 @@ function StatCardVariant({
   headingFont: string;
   index: number;
   inView: boolean;
+  isEditorMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: () => void;
 }) {
   const count = useCountUp(value, 2, inView);
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (!isEditorMode || !onSelect) return;
+    if (window.getSelection()?.toString()) return;
+    onSelect();
+  };
+
   return (
     <motion.div
-      className="relative p-6 sm:p-8 rounded-2xl text-center group overflow-hidden min-w-0"
+      onClick={isEditorMode ? handleClick : undefined}
+      className={cn(
+        "relative p-6 sm:p-8 rounded-2xl text-center group overflow-hidden min-w-0",
+        isEditorMode && "cursor-pointer",
+        isSelected && "ring-2 ring-blue-500 ring-offset-2 ring-offset-transparent"
+      )}
       style={{
         backgroundColor: "rgba(255,255,255,0.02)",
         border: "1px solid rgba(255,255,255,0.05)",
@@ -303,6 +324,11 @@ export default function StatsSectionBase({
   const containerRef = useRef<HTMLDivElement>(null);
   const inView = useInView(containerRef, { once: true, margin: "-100px" });
 
+  // Only enable selection in editor mode (when renderText exists)
+  const isEditorMode = !!renderText;
+  const selectItem = useEditorStore((state) => state.selectItem);
+  const selectedItemId = useEditorStore((state) => state.selectedItemId);
+
   // Dynamic colors from color scheme
   const bgColor = content.backgroundColor || colorScheme.background;
   const textColor = content.textColor || colorScheme.text;
@@ -470,6 +496,7 @@ export default function StatsSectionBase({
               return (
                 <StatCardVariant
                   key={item.id}
+                  itemId={item.id}
                   prefix={prefix}
                   value={value}
                   suffix={suffix}
@@ -479,6 +506,9 @@ export default function StatsSectionBase({
                   headingFont={headingFont}
                   index={index}
                   inView={inView}
+                  isEditorMode={isEditorMode}
+                  isSelected={isEditorMode && selectedItemId === item.id}
+                  onSelect={() => selectItem(section.id, item.id)}
                 />
               );
             })}
@@ -497,7 +527,7 @@ export default function StatsSectionBase({
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <SectionBackground effect={content.backgroundEffect} />
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       {/* Background pattern */}
       <div
         className="absolute inset-0 opacity-[0.02]"

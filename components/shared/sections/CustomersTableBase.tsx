@@ -2,6 +2,7 @@ import React from "react";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import { cn } from "@/lib/utils";
 import { SubheadingText } from "./SubheadingText";
+import { SectionBackground } from "../SectionBackground";
 
 const Badge = ({
   variant,
@@ -46,13 +47,15 @@ export default function CustomersTableBase({
 
   return (
     <section
+      className="relative overflow-hidden"
       style={{
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
       }}
     >
-      <div className="container mx-auto px-4">
+      <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
+      <div className="container relative z-10 mx-auto px-4">
         <div
           className={cn(
             "w-full rounded-lg border border-border bg-card p-6 shadow-sm",
