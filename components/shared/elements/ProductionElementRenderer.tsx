@@ -772,19 +772,30 @@ function SocialElement({ element, scaleFactor = 1 }: { element: PageElement; sca
 function CountdownElement({ element, scaleFactor = 1 }: { element: PageElement; scaleFactor?: number }) {
   const content = element.content;
 
-  // For static export, we calculate once at build time
-  // In production, you'd want to use useEffect with setInterval for live updates
   const targetDate = content.countdownTarget
     ? new Date(content.countdownTarget)
     : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  const now = new Date();
-  const diff = targetDate.getTime() - now.getTime();
+  const calcTimeLeft = () => {
+    const diff = targetDate.getTime() - Date.now();
+    return {
+      days: Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24))),
+      hours: Math.max(0, Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))),
+      minutes: Math.max(0, Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))),
+      seconds: Math.max(0, Math.floor((diff % (1000 * 60)) / 1000)),
+    };
+  };
 
-  const days = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
-  const hours = Math.max(0, Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)));
-  const minutes = Math.max(0, Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)));
-  const seconds = Math.max(0, Math.floor((diff % (1000 * 60)) / 1000));
+  const [timeLeft, setTimeLeft] = useState(calcTimeLeft);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft(calcTimeLeft());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [targetDate.getTime()]);
+
+  const { days, hours, minutes, seconds } = timeLeft;
 
   // Apply scale factor to dimensions
   const boxBgColor = content.countdownBoxBgColor || 'rgba(255,255,255,0.05)';

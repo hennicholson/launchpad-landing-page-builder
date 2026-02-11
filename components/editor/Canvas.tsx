@@ -174,6 +174,16 @@ export default function Canvas() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Auto-scroll to the selected section when it changes
+  useEffect(() => {
+    if (selectedSectionId) {
+      const el = document.getElementById(`section-${selectedSectionId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [selectedSectionId]);
+
   const suggestedSection = getSuggestedSection(page.sections);
 
   const handleAddSection = (type: SectionType) => {
@@ -462,6 +472,7 @@ export default function Canvas() {
               return (
                 <div
                   key={section.id}
+                  id={`section-${section.id}`}
                   ref={(el) => {
                     if (el) sectionRefs.current.set(section.id, el);
                     else sectionRefs.current.delete(section.id);

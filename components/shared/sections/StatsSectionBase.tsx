@@ -85,7 +85,7 @@ function StatCardVariant({
 
       <p
         className="text-xs sm:text-sm uppercase tracking-wider"
-        style={{ color: `${textColor}60` }}
+        style={{ color: `${textColor}b3` }}
       >
         {label}
       </p>
@@ -142,7 +142,7 @@ function StatMinimalVariant({
 
       <p
         className="text-sm uppercase tracking-wider"
-        style={{ color: `${textColor}60` }}
+        style={{ color: `${textColor}b3` }}
       >
         {label}
       </p>
@@ -190,7 +190,7 @@ function StatBarsVariant({
       <div className="flex items-baseline justify-between mb-2">
         <p
           className="text-sm uppercase tracking-wider"
-          style={{ color: `${textColor}70` }}
+          style={{ color: `${textColor}b3` }}
         >
           {label}
         </p>
@@ -305,7 +305,7 @@ function StatCirclesVariant({
 
       <p
         className="mt-3 text-sm uppercase tracking-wider text-center"
-        style={{ color: `${textColor}60` }}
+        style={{ color: `${textColor}b3` }}
       >
         {label}
       </p>
@@ -586,7 +586,7 @@ export default function StatsSectionBase({
           {content.showSubheading !== false && content.subheading && (
             <span
               className="block mt-4 text-lg max-w-2xl mx-auto"
-              style={{ color: `${textColor}70`, fontFamily: bodyFont }}
+              style={{ color: `${textColor}b3`, fontFamily: bodyFont }}
             >
               {renderText ? (
                 renderText({

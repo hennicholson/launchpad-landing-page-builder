@@ -96,7 +96,7 @@ export default function FAQSectionBase({
           {content.showSubheading !== false && content.subheading && (
             <span
               className="block mt-4 text-lg"
-              style={{ color: `${textColor}70`, fontFamily: bodyFont }}
+              style={{ color: `${textColor}b3`, fontFamily: bodyFont }}
             >
               {renderText ? (
                 renderText({
@@ -193,7 +193,7 @@ export default function FAQSectionBase({
                       >
                         <div
                           className="px-6 pb-5 text-base leading-relaxed"
-                          style={{ color: `${textColor}80`, fontFamily: bodyFont }}
+                          style={{ color: `${textColor}cc`, fontFamily: bodyFont }}
                         >
                           {renderText ? (
                             renderText({
@@ -240,7 +240,7 @@ export default function FAQSectionBase({
         >
           <p
             className="text-sm"
-            style={{ color: `${textColor}50` }}
+            style={{ color: `${textColor}90` }}
           >
             Still have questions?{" "}
             <a
