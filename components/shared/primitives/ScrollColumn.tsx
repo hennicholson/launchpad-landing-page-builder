@@ -75,6 +75,21 @@ export function TestimonialCard({
         </p>
       )}
 
+      {/* Proof Images */}
+      {item.proofImages && item.proofImages.length > 0 && (
+        <div className={`mb-4 grid gap-2 ${item.proofImages.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+          {item.proofImages.map((url, i) => (
+            <img
+              key={i}
+              src={url}
+              alt={`Proof screenshot ${i + 1}`}
+              className="w-full rounded-lg object-cover"
+              style={{ border: "1px solid rgba(255,255,255,0.08)" }}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Author info */}
       <div className="flex items-center gap-3 pt-4 border-t" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
         {item.imageUrl ? (

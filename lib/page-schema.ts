@@ -50,11 +50,11 @@ export type CTAVariant = "centered" | "split" | "banner" | "minimal";
 export type ProcessVariant = "timeline" | "cards" | "horizontal";
 export type HeaderVariant = "default" | "header-2" | "floating-header" | "simple-header" | "header-with-search";
 export type HeaderPosition = "sticky" | "fixed" | "static";
-export type TestimonialVariant = "scrolling" | "twitter-cards";
+export type TestimonialVariant = "scrolling" | "twitter-cards" | "screenshots";
 export type VideoVariant = "centered" | "grid" | "side-by-side" | "fullscreen";
 export type GalleryVariant = "bento" | "focusrail";
 export type FeaturesVariant = "default" | "illustrated" | "hover" | "bento" | "table";
-export type HeroVariant = "default" | "animated-preview" | "email-signup" | "sales-funnel";
+export type HeroVariant = "default" | "animated-preview" | "email-signup" | "sales-funnel" | "glassmorphism-trust";
 export type LogoSize = "small" | "medium" | "large" | "custom";
 export type TransitionAnimation = "fade" | "slide" | "zoom";
 
@@ -87,6 +87,9 @@ export type BackgroundConfig = {
 
 // Animation presets
 export type AnimationPreset = "none" | "subtle" | "moderate" | "dramatic";
+
+// Content width presets for section alignment
+export type ContentWidth = "narrow" | "medium" | "wide";
 
 // Subheading configuration types
 export type SubheadingAnimation =
@@ -342,6 +345,7 @@ export type SectionItem = {
   description?: string;
   icon?: string;
   imageUrl?: string;
+  proofImages?: string[];  // Array of proof/screenshot image URLs for testimonials
   videoUrl?: string;       // Video URL for grid video variant
   price?: string;
   features?: string[];
@@ -514,6 +518,23 @@ export type SectionContent = {
   badgeIcon?: string;          // Icon name for badge (e.g., "checkmark", "shield")
   heroImageUrl?: string;       // Hero image URL
   heroImageAlt?: string;       // Hero image alt text
+  // Glassmorphism-trust hero variant fields
+  statValue?: string;          // Main stat number (e.g., "150+")
+  statLabel?: string;          // Main stat description (e.g., "Projects Delivered")
+  progressLabel?: string;      // Progress bar label (e.g., "Client Satisfaction")
+  progressValue?: number;      // Progress bar percentage (0-100)
+  miniStats?: { value: string; label: string }[];  // Array of mini stats
+  clientLogos?: { name: string; icon?: string; imageUrl?: string }[];  // Client logos for marquee (icon or image URL)
+  backgroundImageUrl?: string; // Hero background image URL
+  // Glassmorphism-trust visibility toggles
+  showAccentHeading?: boolean; // Show gradient accent heading line
+  showMiniStats?: boolean;     // Show mini stats in stats card
+  showClientLogos?: boolean;   // Show client logos marquee
+  // Glassmorphism-trust spacing
+  heroElementGap?: number;     // Gap between hero left column elements (px)
+  statsCardGap?: number;       // Gap inside stats card between elements (px)
+  // Glassmorphism-trust video modal
+  showreelVideoUrl?: string;   // YouTube, Vimeo, or MP4 URL for "Watch Showreel" button
   // Video section specific
   autoplayVideo?: boolean;
   muteVideo?: boolean;
@@ -649,6 +670,8 @@ export type LandingPage = {
   animationPreset?: AnimationPreset;
   // Responsive scaling reference (design canvas width in px)
   designCanvasWidth?: number; // Default: 896 (max-w-4xl)
+  // Content width for section alignment (narrow=672px, medium=896px, wide=1152px)
+  contentWidth?: ContentWidth;
 };
 
 export type ProjectSettings = {
@@ -660,6 +683,23 @@ export type ProjectSettings = {
 
 // Default design canvas width (standard desktop = 1280px)
 export const DEFAULT_DESIGN_WIDTH = 1280;
+
+// Default content width
+export const DEFAULT_CONTENT_WIDTH: ContentWidth = "medium";
+
+// Get Tailwind max-width class from contentWidth setting
+export function getContentWidthClass(width?: ContentWidth): string {
+  switch (width) {
+    case "narrow":
+      return "max-w-2xl"; // 672px - Sales funnel style
+    case "medium":
+      return "max-w-4xl"; // 896px - Balanced
+    case "wide":
+      return "max-w-6xl"; // 1152px - SaaS style
+    default:
+      return "max-w-4xl"; // Default to medium
+  }
+}
 
 // Default empty page template
 export const defaultPage: LandingPage = {
@@ -678,6 +718,7 @@ export const defaultPage: LandingPage = {
     bodyFont: "Inter",
   },
   designCanvasWidth: DEFAULT_DESIGN_WIDTH,
+  contentWidth: DEFAULT_CONTENT_WIDTH,
 };
 
 // Helper to generate unique IDs
@@ -716,6 +757,40 @@ export function createSection(type: SectionType, options?: { ctaVariant?: CTAVar
           badge: "365 DAYS MONEY BACK GUARANTEE",
           badgeIcon: "checkmark",
           showBadge: true,
+        };
+      } else if (heroVariant === "glassmorphism-trust") {
+        baseSection.content = {
+          ...baseSection.content,
+          heroVariant,
+          badge: "Award-Winning Design",
+          heading: "Crafting Digital",
+          accentHeading: "Experiences",
+          subheading: "That Matter",
+          bodyText: "We design interfaces that combine beauty with functionality, creating seamless experiences that users love and businesses thrive on.",
+          buttonText: "View Portfolio",
+          buttonLink: "#",
+          secondaryButtonText: "Watch Showreel",
+          secondaryButtonLink: "#",
+          statValue: "150+",
+          statLabel: "Projects Delivered",
+          progressLabel: "Client Satisfaction",
+          progressValue: 98,
+          miniStats: [
+            { value: "5+", label: "Years" },
+            { value: "24/7", label: "Support" },
+            { value: "100%", label: "Quality" },
+          ],
+          clientLogos: [
+            { name: "Acme Corp", icon: "hexagon" },
+            { name: "Quantum", icon: "triangle" },
+            { name: "Command+Z", icon: "command" },
+            { name: "Phantom", icon: "ghost" },
+            { name: "Ruby", icon: "gem" },
+            { name: "Chipset", icon: "cpu" },
+          ],
+          backgroundImageUrl: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/a72ca2f3-9dd1-4fe4-84ba-fe86468a5237_3840w.webp?w=800&q=80",
+          backgroundColor: "#09090b",
+          accentColor: "#ffcd75",
         };
       } else {
         baseSection.content = {

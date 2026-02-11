@@ -5,7 +5,7 @@ export const salesFunnelTemplate: LandingPage = {
   title: "Sales Funnel Template",
   description: "High-converting sales funnel with proven 12-section structure. Perfect for digital products, courses, and services.",
   colorScheme: {
-    primary: "#8B6F7D",      // Dusty mauve (from reference PDF header)
+    primary: "#8B6F7D",      // Dusty mauve
     secondary: "#8B6F7D",    // Same as primary for consistency
     accent: "#10b981",       // Green for CTAs
     background: "#ffffff",   // White background
@@ -18,6 +18,7 @@ export const salesFunnelTemplate: LandingPage = {
   animationPreset: "subtle", // Minimal animations
   smoothScroll: true,
   designCanvasWidth: 896,
+  contentWidth: "narrow", // Focused sales funnel style
   sections: [
     // 1. HEADER - Navigation
     {
@@ -25,7 +26,7 @@ export const salesFunnelTemplate: LandingPage = {
       type: "header",
       content: {
         headerVariant: "simple-header",
-        headerPosition: "sticky",
+        headerPosition: "fixed",
         logoText: "YourBrand",
         logoUrl: "",
         backgroundColor: "#ffffff",
@@ -35,7 +36,12 @@ export const salesFunnelTemplate: LandingPage = {
         buttonVariant: "primary",
         showLogo: true,
         showLinks: true,
-        showButton: true,
+        showButton: false,
+        links: [
+          { id: generateId(), label: "Features", url: "#features" },
+          { id: generateId(), label: "Pricing", url: "#pricing" },
+          { id: generateId(), label: "Testimonials", url: "#testimonials" },
+        ],
       },
       items: [
         { id: generateId(), label: "Features", url: "#features" },
@@ -53,45 +59,65 @@ export const salesFunnelTemplate: LandingPage = {
         heroVariant: "sales-funnel",
         topTitle: "For Entrepreneurs & Business Owners Who Want To Scale Their Success...",
         heading: "Transform Your Business With Our Proven 90-Day Growth System",
-        subheading: "Join 5,000+ Entrepreneurs Who've 10x'd Their Revenue With This Step-By-Step Framework",
+        subheading: "Easy To Implement & See Results So You Can Start Winning Today!",
         imageUrl: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=1200&auto=format&fit=crop",
+        heroImageUrl: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=1200&auto=format&fit=crop",
         showImage: true,
         ctaText: "YES! I WANT TO GROW MY BUSINESS",
         ctaUrl: "#offer",
         ctaSecondaryText: "Only $297 - One-Time Payment",
-        badge: "365-DAY MONEY-BACK GUARANTEE",
-        badgeIcon: "checkmark",
+        badge: "365 days money back guarantee",
+        badgeIcon: "shield",
         showBadge: true,
         backgroundColor: "#ffffff",
         textColor: "#111827",
         accentColor: "#10b981",
-        paddingTop: 20,
-        paddingBottom: 16,
+        paddingTop: 15,
+        paddingBottom: 6,
+        showHeading: true,
+        showSubheading: true,
+        showButton: true,
+        buttonVariant: "primary",
+        buttonShadow: "md",
+        buttonBorderWidth: 3,
+        elementStyles: {
+          heading: {
+            fontSize: 31,
+            textAlign: "center",
+          },
+          subheading: {
+            fontSize: 22,
+            textAlign: "left",
+            lineHeight: 1,
+          },
+        },
       },
     },
 
-    // 3. VALUE PROPOSITION - Long-form copy (NEW SECTION)
+    // 3. VALUE PROPOSITION - Long-form copy
     {
       id: generateId(),
       type: "value-proposition",
       content: {
         heading: "Here's the Truth About Success",
         badge: "THE PROBLEM",
-        showBadge: true,
+        showBadge: false,
         showHeading: true,
         bodyParagraphs: [
-          "You've probably tried everything. The courses, the books, the webinars. You're motivated, you're willing to put in the work, but something just isn't clicking. You feel stuck, watching others succeed while you're still searching for that breakthrough.",
-          "The problem isn't you. It's the system you've been following. Most programs focus on theory without giving you the practical, step-by-step roadmap you need to get results. They leave you confused, overwhelmed, and unsure of what to do next.",
+          "<p>You've probably tried everything. The courses, the books, the webinars. You're motivated, you're willing to put in the work, but something just isn't clicking. You feel stuck, watching others succeed while you're still searching for that <strong>breakthrough</strong>.</p>",
+          "<p>The problem isn't you. It's the system you've been following. Most programs focus on theory without giving you the practical, step-by-step roadmap you need to get results. They leave you confused, overwhelmed, and unsure of what to do next.</p>",
           "What if there was a proven system that took you by the hand and showed you exactly what to do, step by step? A system that's already helped thousands of people just like you achieve their goals?",
-          "That's exactly what we've created. No fluff, no theory, just actionable steps that get real results. Whether you're starting from zero or looking to take your success to the next level, this is the system you've been looking for."
+          "<p>That's exactly what we've created. No fluff, no theory, just actionable steps that get real results. Whether you're starting from zero or looking to take your success to the next level, this is the system you've been looking for.</p>",
         ],
         backgroundColor: "#f9fafb",
         textColor: "#111827",
         accentColor: "#8B6F7D",
+        paddingTop: 28,
+        paddingBottom: 28,
       },
     },
 
-    // 4. OFFER DETAILS - Image + Bullet List (NEW SECTION)
+    // 4. OFFER DETAILS - Image + Bullet List
     {
       id: generateId(),
       type: "offer-details",
@@ -146,7 +172,7 @@ export const salesFunnelTemplate: LandingPage = {
       ],
     },
 
-    // 5. SECONDARY CTA
+    // 5. FIRST CTA
     {
       id: generateId(),
       type: "cta",
@@ -156,25 +182,41 @@ export const salesFunnelTemplate: LandingPage = {
         subheading: "Join thousands of successful students who are already seeing results",
         buttonText: "Enroll Now",
         buttonLink: "#pricing",
-        buttonVariant: "primary",
-        backgroundColor: "#8B6F7D",
-        textColor: "#ffffff",
+        buttonVariant: "cartoon",
+        buttonBgColor: "#32c36a",
+        buttonTextColor: "#131514",
+        backgroundColor: "#f2f3f2",
+        textColor: "#111827",
         accentColor: "#10b981",
         showHeading: true,
         showSubheading: true,
         showButton: true,
+        showGridBackground: false,
+        paddingTop: 37,
+        paddingBottom: 21,
+        elementStyles: {
+          buttonText: {
+            color: "#000000",
+          },
+        },
       },
     },
 
-    // 6. COMPARISON - Without/With Columns
+    // 6. COMPARISON - Before/After Columns
     {
       id: generateId(),
       type: "comparison",
       content: {
         heading: "Before vs. After",
         subheading: "See the transformation our students experience",
+        badge: "Comparison",
         backgroundColor: "#f9fafb",
         textColor: "#111827",
+        elementStyles: {
+          heading: {
+            fontSize: 45,
+          },
+        },
       },
       items: [
         {
@@ -206,15 +248,15 @@ export const salesFunnelTemplate: LandingPage = {
       ],
     },
 
-    // 7. CREATOR/EXPERT - Photo + Bio (NEW SECTION)
+    // 7. CREATOR/EXPERT - Josh Gavin
     {
       id: generateId(),
       type: "creator",
       content: {
         heading: "Meet Your Instructor",
-        creatorPhotoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop",
+        creatorPhotoUrl: "https://yt3.googleusercontent.com/YubqTr6nBGKty8Ou8s35vwS-WUSdrE3QffEfZ7w4htrJkoaLCrT5hYd3nf_btKNXgs5J7NRB2A=s900-c-k-c0x00ffffff-no-rj",
         creatorPhotoAlt: "Instructor photo",
-        creatorName: "John Smith",
+        creatorName: "Josh Gavin",
         creatorRole: "Founder & Lead Instructor",
         creatorBio: "I know what it's like to feel stuck. Ten years ago, I was exactly where you are now - frustrated, confused, and ready to give up on my dreams.\n\nBut everything changed when I discovered the system I'm about to share with you. Within 90 days, I went from struggling to thriving. I achieved goals I thought were impossible and built the life I'd always dreamed of.\n\nSince then, I've dedicated my life to helping others achieve the same transformation. I've worked with over 10,000 students from around the world, and the results speak for themselves.\n\nThis isn't theory - it's a proven system that works. I've refined it over years of real-world testing, and I'm confident it will work for you too.",
         creatorCredentials: [
@@ -226,10 +268,15 @@ export const salesFunnelTemplate: LandingPage = {
         backgroundColor: "#ffffff",
         textColor: "#111827",
         accentColor: "#10b981",
+        twitterUrl: "",
+        instagramUrl: "",
+        linkedinUrl: "",
+        youtubeUrl: "",
+        tiktokUrl: "",
       },
     },
 
-    // 8. DETAILED FEATURES - Image + Comprehensive List (NEW SECTION)
+    // 8. DETAILED FEATURES - What's Inside
     {
       id: generateId(),
       type: "detailed-features",
@@ -241,6 +288,7 @@ export const salesFunnelTemplate: LandingPage = {
         backgroundColor: "#f9fafb",
         textColor: "#111827",
         accentColor: "#8B6F7D",
+        paddingBottom: 32,
       },
       items: [
         {
@@ -294,7 +342,7 @@ export const salesFunnelTemplate: LandingPage = {
       ],
     },
 
-    // 9. THIRD CTA
+    // 9. SECOND CTA
     {
       id: generateId(),
       type: "cta",
@@ -304,69 +352,44 @@ export const salesFunnelTemplate: LandingPage = {
         subheading: "Don't wait another day to start achieving your goals",
         buttonText: "Join Now",
         buttonLink: "#pricing",
-        buttonVariant: "primary",
-        backgroundColor: "#10b981",
-        textColor: "#ffffff",
+        buttonVariant: "cartoon",
+        buttonBgColor: "#33c36a",
+        buttonShadow: "md",
+        buttonFontSize: 24,
+        buttonBorderWidth: 4,
+        backgroundColor: "#f2f3f2",
+        textColor: "#111827",
         accentColor: "#2563eb",
         showHeading: true,
         showSubheading: true,
         showButton: true,
+        showGridBackground: false,
+        paddingTop: 28,
+        paddingBottom: 14,
+        elementStyles: {
+          heading: {
+            color: "#111827",
+            fontSize: 35,
+          },
+          buttonText: {
+            color: "#111827",
+          },
+          subheading: {
+            color: "#111827",
+            lineHeight: 2.8,
+          },
+        },
       },
     },
 
-    // 10. RESULTS GALLERY - 6 images in grid
-    {
-      id: generateId(),
-      type: "gallery",
-      content: {
-        heading: "Real Results from Real Students",
-        subheading: "See the transformations our students have achieved",
-        galleryVariant: "bento",
-        backgroundColor: "#ffffff",
-        textColor: "#111827",
-      },
-      items: [
-        {
-          id: generateId(),
-          imageUrl: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&auto=format&fit=crop",
-          title: "Sarah's Journey",
-          gridClass: "md:col-span-2 md:row-span-2"
-        },
-        {
-          id: generateId(),
-          imageUrl: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&auto=format&fit=crop",
-          title: "Mike's Success",
-          gridClass: "md:col-span-1 md:row-span-1"
-        },
-        {
-          id: generateId(),
-          imageUrl: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800&auto=format&fit=crop",
-          title: "Emma's Transformation",
-          gridClass: "md:col-span-1 md:row-span-1"
-        },
-        {
-          id: generateId(),
-          imageUrl: "https://images.unsplash.com/photo-1559223607-a43c990fbb4e?w=800&auto=format&fit=crop",
-          title: "David's Achievement",
-          gridClass: "md:col-span-1 md:row-span-1"
-        },
-        {
-          id: generateId(),
-          imageUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop",
-          title: "Lisa's Results",
-          gridClass: "md:col-span-1 md:row-span-1"
-        },
-      ],
-    },
-
-    // 11. WRITTEN TESTIMONIALS - 3 cards
+    // 10. TESTIMONIALS - Screenshot Gallery Style
     {
       id: generateId(),
       type: "testimonials",
       content: {
         heading: "What Our Students Say",
         subheading: "Join thousands of satisfied students who've transformed their lives",
-        testimonialVariant: "twitter-cards",
+        testimonialVariant: "screenshots",
         backgroundColor: "#f9fafb",
         textColor: "#111827",
       },
@@ -374,34 +397,46 @@ export const salesFunnelTemplate: LandingPage = {
         {
           id: generateId(),
           title: "Life-Changing Results",
-          description: "This program completely transformed my life. Within 90 days, I achieved goals I'd been working toward for years. The step-by-step system made it so easy to stay on track and see real progress.",
-          author: "Sarah Johnson",
-          role: "Marketing Director",
+          description: "This program completely transformed my life. Within 90 days, I achieved goals I'd been working toward for years.",
+          author: "Discord",
+          role: "Community",
           rating: 5,
-          imageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah"
+          imageUrl: "https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665643dd8c7ac752237b5cef_Discord-OG-1200x630.jpg",
+          proofImages: ["https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/665643dd8c7ac752237b5cef_Discord-OG-1200x630.jpg"]
         },
         {
           id: generateId(),
           title: "Best Investment Ever",
-          description: "I've tried other programs before, but nothing compares to this. The quality of the training, the support from the community, and the results I've achieved have exceeded all my expectations. Absolutely worth every penny.",
+          description: "I've tried other programs before, but nothing compares to this. The quality of the training exceeded all my expectations.",
           author: "Michael Chen",
           role: "Entrepreneur",
           rating: 5,
-          imageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Michael"
+          imageUrl: "https://static01.nyt.com/images/2021/12/28/business/28discord3/28discord3-articleLarge.png?quality=75&auto=webp&disable=upscale",
+          proofImages: ["https://static01.nyt.com/images/2021/12/28/business/28discord3/28discord3-articleLarge.png?quality=75&auto=webp&disable=upscale"]
         },
         {
           id: generateId(),
           title: "Finally Found Success",
-          description: "After years of struggling and feeling stuck, I finally found the system that works. The clarity and confidence I've gained have been incredible. I wish I'd found this program sooner!",
+          description: "After years of struggling and feeling stuck, I finally found the system that works. The clarity I've gained has been incredible.",
           author: "Emily Rodriguez",
           role: "Business Owner",
           rating: 5,
-          imageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emily"
+          imageUrl: "https://techcrunch.com/wp-content/uploads/2023/12/discord-app.jpg",
+          proofImages: ["https://techcrunch.com/wp-content/uploads/2023/12/discord-app.jpg"]
+        },
+        {
+          id: generateId(),
+          title: "Community Proof",
+          description: "",
+          author: "DM",
+          role: "Community",
+          imageUrl: "https://i.ytimg.com/vi/ZBd8O52Ohvg/maxresdefault.jpg",
+          proofImages: ["https://i.ytimg.com/vi/ZBd8O52Ohvg/maxresdefault.jpg"]
         },
       ],
     },
 
-    // 12. FAQ - Objection Handling
+    // 11. FAQ - Objection Handling
     {
       id: generateId(),
       type: "faq",
@@ -445,7 +480,7 @@ export const salesFunnelTemplate: LandingPage = {
       ],
     },
 
-    // 13. FINAL CTA - Conversion Section
+    // 12. FINAL CTA - Conversion Section
     {
       id: generateId(),
       type: "cta",
@@ -455,17 +490,33 @@ export const salesFunnelTemplate: LandingPage = {
         subheading: "Join thousands of successful students and achieve your goals in just 90 days. Backed by our 30-day money-back guarantee.",
         buttonText: "Enroll Now - Limited Time Offer",
         buttonLink: "#pricing",
-        buttonVariant: "primary",
-        backgroundColor: "#8B6F7D",
-        textColor: "#ffffff",
+        buttonVariant: "win98",
+        buttonBgColor: "#111827",
+        backgroundColor: "#f2f3f2",
+        textColor: "#111827",
         accentColor: "#10b981",
         showHeading: true,
         showSubheading: true,
         showButton: true,
+        showGridBackground: false,
+        paddingTop: 31,
+        paddingBottom: 16,
+        elementStyles: {
+          heading: {
+            color: "#111827",
+            fontSize: 33,
+          },
+          buttonText: {
+            color: "#ffffff",
+          },
+          subheading: {
+            color: "#111827",
+          },
+        },
       },
     },
 
-    // 14. FOOTER
+    // 13. FOOTER
     {
       id: generateId(),
       type: "footer",

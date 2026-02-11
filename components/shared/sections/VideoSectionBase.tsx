@@ -68,7 +68,7 @@ function CenteredVariant({
   const embedUrl = getEmbedUrl(content.videoUrl || "");
 
   return (
-    <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Background glow - responsive */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] md:w-[500px] md:h-[500px] lg:w-[600px] lg:h-[600px] rounded-full blur-[100px] sm:blur-[150px] opacity-20 md:opacity-30"
@@ -271,7 +271,7 @@ function GridVariant({
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
   return (
-    <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <motion.div
         className="text-center mb-12"
@@ -428,7 +428,7 @@ function SideBySideVariant({
   const embedUrl = getEmbedUrl(content.videoUrl || "");
 
   return (
-    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
         {/* Video Side */}
         <motion.div

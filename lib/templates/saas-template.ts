@@ -364,6 +364,7 @@ export const saasTemplate: LandingPage = {
     headingFont: "Inter",
     bodyFont: "Inter",
   },
+  contentWidth: "wide", // SaaS style with more horizontal space
   animationPreset: "moderate",
   smoothScroll: true,
 };

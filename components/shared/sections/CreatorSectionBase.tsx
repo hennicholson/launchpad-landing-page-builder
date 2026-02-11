@@ -1,12 +1,14 @@
 "use client";
 
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import { getContentWidthClass } from "@/lib/page-schema";
 import { SectionBackground } from "../SectionBackground";
 
 export default function CreatorSectionBase({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
   renderImage,
 }: BaseSectionProps) {
@@ -52,7 +54,7 @@ export default function CreatorSectionBase({
 
       {/* Content Container */}
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
+        <div className={`${getContentWidthClass(contentWidth)} mx-auto`}>
           {/* Section Heading */}
           {content.showHeading !== false && content.heading && (
             <div className="mb-8 sm:mb-12 text-center">

@@ -537,7 +537,7 @@ export default function StatsSectionBase({
         }}
       />
 
-      <div className="relative max-w-6xl mx-auto px-6 lg:px-8">
+      <div className="relative max-w-2xl mx-auto px-6 lg:px-8">
         {/* Header */}
         <motion.div
           className="text-center mb-16"

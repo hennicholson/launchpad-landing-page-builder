@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import type { SectionItem } from "@/lib/page-schema";
+import { getContentWidthClass } from "@/lib/page-schema";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import { SectionBackground } from "../../SectionBackground";
 import { SubheadingText } from "../SubheadingText";
@@ -165,6 +166,7 @@ export default function FeaturesDefault({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
   renderImage,
 }: BaseSectionProps) {
@@ -192,7 +194,7 @@ export default function FeaturesDefault({
       }}
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
-      <div className="max-w-6xl mx-auto px-6 lg:px-8">
+      <div className={`${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8`}>
         {/* Header with gradient reveal */}
         <div className="text-center mb-12 overflow-hidden">
           {/* Title with gradient reveal mask */}

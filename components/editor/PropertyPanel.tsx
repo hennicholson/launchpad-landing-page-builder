@@ -10,6 +10,7 @@ import { ANIMATION_PRESET_LABELS, ANIMATION_PRESET_DESCRIPTIONS } from "@/lib/an
 import { getElementStyleOverride } from "@/lib/style-utils";
 import { normalizeColorToHex } from "@/lib/utils/colorUtils";
 import ElementSettingsPanel from "./ElementSettingsPanel";
+import { AIQuickActions } from "./ai/AIQuickActions";
 import { Switch } from "@/components/ui/switch";
 import {
   Type,
@@ -668,6 +669,25 @@ export default function PropertyPanel() {
             </p>
           </div>
 
+          {/* Content Width */}
+          <div className="space-y-3">
+            <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+              Content Width
+            </label>
+            <select
+              value={page.contentWidth || "medium"}
+              onChange={(e) => updatePageMeta({ contentWidth: e.target.value as "narrow" | "medium" | "wide" })}
+              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+            >
+              <option value="narrow">Narrow (672px) - Sales funnel</option>
+              <option value="medium">Medium (896px) - Balanced</option>
+              <option value="wide">Wide (1152px) - SaaS style</option>
+            </select>
+            <p className="text-[10px] text-white/40">
+              Controls the max width of all section content for consistent alignment
+            </p>
+          </div>
+
           {/* Smooth Scroll */}
           <div className="space-y-3">
             <label className="flex items-center gap-3 cursor-pointer">
@@ -1007,6 +1027,15 @@ export default function PropertyPanel() {
             </div>
           </div>
 
+          {/* AI Quick Actions */}
+          <div className="p-4 border-b border-white/5">
+            <AIQuickActions
+              sectionId={selectedSectionId}
+              sectionType={sectionType}
+              section={selectedSection}
+            />
+          </div>
+
           {/* Elements List */}
           {selectedSection.elements && selectedSection.elements.length > 0 && (
             <div className="p-4 border-b border-white/5">
@@ -1149,6 +1178,7 @@ export default function PropertyPanel() {
                 <option value="animated-preview">Animated Preview</option>
                 <option value="email-signup">Email Signup</option>
                 <option value="sales-funnel">Sales Funnel</option>
+                <option value="glassmorphism-trust">Glassmorphism Trust</option>
               </select>
             </div>
 
@@ -1522,6 +1552,351 @@ export default function PropertyPanel() {
                           <option value="none">None</option>
                         </select>
                       </div>
+                    </CollapsibleSection>
+                  </>
+                );
+              }
+
+              // GLASSMORPHISM-TRUST VARIANT
+              if (variant === "glassmorphism-trust") {
+                const ICON_OPTIONS = [
+                  { value: "hexagon", label: "Hexagon" },
+                  { value: "triangle", label: "Triangle" },
+                  { value: "command", label: "Command" },
+                  { value: "ghost", label: "Ghost" },
+                  { value: "gem", label: "Gem" },
+                  { value: "cpu", label: "CPU" },
+                  { value: "star", label: "Star" },
+                  { value: "zap", label: "Zap" },
+                  { value: "heart", label: "Heart" },
+                  { value: "shield", label: "Shield" },
+                ];
+                return (
+                  <>
+                    <TextInput
+                      label="Badge"
+                      value={selectedSection.content.badge || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+                      placeholder="Award-Winning Design"
+                    />
+                    <TextInput
+                      label="Heading (Line 1)"
+                      value={selectedSection.content.heading || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+                      placeholder="Crafting Digital"
+                    />
+                    <TextInput
+                      label="Accent Heading (Gradient)"
+                      value={selectedSection.content.accentHeading || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { accentHeading: v })}
+                      placeholder="Experiences"
+                    />
+                    <TextInput
+                      label="Heading (Line 3)"
+                      value={selectedSection.content.subheading || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+                      placeholder="That Matter"
+                    />
+                    <TextAreaInput
+                      label="Description"
+                      value={selectedSection.content.bodyText || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { bodyText: v })}
+                      rows={3}
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <TextInput
+                        label="Button Text"
+                        value={selectedSection.content.buttonText || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { buttonText: v })}
+                      />
+                      <TextInput
+                        label="Button Link"
+                        value={selectedSection.content.buttonLink || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { buttonLink: v })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <TextInput
+                        label="Secondary Button Text"
+                        value={selectedSection.content.secondaryButtonText || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { secondaryButtonText: v })}
+                      />
+                      <TextInput
+                        label="Secondary Button Link"
+                        value={selectedSection.content.secondaryButtonLink || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { secondaryButtonLink: v })}
+                      />
+                    </div>
+                    <TextInput
+                      label="Showreel Video URL"
+                      value={selectedSection.content.showreelVideoUrl || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { showreelVideoUrl: v })}
+                      placeholder="YouTube, Vimeo, or MP4 URL"
+                    />
+
+                    {/* Primary Button Style */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Primary Button</label>
+                      <SectionButtonSettings
+                        content={selectedSection.content}
+                        onUpdate={(updates) => updateSectionContent(selectedSectionId, updates)}
+                        prefix="button"
+                      />
+                    </div>
+
+                    {/* Secondary Button Style */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">Secondary Button</label>
+                      <SectionButtonSettings
+                        content={selectedSection.content}
+                        onUpdate={(updates) => updateSectionContent(selectedSectionId, updates)}
+                        prefix="secondaryButton"
+                      />
+                    </div>
+
+                    {/* Visibility Toggles */}
+                    <CollapsibleSection title="Visibility" defaultOpen={false}>
+                      <div className="space-y-2">
+                        {[
+                          { key: "showBadge", label: "Show Badge" },
+                          { key: "showHeading", label: "Show Heading" },
+                          { key: "showAccentHeading", label: "Show Accent Heading" },
+                          { key: "showSubheading", label: "Show Subheading (Line 3)" },
+                          { key: "showBodyText", label: "Show Body Text" },
+                          { key: "showButton", label: "Show Primary Button" },
+                          { key: "showSecondaryButton", label: "Show Secondary Button" },
+                          { key: "showMiniStats", label: "Show Mini Stats" },
+                          { key: "showClientLogos", label: "Show Client Logos" },
+                        ].map(({ key, label }) => (
+                          <label key={key} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedSection.content[key as keyof typeof selectedSection.content] !== false}
+                              onChange={(e) => updateSectionContent(selectedSectionId, { [key]: e.target.checked })}
+                              className="w-4 h-4 rounded border-white/20 bg-black/20 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                            />
+                            <span className="text-sm text-white/70">{label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </CollapsibleSection>
+
+                    {/* Spacing Controls */}
+                    <CollapsibleSection title="Spacing" defaultOpen={false}>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                            Hero Element Gap (px)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={selectedSection.content.heroElementGap ?? 32}
+                            onChange={(e) => updateSectionContent(selectedSectionId, { heroElementGap: parseInt(e.target.value) || 0 })}
+                            className="w-full px-3 py-2 rounded-md bg-black/20 border border-white/10 text-sm text-white hover:border-white/20 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                            Stats Card Gap (px)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={selectedSection.content.statsCardGap ?? 24}
+                            onChange={(e) => updateSectionContent(selectedSectionId, { statsCardGap: parseInt(e.target.value) || 0 })}
+                            className="w-full px-3 py-2 rounded-md bg-black/20 border border-white/10 text-sm text-white hover:border-white/20 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                          />
+                        </div>
+                      </div>
+                    </CollapsibleSection>
+
+                    <TextInput
+                      label="Background Image URL"
+                      value={selectedSection.content.backgroundImageUrl || ""}
+                      onChange={(v) => updateSectionContent(selectedSectionId, { backgroundImageUrl: v })}
+                      placeholder="https://..."
+                    />
+                    <CollapsibleSection title="Stats Card" defaultOpen>
+                      <div className="grid grid-cols-2 gap-3">
+                        <TextInput
+                          label="Main Stat Value"
+                          value={selectedSection.content.statValue || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { statValue: v })}
+                          placeholder="150+"
+                        />
+                        <TextInput
+                          label="Main Stat Label"
+                          value={selectedSection.content.statLabel || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { statLabel: v })}
+                          placeholder="Projects Delivered"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <TextInput
+                          label="Progress Label"
+                          value={selectedSection.content.progressLabel || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { progressLabel: v })}
+                          placeholder="Client Satisfaction"
+                        />
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                            Progress Value (%)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={selectedSection.content.progressValue ?? 98}
+                            onChange={(e) => updateSectionContent(selectedSectionId, { progressValue: parseInt(e.target.value) || 0 })}
+                            className="w-full px-3 py-2 rounded-md bg-black/20 border border-white/10 text-sm text-white hover:border-white/20 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                          />
+                        </div>
+                      </div>
+                    </CollapsibleSection>
+                    <CollapsibleSection title={`Mini Stats (${(selectedSection.content.miniStats || []).length})`} defaultOpen={false}>
+                      {(selectedSection.content.miniStats || []).map((stat: { value: string; label: string }, index: number) => (
+                        <div key={index} className="relative mb-2 p-2 bg-white/5 rounded-lg">
+                          <button
+                            onClick={() => {
+                              const newStats = [...(selectedSection.content.miniStats || [])];
+                              newStats.splice(index, 1);
+                              updateSectionContent(selectedSectionId, { miniStats: newStats });
+                            }}
+                            className="absolute top-1 right-1 p-1 text-white/40 hover:text-red-400 transition-colors"
+                            title="Delete stat"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                          <div className="grid grid-cols-2 gap-2 pr-6">
+                            <TextInput
+                              label={`Value`}
+                              value={stat.value || ""}
+                              onChange={(v) => {
+                                const newStats = [...(selectedSection.content.miniStats || [])];
+                                newStats[index] = { ...newStats[index], value: v };
+                                updateSectionContent(selectedSectionId, { miniStats: newStats });
+                              }}
+                            />
+                            <TextInput
+                              label={`Label`}
+                              value={stat.label || ""}
+                              onChange={(v) => {
+                                const newStats = [...(selectedSection.content.miniStats || [])];
+                                newStats[index] = { ...newStats[index], label: v };
+                                updateSectionContent(selectedSectionId, { miniStats: newStats });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          const newStats = [...(selectedSection.content.miniStats || []), { value: "99+", label: "New" }];
+                          updateSectionContent(selectedSectionId, { miniStats: newStats });
+                        }}
+                        className="w-full px-3 py-2 mt-2 rounded-md bg-white/5 border border-white/10 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                      >
+                        + Add Stat
+                      </button>
+                    </CollapsibleSection>
+                    <CollapsibleSection title={`Client Logos (${(selectedSection.content.clientLogos || []).length})`} defaultOpen={false}>
+                      {(selectedSection.content.clientLogos || []).map((logo: { name: string; icon?: string; imageUrl?: string }, index: number) => {
+                        const logoType = logo.imageUrl ? "image" : "icon";
+                        return (
+                          <div key={index} className="relative mb-2 p-2 bg-white/5 rounded-lg">
+                            <button
+                              onClick={() => {
+                                const newLogos = [...(selectedSection.content.clientLogos || [])];
+                                newLogos.splice(index, 1);
+                                updateSectionContent(selectedSectionId, { clientLogos: newLogos });
+                              }}
+                              className="absolute top-1 right-1 p-1 text-white/40 hover:text-red-400 transition-colors"
+                              title="Delete logo"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                            <div className="space-y-2 pr-6">
+                              <TextInput
+                                label="Name"
+                                value={logo.name || ""}
+                                onChange={(v) => {
+                                  const newLogos = [...(selectedSection.content.clientLogos || [])];
+                                  newLogos[index] = { ...newLogos[index], name: v };
+                                  updateSectionContent(selectedSectionId, { clientLogos: newLogos });
+                                }}
+                              />
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                                  Type
+                                </label>
+                                <select
+                                  value={logoType}
+                                  onChange={(e) => {
+                                    const newLogos = [...(selectedSection.content.clientLogos || [])];
+                                    if (e.target.value === "icon") {
+                                      newLogos[index] = { name: logo.name, icon: "hexagon" };
+                                    } else {
+                                      newLogos[index] = { name: logo.name, imageUrl: "" };
+                                    }
+                                    updateSectionContent(selectedSectionId, { clientLogos: newLogos });
+                                  }}
+                                  className="w-full px-3 py-2 rounded-md bg-black/20 border border-white/10 text-sm text-white hover:border-white/20 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                                >
+                                  <option value="icon">Icon</option>
+                                  <option value="image">Image URL</option>
+                                </select>
+                              </div>
+                              {logoType === "icon" ? (
+                                <div className="space-y-2">
+                                  <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                                    Icon
+                                  </label>
+                                  <select
+                                    value={logo.icon || "hexagon"}
+                                    onChange={(v) => {
+                                      const newLogos = [...(selectedSection.content.clientLogos || [])];
+                                      newLogos[index] = { ...newLogos[index], icon: v.target.value, imageUrl: undefined };
+                                      updateSectionContent(selectedSectionId, { clientLogos: newLogos });
+                                    }}
+                                    className="w-full px-3 py-2 rounded-md bg-black/20 border border-white/10 text-sm text-white hover:border-white/20 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                                  >
+                                    {ICON_OPTIONS.map((opt) => (
+                                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              ) : (
+                                <TextInput
+                                  label="Image URL"
+                                  value={logo.imageUrl || ""}
+                                  onChange={(v) => {
+                                    const newLogos = [...(selectedSection.content.clientLogos || [])];
+                                    newLogos[index] = { ...newLogos[index], imageUrl: v, icon: undefined };
+                                    updateSectionContent(selectedSectionId, { clientLogos: newLogos });
+                                  }}
+                                  placeholder="https://..."
+                                />
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <button
+                        onClick={() => {
+                          const newLogos = [...(selectedSection.content.clientLogos || []), { name: "New Company", icon: "hexagon" }];
+                          updateSectionContent(selectedSectionId, { clientLogos: newLogos });
+                        }}
+                        className="w-full px-3 py-2 mt-2 rounded-md bg-white/5 border border-white/10 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                      >
+                        + Add Logo
+                      </button>
                     </CollapsibleSection>
                   </>
                 );
@@ -2657,6 +3032,7 @@ export default function PropertyPanel() {
               >
                 <option value="scrolling">Scrolling Columns</option>
                 <option value="twitter-cards">Twitter Cards</option>
+                <option value="screenshots">Screenshot Gallery</option>
               </select>
             </div>
             <TextInput
@@ -2679,34 +3055,69 @@ export default function PropertyPanel() {
                   isSelected={selectedItemId === item.id}
                   onRemove={() => removeItem(selectedSectionId, item.id)}
                 >
-                  <TextInput
-                    label="Quote Title"
-                    value={item.title || ""}
-                    onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })}
-                  />
-                  <TextAreaInput
-                    label="Quote"
-                    value={item.description || ""}
-                    onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })}
-                    rows={2}
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <TextInput
-                      label="Author"
-                      value={item.author || ""}
-                      onChange={(v) => updateItem(selectedSectionId, item.id, { author: v })}
-                    />
-                    <TextInput
-                      label="Role"
-                      value={item.role || ""}
-                      onChange={(v) => updateItem(selectedSectionId, item.id, { role: v })}
-                    />
-                  </div>
-                  <TextInput
-                    label="Avatar URL (optional)"
-                    value={item.imageUrl || ""}
-                    onChange={(v) => updateItem(selectedSectionId, item.id, { imageUrl: v })}
-                  />
+                  {/* Screenshot variant: simplified fields */}
+                  {selectedSection.content.testimonialVariant === "screenshots" ? (
+                    <>
+                      <TextInput
+                        label="Screenshot URL"
+                        value={item.proofImages?.[0] || item.imageUrl || ""}
+                        onChange={(v) => updateItem(selectedSectionId, item.id, { proofImages: [v], imageUrl: v })}
+                        placeholder="Paste screenshot URL from Discord, Twitter, etc."
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <TextInput
+                          label="Source/Author (optional)"
+                          value={item.author || ""}
+                          onChange={(v) => updateItem(selectedSectionId, item.id, { author: v })}
+                          placeholder="e.g., Discord DM"
+                        />
+                        <TextInput
+                          label="Label (optional)"
+                          value={item.role || ""}
+                          onChange={(v) => updateItem(selectedSectionId, item.id, { role: v })}
+                          placeholder="e.g., Community member"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <TextInput
+                        label="Quote Title"
+                        value={item.title || ""}
+                        onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })}
+                      />
+                      <TextAreaInput
+                        label="Quote"
+                        value={item.description || ""}
+                        onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })}
+                        rows={2}
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <TextInput
+                          label="Author"
+                          value={item.author || ""}
+                          onChange={(v) => updateItem(selectedSectionId, item.id, { author: v })}
+                        />
+                        <TextInput
+                          label="Role"
+                          value={item.role || ""}
+                          onChange={(v) => updateItem(selectedSectionId, item.id, { role: v })}
+                        />
+                      </div>
+                      <TextInput
+                        label="Avatar URL (optional)"
+                        value={item.imageUrl || ""}
+                        onChange={(v) => updateItem(selectedSectionId, item.id, { imageUrl: v })}
+                      />
+                      <TextAreaInput
+                        label="Proof Images (one URL per line)"
+                        value={(item.proofImages || []).join("\n")}
+                        onChange={(v) => updateItem(selectedSectionId, item.id, { proofImages: v.split("\n").filter(url => url.trim()) })}
+                        rows={3}
+                        placeholder="https://example.com/screenshot1.png&#10;https://example.com/screenshot2.png"
+                      />
+                    </>
+                  )}
                 </ItemCard>
               ))}
               <button
@@ -3997,6 +4408,13 @@ export default function PropertyPanel() {
                       ))}
                     </select>
                   </div>
+                  <TextAreaInput
+                    label="Proof Images (one URL per line)"
+                    value={(item.proofImages || []).join("\n")}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { proofImages: v.split("\n").filter(url => url.trim()) })}
+                    rows={3}
+                    placeholder="https://example.com/screenshot1.png&#10;https://example.com/screenshot2.png"
+                  />
                 </ItemCard>
               ))}
               <button
@@ -4451,6 +4869,13 @@ export default function PropertyPanel() {
                     onChange={(v) => updateItem(selectedSectionId, item.id, { rating: v })}
                     min={1}
                     max={5}
+                  />
+                  <TextAreaInput
+                    label="Proof Images (one URL per line)"
+                    value={(item.proofImages || []).join("\n")}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { proofImages: v.split("\n").filter(url => url.trim()) })}
+                    rows={3}
+                    placeholder="https://example.com/screenshot1.png&#10;https://example.com/screenshot2.png"
                   />
                 </ItemCard>
               ))}
@@ -5535,15 +5960,40 @@ export default function PropertyPanel() {
               </p>
             </div>
 
-            {/* Items List Note */}
-            <div className="space-y-2">
-              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
-                Feature Items (6-10 recommended)
-              </label>
-              <p className="text-xs text-white/30">
-                Manage items in the Items tab below
-              </p>
-            </div>
+            <ItemsSection label="Offer Items">
+              {selectedSection.items?.map((item, index) => (
+                <ItemCard
+                  key={item.id}
+                  ref={(el) => {
+                    if (el) {
+                      itemRefs.current.set(item.id, el);
+                    } else {
+                      itemRefs.current.delete(item.id);
+                    }
+                  }}
+                  index={index}
+                  isSelected={selectedItemId === item.id}
+                  onRemove={() => removeItem(selectedSectionId, item.id)}
+                >
+                  <TextInput
+                    label="Title"
+                    value={item.title || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { title: v })}
+                  />
+                  <TextInput
+                    label="Description"
+                    value={item.description || ""}
+                    onChange={(v) => updateItem(selectedSectionId, item.id, { description: v })}
+                  />
+                </ItemCard>
+              ))}
+              <button
+                onClick={() => addItem(selectedSectionId)}
+                className="w-full py-2 rounded-lg bg-white/5 text-xs text-white/60 hover:bg-white/10 transition-colors"
+              >
+                + Add Item
+              </button>
+            </ItemsSection>
           </div>
         )}
 

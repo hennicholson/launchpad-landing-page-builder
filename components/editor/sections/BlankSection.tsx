@@ -16,6 +16,7 @@ export default function BlankSection({ section }: Props) {
       section={section}
       colorScheme={page.colorScheme}
       typography={page.typography}
+      contentWidth={page.contentWidth}
     />
   );
 }

@@ -186,7 +186,7 @@ export default function HeroAnimatedPreview({
             {/* Subheading */}
             {content.showSubheading !== false && content.subheading && (
               <motion.p
-                className="text-base sm:text-lg lg:text-xl max-w-3xl mx-auto leading-relaxed"
+                className="text-base sm:text-lg lg:text-xl mx-auto leading-relaxed"
                 style={{
                   fontFamily: bodyFont,
                   color: `${textColor}b3`,

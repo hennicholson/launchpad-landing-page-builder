@@ -1,12 +1,14 @@
 "use client";
 
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import { getContentWidthClass } from "@/lib/page-schema";
 import { SectionBackground } from "../SectionBackground";
 
 export default function OfferDetailsSectionBase({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
   renderImage,
 }: BaseSectionProps) {
@@ -42,7 +44,7 @@ export default function OfferDetailsSectionBase({
 
       {/* Content Container */}
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
+        <div className={`${getContentWidthClass(contentWidth)} mx-auto`}>
           {/* Badge */}
           {content.showBadge && content.badge && (
             <div className="flex justify-center mb-4 sm:mb-6">
@@ -129,18 +131,18 @@ export default function OfferDetailsSectionBase({
                     alt: content.featuredImageAlt || "Product image",
                     sectionId: section.id,
                     field: "featuredImageUrl",
-                    className: "w-full max-w-lg mx-auto rounded-lg",
+                    className: "w-full rounded-lg",
                   })
                 ) : (
                   <img
                     src={content.featuredImageUrl}
                     alt={content.featuredImageAlt || "Product image"}
-                    className="w-full max-w-lg mx-auto rounded-lg"
+                    className="w-full rounded-lg"
                   />
                 )
               ) : (
                 <div
-                  className="w-full max-w-lg mx-auto rounded-lg aspect-square flex items-center justify-center"
+                  className="w-full rounded-lg aspect-square flex items-center justify-center"
                   style={{ backgroundColor: `${accentColor}20` }}
                 >
                   <span
@@ -176,33 +178,37 @@ export default function OfferDetailsSectionBase({
                       </svg>
 
                       {/* Item Content */}
-                      <div className="flex-1">
+                      <div className="flex-1 flex flex-col">
                         {/* Title */}
-                        {renderText ? (
-                          renderText({
-                            value: item.title || `Feature ${index + 1}`,
-                            sectionId: section.id,
-                            field: `items.${index}.title`,
-                            className: "text-base sm:text-lg font-semibold mb-1",
-                            style: { color: textColor, fontFamily: bodyFont },
-                          })
-                        ) : (
-                          <h3
-                            className="text-base sm:text-lg font-semibold mb-1"
-                            style={{ color: textColor, fontFamily: bodyFont }}
-                          >
-                            {item.title || `Feature ${index + 1}`}
-                          </h3>
-                        )}
+                        <div className="block">
+                          {renderText ? (
+                            renderText({
+                              value: item.title || `Feature ${index + 1}`,
+                              sectionId: section.id,
+                              field: "title",
+                              itemId: item.id,
+                              className: "text-base sm:text-lg font-semibold",
+                              style: { color: textColor, fontFamily: bodyFont },
+                            })
+                          ) : (
+                            <h3
+                              className="text-base sm:text-lg font-semibold"
+                              style={{ color: textColor, fontFamily: bodyFont }}
+                            >
+                              {item.title || `Feature ${index + 1}`}
+                            </h3>
+                          )}
+                        </div>
 
                         {/* Description */}
                         {item.description && (
-                          <>
+                          <div className="block mt-1">
                             {renderText ? (
                               renderText({
                                 value: item.description,
                                 sectionId: section.id,
-                                field: `items.${index}.description`,
+                                field: "description",
+                                itemId: item.id,
                                 className: "text-sm opacity-80",
                                 style: { color: textColor, fontFamily: bodyFont },
                               })
@@ -214,7 +220,7 @@ export default function OfferDetailsSectionBase({
                                 {item.description}
                               </p>
                             )}
-                          </>
+                          </div>
                         )}
                       </div>
                     </div>

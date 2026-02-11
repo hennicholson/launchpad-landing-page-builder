@@ -13,6 +13,22 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+# Next.js server handler - needs more memory for PDF generation with Chromium
+# Extended timeout for AI generation (requires Netlify Pro)
+[functions."___netlify-server-handler"]
+  external_node_modules = ["@sparticuz/chromium", "puppeteer-core"]
+  included_files = ["node_modules/@sparticuz/chromium/**"]
+  timeout = 60
+
 # Background function for deploy (can run up to 15 minutes)
 [functions."deploy-background"]
   external_node_modules = ["@neondatabase/serverless", "drizzle-orm"]
+
+# Background function for AI generation (can run up to 15 minutes)
+[functions."ai-generation-background"]
+  external_node_modules = ["@neondatabase/serverless", "drizzle-orm", "@anthropic-ai/sdk"]
+
+# Background function for PDF export (can run up to 15 minutes)
+[functions."pdf-export-background"]
+  external_node_modules = ["@sparticuz/chromium", "puppeteer-core", "@neondatabase/serverless", "drizzle-orm"]
+  included_files = ["node_modules/@sparticuz/chromium/**"]

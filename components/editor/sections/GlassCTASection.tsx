@@ -18,6 +18,7 @@ export default function GlassCTASection({ section }: Props) {
       section={section}
       colorScheme={page.colorScheme}
       typography={page.typography}
+      contentWidth={page.contentWidth}
       renderText={(props) => (
         <EditableText
           {...props}

@@ -41,7 +41,7 @@ export default function FooterSectionBase({
         style={{ backgroundColor: `${textColor}0d` }}
       />
 
-      <div className="max-w-6xl mx-auto px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto px-6 lg:px-8">
         <div className="flex flex-col items-center text-center">
           {/* Logo */}
           {content.showLogo !== false && (content.logoUrl || content.logoText) && (

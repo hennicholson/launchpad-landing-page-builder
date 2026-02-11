@@ -386,4 +386,5 @@ export const skinnyTemplate: LandingPage = {
   },
   animationPreset: "moderate",
   smoothScroll: true,
+  contentWidth: "wide", // Wide layout for premium look
 };

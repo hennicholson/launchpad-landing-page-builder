@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import type { SectionContent, SectionItem, GalleryVariant } from "@/lib/page-schema";
+import { getContentWidthClass } from "@/lib/page-schema";
 import { SectionBackground } from "../SectionBackground";
 import { FocusRail, type FocusRailItem } from "@/components/ui/focus-rail";
 import { useEditorStore } from "@/lib/store";
@@ -151,7 +152,7 @@ function FocusRailVariant({
       items={focusItems}
       loop={true}
       autoPlay={false}
-      className="mx-auto max-w-7xl"
+      className="mx-auto max-w-2xl"
     />
   );
 }
@@ -161,6 +162,7 @@ export default function GallerySectionBase({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
   renderImage,
 }: BaseSectionProps) {
@@ -195,7 +197,7 @@ export default function GallerySectionBase({
       }}
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
-      <div className="max-w-6xl mx-auto px-6 lg:px-8">
+      <div className={`${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8`}>
         {/* Header */}
         <motion.div
           className="text-center mb-16"

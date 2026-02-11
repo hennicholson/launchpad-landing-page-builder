@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import { getContentWidthClass } from "@/lib/page-schema";
 import { SectionBackground } from "../SectionBackground";
 
 export default function AudienceSectionBase({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
 }: BaseSectionProps) {
   const { content } = section;
@@ -44,7 +46,7 @@ export default function AudienceSectionBase({
         }}
       />
 
-      <div className="relative max-w-5xl mx-auto px-6 lg:px-8">
+      <div className={`relative ${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8`}>
         {/* Header */}
         {content.showHeading !== false && content.heading && (
           <motion.h2

@@ -18,6 +18,7 @@ export default function ValuePropositionSection({ section }: Props) {
       section={section}
       colorScheme={page.colorScheme}
       typography={page.typography}
+      contentWidth={page.contentWidth}
       renderText={(props) => {
         // Use EditableRichText for bodyParagraphs (rich text), EditableText for others (plain text)
         if (props.isRichText && props.paragraphIndex !== undefined) {

@@ -1195,7 +1195,7 @@ function renderSection(section: PageSection, colorScheme: ColorScheme, typograph
 /**
  * Generate complete HTML page from LandingPage data
  */
-export function renderLandingPage(page: LandingPage, settings?: ProjectSettings): string {
+export function renderLandingPage(page: LandingPage, settings?: ProjectSettings, forPdf?: boolean): string {
   const { colorScheme, typography, sections } = page;
 
   const fontsUrl = generateGoogleFontsUrl(typography);
@@ -1288,6 +1288,14 @@ export function renderLandingPage(page: LandingPage, settings?: ProjectSettings)
       opacity: 1;
       transform: translateY(0);
     }
+
+    ${forPdf ? `
+    /* PDF Export: Show all animated elements immediately */
+    [data-animate] {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+    ` : ""}
 
     /* ==================== BUTTON EFFECTS ==================== */
 

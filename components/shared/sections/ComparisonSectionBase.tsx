@@ -58,7 +58,7 @@ export default function ComparisonSectionBase({
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
           className="text-center mb-10 sm:mb-16"
@@ -123,12 +123,12 @@ export default function ComparisonSectionBase({
           )}
         </motion.div>
 
-        {/* Two Card Layout */}
+        {/* Two Card Layout - using subgrid for aligned content */}
         {content.showItems !== false && items && items.length >= 2 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8" style={{ gridAutoRows: '1fr' }}>
             {/* Problem Card */}
             <motion.div
-              className="rounded-2xl p-6 sm:p-8 lg:p-10"
+              className="rounded-2xl p-6 sm:p-8 lg:p-10 flex flex-col h-full"
               style={{
                 backgroundColor: cardBg,
                 border: `1px solid ${cardBorder}`,
@@ -181,9 +181,9 @@ export default function ComparisonSectionBase({
               </div>
 
               {/* Subtitle */}
-              {problemCard?.description && (
-                <div className="mb-6 sm:mb-8">
-                  {renderText ? (
+              <div className="mb-6 sm:mb-8">
+                {problemCard?.description && (
+                  renderText ? (
                     renderText({
                       value: problemCard.description,
                       sectionId: section.id,
@@ -199,9 +199,9 @@ export default function ComparisonSectionBase({
                     >
                       {problemCard.description}
                     </p>
-                  )}
-                </div>
-              )}
+                  )
+                )}
+              </div>
 
               {/* Section Label */}
               <div
@@ -212,7 +212,7 @@ export default function ComparisonSectionBase({
               </div>
 
               {/* Bullet Points */}
-              <ul className="space-y-3 sm:space-y-4">
+              <ul className="space-y-3 sm:space-y-4 flex-grow">
                 {problemCard?.features?.map((feature: string, index: number) => (
                   <motion.li
                     key={index}
@@ -244,7 +244,7 @@ export default function ComparisonSectionBase({
 
             {/* Solution Card */}
             <motion.div
-              className="rounded-2xl p-6 sm:p-8 lg:p-10"
+              className="rounded-2xl p-6 sm:p-8 lg:p-10 flex flex-col h-full"
               style={{
                 background: solutionCardBg,
                 border: `1px solid ${accentColor}30`,
@@ -275,8 +275,8 @@ export default function ComparisonSectionBase({
                 </svg>
               </div>
 
-              {/* Title */}
-              <div className="mb-2">
+              {/* Title - fixed height for alignment */}
+              <div className="mb-2 min-h-[72px] sm:min-h-[80px]">
                 {renderText ? (
                   renderText({
                     value: solutionCard?.title || "The Solution",
@@ -296,10 +296,10 @@ export default function ComparisonSectionBase({
                 )}
               </div>
 
-              {/* Subtitle */}
-              {solutionCard?.description && (
-                <div className="mb-6 sm:mb-8">
-                  {renderText ? (
+              {/* Subtitle - fixed height for alignment */}
+              <div className="mb-6 sm:mb-8 min-h-[24px]">
+                {solutionCard?.description && (
+                  renderText ? (
                     renderText({
                       value: solutionCard.description,
                       sectionId: section.id,
@@ -315,9 +315,9 @@ export default function ComparisonSectionBase({
                     >
                       {solutionCard.description}
                     </p>
-                  )}
-                </div>
-              )}
+                  )
+                )}
+              </div>
 
               {/* Section Label */}
               <div
@@ -328,7 +328,7 @@ export default function ComparisonSectionBase({
               </div>
 
               {/* Bullet Points */}
-              <ul className="space-y-3 sm:space-y-4">
+              <ul className="space-y-3 sm:space-y-4 flex-grow">
                 {solutionCard?.features?.map((feature: string, index: number) => (
                   <motion.li
                     key={index}

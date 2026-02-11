@@ -3,12 +3,14 @@
 import { motion } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import type { SectionItem } from "@/lib/page-schema";
+import { getContentWidthClass } from "@/lib/page-schema";
 import { SectionBackground } from "../SectionBackground";
 
 export default function FoundersSectionBase({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
   renderImage,
 }: BaseSectionProps) {
@@ -43,7 +45,7 @@ export default function FoundersSectionBase({
         }}
       />
 
-      <div className="relative max-w-6xl mx-auto px-6 lg:px-8">
+      <div className={`relative ${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8`}>
         {/* Header */}
         <div className="text-center mb-16">
           {content.showBadge !== false && content.badge && (

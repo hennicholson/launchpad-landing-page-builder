@@ -43,7 +43,7 @@ export default function LogoCloudSectionBase({
       }}
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
-      <div className="max-w-6xl mx-auto px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto px-6 lg:px-8">
         {/* Header */}
         <motion.div
           className="text-center mb-12"

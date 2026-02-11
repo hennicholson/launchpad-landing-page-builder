@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import type { SectionItem } from "@/lib/page-schema";
+import { getContentWidthClass } from "@/lib/page-schema";
 import SectionButton, { getButtonPropsFromContent } from "./SectionButton";
 import { SectionBackground } from "../SectionBackground";
 import { useEditorStore } from "@/lib/store";
@@ -51,6 +52,7 @@ export default function ProcessSectionBase({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
 }: BaseSectionProps) {
   const { content, items } = section;
@@ -88,7 +90,7 @@ export default function ProcessSectionBase({
         style={{ backgroundColor: accentColor }}
       />
 
-      <div className="relative max-w-5xl mx-auto px-6 lg:px-8">
+      <div className={`relative ${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8`}>
         {/* Header */}
         <motion.div
           className="text-center mb-20"

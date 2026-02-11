@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useRef, useState } from "react";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import { getContentWidthClass } from "@/lib/page-schema";
 import { BrandMarquee } from "../../primitives/BrandMarquee";
 import { VideoWithControls } from "../../primitives/VideoWithControls";
 import SectionButton, { getButtonPropsFromContent } from "../SectionButton";
@@ -30,6 +31,7 @@ export default function HeroDefault({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
   renderImage,
 }: BaseSectionProps) {
@@ -171,7 +173,7 @@ export default function HeroDefault({
       {/* ============================================
           MAIN CONTENT CONTAINER
           ============================================ */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className={`relative z-10 ${getContentWidthClass(contentWidth)} mx-auto px-4 sm:px-6 lg:px-8`}>
         <div className="text-center space-y-6 md:space-y-8">
           {/* ============================================
               BADGE - Glass Morphism with Magnetic Effect
@@ -304,7 +306,7 @@ export default function HeroDefault({
               ============================================ */}
           {content.showSubheading !== false && content.subheading && (
             <motion.p
-              className="text-base sm:text-lg lg:text-xl max-w-2xl mx-auto leading-relaxed px-4 sm:px-0 text-center"
+              className="text-base sm:text-lg lg:text-xl leading-relaxed px-4 sm:px-0 text-center"
               style={{
                 fontFamily: bodyFont,
                 color: `${textColor}cc`,

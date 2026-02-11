@@ -1,6 +1,7 @@
 "use client";
 
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import { getContentWidthClass } from "@/lib/page-schema";
 import { SectionBackground } from "../SectionBackground";
 
 // Icon mapping for common feature icons
@@ -21,6 +22,7 @@ export default function DetailedFeaturesSectionBase({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
   renderImage,
 }: BaseSectionProps) {
@@ -72,7 +74,7 @@ export default function DetailedFeaturesSectionBase({
 
       {/* Content Container */}
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
+        <div className={`${getContentWidthClass(contentWidth)} mx-auto`}>
           {/* Section Heading */}
           {content.showHeading !== false && content.heading && (
             <div className="mb-4 text-center">
@@ -97,7 +99,7 @@ export default function DetailedFeaturesSectionBase({
 
           {/* Intro Text */}
           {content.introText && (
-            <div className="mb-8 sm:mb-12 text-center max-w-3xl mx-auto">
+            <div className="mb-8 sm:mb-12 text-center max-w-2xl mx-auto">
               {renderText ? (
                 renderText({
                   value: content.introText,

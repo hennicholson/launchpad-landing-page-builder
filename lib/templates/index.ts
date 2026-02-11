@@ -20,6 +20,8 @@ export type Template = {
   preview?: string;
   template: LandingPage;
   tags: string[];
+  author?: string;
+  authorUrl?: string;
 };
 
 // Blank template for starting from scratch
@@ -128,8 +130,11 @@ export const templates: Template[] = [
     name: "Sales Funnel",
     description: "High-converting sales funnel with proven 12-section structure. Perfect for digital products, courses, and services. Text-focused for maximum conversion.",
     thumbnail: "/templates/sales-funnel-thumb.png",
+    preview: "/templates/sales-funnel-preview.jpg",
     template: salesFunnelTemplate,
     tags: ["sales", "funnel", "conversion", "lead-gen", "copy-heavy", "light"],
+    author: "Josh Gavin",
+    authorUrl: "https://twitter.com/joshgavin",
   },
 ];
 

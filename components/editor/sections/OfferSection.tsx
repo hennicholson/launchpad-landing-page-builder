@@ -17,6 +17,7 @@ export default function OfferSection({ section }: Props) {
       section={section}
       colorScheme={page.colorScheme}
       typography={page.typography}
+      contentWidth={page.contentWidth}
       renderText={(props) => (
         <EditableText
           value={props.value}

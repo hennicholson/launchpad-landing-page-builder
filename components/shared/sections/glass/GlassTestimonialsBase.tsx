@@ -148,6 +148,23 @@ export function GlassTestimonialsBase({
                   </Card3DItem>
                 )}
 
+                {/* Proof Images */}
+                {testimonial.proofImages && testimonial.proofImages.length > 0 && (
+                  <Card3DItem translateZ={30} className="mb-4">
+                    <div className={`grid gap-2 ${testimonial.proofImages.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+                      {testimonial.proofImages.map((url, imgIndex) => (
+                        <img
+                          key={imgIndex}
+                          src={url}
+                          alt={`Proof screenshot ${imgIndex + 1}`}
+                          className="w-full rounded-lg object-cover"
+                          style={{ border: `1px solid ${textColor}15` }}
+                        />
+                      ))}
+                    </div>
+                  </Card3DItem>
+                )}
+
                 {/* Author Info */}
                 <Card3DItem translateZ={45} className="flex items-center gap-3">
                   {/* Avatar */}

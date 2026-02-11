@@ -7,9 +7,11 @@ import SectionList from "@/components/editor/SectionList";
 import Canvas from "@/components/editor/Canvas";
 import PropertyPanel from "@/components/editor/PropertyPanel";
 import DeployModal from "@/components/editor/DeployModal";
+import { DomainSettingsModal } from "@/components/editor/DomainSettingsModal";
 import { updateProject, type FullProject } from "@/lib/actions/projects";
 import type { LandingPage } from "@/lib/page-schema";
 import { useFullScreen, useFullScreenKeyboardShortcut } from "@/lib/useFullScreen";
+import { AICommandInput, AIPreviewModal, AIGenerationStatus, AIUsageIndicator } from "@/components/editor/ai";
 
 type Props = {
   project: FullProject;
@@ -25,14 +27,40 @@ export default function EditorClient({ project, userPlan }: Props) {
   const [deployError, setDeployError] = useState<string | null>(null);
   const [deploySuccess, setDeploySuccess] = useState(false);
   const [showDeployModal, setShowDeployModal] = useState(false);
+  const [showDomainModal, setShowDomainModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showDraftRecovery, setShowDraftRecovery] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [aiUsage, setAiUsage] = useState<{
+    copyUsed: number;
+    copyLimit: number;
+    componentUsed: number;
+    componentLimit: number;
+  } | null>(null);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const saveRetryCount = useRef(0);
   const initializedRef = useRef(false);
 
-  const { page, setPage, isDirty, markSaved, undo, redo, canUndo, canRedo, selectSection } = useEditorStore();
+  const {
+    page,
+    setPage,
+    isDirty,
+    markSaved,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    selectSection,
+    selectedSectionId,
+    aiCommandInputOpen,
+    openAICommandInput,
+    closeAICommandInput,
+    aiLoadingAction,
+    aiPendingSuggestion,
+    approveAISuggestion,
+    rejectAISuggestion,
+  } = useEditorStore();
 
   // Full-screen mode
   const { isFullScreen, toggleFullScreen, isSupported: isFullScreenSupported } = useFullScreen();
@@ -47,6 +75,27 @@ export default function EditorClient({ project, userPlan }: Props) {
       initializedRef.current = true;
     }
   }, [project.pageData, setPage]);
+
+  // Fetch AI usage on mount
+  useEffect(() => {
+    const fetchAIUsage = async () => {
+      try {
+        const response = await fetch("/api/ai/usage");
+        if (response.ok) {
+          const data = await response.json();
+          setAiUsage({
+            copyUsed: data.copyUsed || 0,
+            copyLimit: data.copyLimit || 100,
+            componentUsed: data.componentUsed || 0,
+            componentLimit: data.componentLimit || 20,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch AI usage:", error);
+      }
+    };
+    fetchAIUsage();
+  }, []);
 
   // Save to localStorage as backup
   const saveDraftToLocalStorage = useCallback(() => {
@@ -164,15 +213,29 @@ export default function EditorClient({ project, userPlan }: Props) {
         }
       }
 
-      // Escape: Deselect section
+      // Escape: Deselect section or close AI command input
       if (e.key === "Escape") {
-        selectSection(null);
+        if (aiCommandInputOpen) {
+          closeAICommandInput();
+        } else {
+          selectSection(null);
+        }
+      }
+
+      // Cmd/Ctrl + K: Open AI command input
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        if (aiCommandInputOpen) {
+          closeAICommandInput();
+        } else {
+          openAICommandInput();
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isDirty, saving, performAutoSave, undo, redo, canUndo, canRedo, selectSection]);
+  }, [isDirty, saving, performAutoSave, undo, redo, canUndo, canRedo, selectSection, aiCommandInputOpen, openAICommandInput, closeAICommandInput]);
 
   // Check for draft recovery on mount
   useEffect(() => {
@@ -226,6 +289,77 @@ export default function EditorClient({ project, userPlan }: Props) {
   const handleDiscardDraft = () => {
     localStorage.removeItem(`draft-${project.id}`);
     setShowDraftRecovery(false);
+  };
+
+  // Handle PDF export (uses background function with polling)
+  const handleExportPdf = async () => {
+    setExportingPdf(true);
+    try {
+      // Save first if there are unsaved changes
+      if (isDirty) {
+        await performAutoSave();
+      }
+
+      // Start the export (triggers background function)
+      const startResponse = await fetch(`/api/export-pdf/${project.id}`, { method: "POST" });
+
+      if (!startResponse.ok) {
+        const errorData = await startResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to start PDF export");
+      }
+
+      const { exportId } = await startResponse.json();
+
+      // Poll for completion
+      const poll = async (): Promise<void> => {
+        const res = await fetch(`/api/export-pdf/${project.id}?exportId=${exportId}`);
+        const contentType = res.headers.get("content-type");
+
+        // If response is PDF, download it
+        if (contentType?.includes("application/pdf")) {
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${projectName.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-copy-sheet.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          return;
+        }
+
+        // Otherwise parse JSON status
+        const data = await res.json();
+
+        if (data.status === "complete") {
+          // Fetch the PDF again to download
+          const pdfRes = await fetch(`/api/export-pdf/${project.id}?exportId=${exportId}`);
+          const blob = await pdfRes.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${projectName.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-copy-sheet.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        } else if (data.status === "failed") {
+          throw new Error(data.error || "PDF generation failed");
+        } else {
+          // Still processing (pending or generating), poll again
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          return poll();
+        }
+      };
+
+      await poll();
+    } catch (error) {
+      console.error("PDF export failed:", error);
+      setSaveError(error instanceof Error ? error.message : "Failed to export PDF");
+    } finally {
+      setExportingPdf(false);
+    }
   };
 
   return (
@@ -283,6 +417,16 @@ export default function EditorClient({ project, userPlan }: Props) {
               </svg>
             </a>
           )}
+          {/* AI Usage Indicator */}
+          {aiUsage && (
+            <AIUsageIndicator
+              copyUsed={aiUsage.copyUsed}
+              copyLimit={aiUsage.copyLimit}
+              componentUsed={aiUsage.componentUsed}
+              componentLimit={aiUsage.componentLimit}
+              onUpgrade={() => setShowUpgradeModal(true)}
+            />
+          )}
           {/* Full-screen toggle button */}
           {isFullScreenSupported && (
             <button
@@ -301,6 +445,24 @@ export default function EditorClient({ project, userPlan }: Props) {
               )}
             </button>
           )}
+          {/* Export Copy Sheet button */}
+          <button
+            onClick={handleExportPdf}
+            disabled={exportingPdf}
+            className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Export Copy Sheet"
+          >
+            {exportingPdf ? (
+              <svg className="w-5 h-5 text-white/60 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+              </svg>
+            )}
+          </button>
           <button
             onClick={handleSave}
             disabled={saving || !isDirty}
@@ -308,6 +470,19 @@ export default function EditorClient({ project, userPlan }: Props) {
           >
             {saving ? "Saving..." : "Save"}
           </button>
+          {/* Domain Button - Pro only */}
+          {(userPlan === "pro" || userPlan === "enterprise") && (
+            <button
+              onClick={() => setShowDomainModal(true)}
+              className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-2"
+              title="Custom Domain"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+              </svg>
+              Domain
+            </button>
+          )}
           <button
             onClick={() => {
               // Check if user is on free plan
@@ -432,6 +607,38 @@ export default function EditorClient({ project, userPlan }: Props) {
           }}
         />
       )}
+
+      {/* Domain Settings Modal - Pro only */}
+      {showDomainModal && (
+        <DomainSettingsModal
+          projectId={project.id}
+          onClose={() => setShowDomainModal(false)}
+        />
+      )}
+
+      {/* AI Command Input (Cmd+K) */}
+      <AICommandInput
+        isOpen={aiCommandInputOpen}
+        onClose={closeAICommandInput}
+        sectionId={selectedSectionId}
+      />
+
+      {/* AI Preview Modal */}
+      {aiPendingSuggestion && (
+        <AIPreviewModal
+          isOpen={!!aiPendingSuggestion}
+          suggestion={aiPendingSuggestion}
+          onApprove={approveAISuggestion}
+          onReject={rejectAISuggestion}
+          onClose={rejectAISuggestion}
+        />
+      )}
+
+      {/* AI Generation Status */}
+      <AIGenerationStatus
+        isLoading={!!aiLoadingAction}
+        message={aiLoadingAction || "AI is thinking..."}
+      />
 
       {/* Upgrade Modal - Free users trying to publish */}
       {showUpgradeModal && (

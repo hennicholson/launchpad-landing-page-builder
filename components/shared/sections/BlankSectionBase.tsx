@@ -1,12 +1,14 @@
 "use client";
 
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import { getContentWidthClass } from "@/lib/page-schema";
 import { SectionBackground } from "../SectionBackground";
 
 export default function BlankSectionBase({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
 }: BaseSectionProps) {
   const { content } = section;
@@ -34,7 +36,7 @@ export default function BlankSectionBase({
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       {/* Empty canvas area - users add elements here */}
-      <div className="relative w-full h-full max-w-6xl mx-auto px-6 lg:px-8">
+      <div className={`relative w-full h-full ${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8`}>
         {/* Optional heading and subheading */}
         {(content.heading || content.subheading) && (
           <div className="text-center mb-12">

@@ -4,6 +4,17 @@ import type { LandingPage, ProjectSettings } from "./page-schema";
 // Plan types for the business model
 export type PlanType = "free" | "starter" | "pro" | "enterprise";
 
+// Custom domain status types
+export type DomainStatus =
+  | "pending"      // User added domain, waiting for DNS verification
+  | "verifying"    // Actively checking DNS records
+  | "provisioning" // Adding to Netlify and provisioning SSL
+  | "active"       // Fully configured and working
+  | "failed"       // Verification or provisioning failed
+  | "expired";     // Verification window expired (24h)
+
+export type DomainType = "apex" | "subdomain";
+
 export type PlanLimits = {
   projects: number;
   deploys: number;
@@ -11,6 +22,7 @@ export type PlanLimits = {
   aiComponentGenerations: number; // per month, resets, no stacking
   canPublish: boolean;
   canUseSubdomain: boolean;
+  canUseCustomDomain: boolean;    // Pro+ can connect their own domains
   trackingEnabled: boolean;       // true = we collect funnel analytics
 };
 
@@ -22,6 +34,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     aiComponentGenerations: 0,
     canPublish: false,
     canUseSubdomain: false,
+    canUseCustomDomain: false,
     trackingEnabled: true,  // We collect data on free funnels
   },
   starter: {
@@ -31,15 +44,17 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     aiComponentGenerations: 5,
     canPublish: true,
     canUseSubdomain: false,
+    canUseCustomDomain: false,
     trackingEnabled: true,
   },
   pro: {
     projects: 7,
     deploys: -1,  // unlimited
-    aiCopyGenerations: 50,
-    aiComponentGenerations: 25,
+    aiCopyGenerations: 25,      // section edits per month
+    aiComponentGenerations: 50, // full page generations per month
     canPublish: true,
     canUseSubdomain: true,
+    canUseCustomDomain: true,  // Pro can connect custom domains
     trackingEnabled: false,  // Pro = secure, no tracking
   },
   enterprise: {
@@ -49,6 +64,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     aiComponentGenerations: -1,  // unlimited
     canPublish: true,
     canUseSubdomain: true,
+    canUseCustomDomain: true,  // Enterprise can connect custom domains
     trackingEnabled: false,
   },
 };
@@ -98,6 +114,16 @@ export const projects = pgTable("projects", {
   netlifySiteName: text("netlify_site_name"), // Netlify subdomain name
   liveUrl: text("live_url"), // Full deployed URL
   customDomain: text("custom_domain"), // Optional custom domain (pro feature)
+  customDomainStatus: text("custom_domain_status").$type<DomainStatus>(), // pending, verifying, active, failed, expired
+  customDomainType: text("custom_domain_type").$type<DomainType>(), // apex or subdomain
+  customDomainVerificationToken: text("custom_domain_verification_token"), // Token for DNS TXT verification
+  customDomainVerifiedAt: timestamp("custom_domain_verified_at"), // When domain was verified
+  customDomainAddedAt: timestamp("custom_domain_added_at"), // When domain was first added
+  customDomainError: text("custom_domain_error"), // Error message if verification/provisioning failed
+  // Netlify DNS mode fields
+  useNetlifyDns: text("use_netlify_dns").default("false"), // "true" if using Netlify DNS
+  netlifyDnsZoneId: text("netlify_dns_zone_id"), // Netlify DNS zone ID
+  netlifyNameservers: text("netlify_nameservers"), // JSON array of nameservers
   isPublished: text("is_published").default("false"), // Whether currently live
   thumbnailUrl: text("thumbnail_url"), // Screenshot thumbnail of the site
   createdAt: timestamp("created_at").defaultNow(),
@@ -136,6 +162,37 @@ export const assets = pgTable("assets", {
   filename: text("filename"),
   size: text("size"),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// AI Generation status types
+export type AIGenerationStatus = "pending" | "generating" | "complete" | "failed";
+
+// PDF Export status types
+export type PDFExportStatus = "pending" | "generating" | "complete" | "failed";
+
+// AI Generations - tracks background AI page generation jobs
+export const aiGenerations = pgTable("ai_generations", {
+  id: text("id").primaryKey(), // Short unique ID like deployments
+  userId: text("user_id").notNull(), // Whop user ID
+  status: text("status").$type<AIGenerationStatus>().notNull(),
+  input: jsonb("input"), // Generation parameters (description, wizardData)
+  result: jsonb("result").$type<LandingPage>(), // Generated page data
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// PDF Exports - tracks background PDF generation jobs
+export const pdfExports = pgTable("pdf_exports", {
+  id: text("id").primaryKey(), // Short unique ID
+  userId: uuid("user_id").notNull().references(() => users.id),
+  projectId: uuid("project_id").notNull().references(() => projects.id),
+  status: text("status").$type<PDFExportStatus>().notNull(),
+  fileData: text("file_data"), // Base64 encoded PDF
+  fileName: text("file_name"),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Admin accounts for dashboard access
@@ -259,3 +316,5 @@ export type Invoice = typeof invoices.$inferSelect;
 export type NewInvoice = typeof invoices.$inferInsert;
 export type CreditTransaction = typeof creditTransactions.$inferSelect;
 export type NewCreditTransaction = typeof creditTransactions.$inferInsert;
+export type PDFExport = typeof pdfExports.$inferSelect;
+export type NewPDFExport = typeof pdfExports.$inferInsert;

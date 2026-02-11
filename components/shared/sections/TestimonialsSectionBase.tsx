@@ -1,8 +1,10 @@
 "use client";
 
-import { motion } from "framer-motion";
+import React from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import type { SectionItem, TestimonialVariant } from "@/lib/page-schema";
+import { getContentWidthClass } from "@/lib/page-schema";
 import { ScrollColumn } from "../primitives/ScrollColumn";
 import { Testimonials, type TestimonialCardProps } from "@/components/ui/twitter-testimonial-cards";
 import { SectionBackground } from "../SectionBackground";
@@ -166,10 +168,118 @@ function ScrollingColumnsVariant({
   );
 }
 
+// Screenshots gallery variant - displays images as testimonials
+function ScreenshotsVariant({
+  items,
+  textColor,
+  accentColor,
+}: {
+  items: SectionItem[];
+  textColor: string;
+  accentColor: string;
+}) {
+  const [previewImage, setPreviewImage] = React.useState<{ url: string; author?: string; role?: string } | null>(null);
+
+  return (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {items.map((item, index) => {
+          // Use proofImages[0] or imageUrl as the screenshot
+          const screenshotUrl = item.proofImages?.[0] || item.imageUrl;
+          if (!screenshotUrl) return null;
+
+          return (
+            <motion.div
+              key={item.id || index}
+              className="group relative rounded-xl overflow-hidden aspect-square cursor-pointer"
+              style={{
+                backgroundImage: `url(${screenshotUrl})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: index * 0.1 }}
+              whileHover={{ scale: 1.05 }}
+              onClick={() => setPreviewImage({ url: screenshotUrl, author: item.author, role: item.role })}
+            >
+              {/* Author overlay on hover */}
+              {item.author && (
+                <div
+                  className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/70 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                >
+                  <p className="text-sm font-medium text-white">{item.author}</p>
+                  {item.role && (
+                    <p className="text-xs text-white/70">{item.role}</p>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Image Preview Modal */}
+      <AnimatePresence>
+        {previewImage && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPreviewImage(null)}
+          >
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+
+            {/* Image container */}
+            <motion.div
+              className="relative max-w-4xl max-h-[90vh] w-full"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={previewImage.url}
+                alt={previewImage.author ? `Screenshot from ${previewImage.author}` : "Screenshot preview"}
+                className="w-full h-auto max-h-[85vh] object-contain rounded-lg"
+              />
+
+              {/* Author info */}
+              {previewImage.author && (
+                <div className="absolute bottom-4 left-4 right-4 text-white">
+                  <p className="text-lg font-medium">{previewImage.author}</p>
+                  {previewImage.role && (
+                    <p className="text-sm text-white/70">{previewImage.role}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Close button */}
+              <button
+                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                onClick={() => setPreviewImage(null)}
+              >
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
 export default function TestimonialsSectionBase({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
 }: BaseSectionProps) {
   const { content, items } = section;
@@ -197,7 +307,7 @@ export default function TestimonialsSectionBase({
       }}
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
-      <div className="max-w-6xl mx-auto px-6 lg:px-8">
+      <div className={`${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8`}>
         {/* Header */}
         <motion.div
           className="text-center mb-16"
@@ -264,7 +374,13 @@ export default function TestimonialsSectionBase({
 
         {/* Testimonials Content - based on variant */}
         {content.showItems !== false && items && items.length > 0 ? (
-          variant === "twitter-cards" ? (
+          variant === "screenshots" ? (
+            <ScreenshotsVariant
+              items={items}
+              textColor={textColor}
+              accentColor={accentColor}
+            />
+          ) : variant === "twitter-cards" ? (
             <TwitterCardsVariant
               items={items}
               textColor={textColor}

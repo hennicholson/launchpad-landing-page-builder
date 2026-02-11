@@ -18,11 +18,13 @@ export default function OfferDetailsSection({ section }: Props) {
       section={section}
       colorScheme={page.colorScheme}
       typography={page.typography}
+      contentWidth={page.contentWidth}
       renderText={(props) => (
         <EditableText
           value={props.value}
           sectionId={props.sectionId}
           field={props.field}
+          itemId={props.itemId}
           className={props.className}
           style={props.style}
           useElementStyles
@@ -34,6 +36,7 @@ export default function OfferDetailsSection({ section }: Props) {
           alt={props.alt}
           sectionId={props.sectionId}
           field={props.field}
+          itemId={props.itemId}
           className={props.className}
         />
       )}

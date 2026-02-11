@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { CTAVariant, HeadingStyle } from "@/lib/page-schema";
+import type { CTAVariant, HeadingStyle, ContentWidth } from "@/lib/page-schema";
+import { getContentWidthClass } from "@/lib/page-schema";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import SectionButton, { getButtonPropsFromContent } from "./SectionButton";
 import { SectionBackground } from "../SectionBackground";
@@ -98,6 +99,7 @@ function CTACentered({
   headingFont,
   bodyFont,
   headingStyle,
+  contentWidth,
   renderText,
 }: {
   section: BaseSectionProps["section"];
@@ -108,13 +110,14 @@ function CTACentered({
   headingFont: string;
   bodyFont: string;
   headingStyle: HeadingStyle;
+  contentWidth?: ContentWidth;
   renderText?: BaseSectionProps["renderText"];
 }) {
   const { content } = section;
   const headingStyles = getHeadingStyles(headingStyle, textColor, accentColor, primaryColor);
 
   return (
-    <div className="relative max-w-4xl mx-auto px-6 lg:px-8 text-center">
+    <div className={`relative ${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8 text-center`}>
       {content.showBadge !== false && content.badge && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -215,6 +218,7 @@ function CTASplit({
   headingFont,
   bodyFont,
   headingStyle,
+  contentWidth,
   renderText,
 }: {
   section: BaseSectionProps["section"];
@@ -225,13 +229,14 @@ function CTASplit({
   headingFont: string;
   bodyFont: string;
   headingStyle: HeadingStyle;
+  contentWidth?: ContentWidth;
   renderText?: BaseSectionProps["renderText"];
 }) {
   const { content } = section;
   const headingStyles = getHeadingStyles(headingStyle, textColor, accentColor, primaryColor);
 
   return (
-    <div className="relative max-w-6xl mx-auto px-6 lg:px-8">
+    <div className={`relative ${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8`}>
       <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         <motion.div
           initial={{ opacity: 0, x: -30 }}
@@ -321,6 +326,7 @@ function CTABanner({
   accentColor,
   headingFont,
   bodyFont,
+  contentWidth,
   renderText,
 }: {
   section: BaseSectionProps["section"];
@@ -329,6 +335,7 @@ function CTABanner({
   accentColor: string;
   headingFont: string;
   bodyFont: string;
+  contentWidth?: ContentWidth;
   renderText?: BaseSectionProps["renderText"];
 }) {
   const { content } = section;
@@ -347,7 +354,7 @@ function CTABanner({
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
       >
-        <div className="max-w-6xl mx-auto px-6 lg:px-8">
+        <div className={`${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8`}>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-8">
             <div className="text-center sm:text-left">
               {content.showHeading !== false && content.heading && (
@@ -400,6 +407,7 @@ function CTAMinimal({
   headingFont,
   bodyFont,
   headingStyle,
+  contentWidth,
   renderText,
 }: {
   section: BaseSectionProps["section"];
@@ -410,13 +418,14 @@ function CTAMinimal({
   headingFont: string;
   bodyFont: string;
   headingStyle: HeadingStyle;
+  contentWidth?: ContentWidth;
   renderText?: BaseSectionProps["renderText"];
 }) {
   const { content } = section;
   const headingStyles = getHeadingStyles(headingStyle, textColor, accentColor, primaryColor);
 
   return (
-    <div className="relative max-w-3xl mx-auto px-6 lg:px-8 text-center">
+    <div className={`relative ${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8 text-center`}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -464,6 +473,7 @@ export default function CTASectionBase({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
 }: BaseSectionProps) {
   const { content } = section;
@@ -491,6 +501,7 @@ export default function CTASectionBase({
     headingFont,
     bodyFont,
     headingStyle,
+    contentWidth,
     renderText,
   };
 

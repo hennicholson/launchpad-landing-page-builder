@@ -1,5 +1,5 @@
 import type { ReactNode, CSSProperties } from "react";
-import type { PageSection, ColorScheme, Typography } from "./page-schema";
+import type { PageSection, ColorScheme, Typography, ContentWidth } from "./page-schema";
 
 // Props for rendering text content - used by renderText slot
 export type RenderTextProps = {
@@ -32,6 +32,8 @@ export type BaseSectionProps = {
   section: PageSection;
   colorScheme: ColorScheme;
   typography: Typography;
+  // Content width for consistent section alignment
+  contentWidth?: ContentWidth;
 
   // Optional render slots for editable content
   // If not provided, components render static content

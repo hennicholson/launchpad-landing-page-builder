@@ -53,6 +53,22 @@ type EditorState = {
   // AI editing state
   aiEditingSectionId: string | null;
   isAIGenerating: boolean;
+  aiCommandInputOpen: boolean;
+  aiLoadingAction: string | null;
+  aiPendingSuggestion: {
+    type: "text" | "section" | "page" | "style";
+    field?: string;
+    sectionId?: string;
+    itemId?: string;
+    original: unknown;
+    proposed: unknown;
+  } | null;
+  aiUsage: {
+    copyUsed: number;
+    copyLimit: number;
+    componentUsed: number;
+    componentLimit: number;
+  } | null;
 
   // Rich text editor state
   richTextEditor: {
@@ -99,7 +115,7 @@ type EditorState = {
   selectSection: (sectionId: string | null) => void;
   updateColorScheme: (colors: Partial<LandingPage["colorScheme"]>) => void;
   updateTypography: (typography: Partial<LandingPage["typography"]>) => void;
-  updatePageMeta: (meta: Partial<Pick<LandingPage, 'title' | 'description' | 'smoothScroll' | 'animationPreset'>>) => void;
+  updatePageMeta: (meta: Partial<Pick<LandingPage, 'title' | 'description' | 'smoothScroll' | 'animationPreset' | 'contentWidth'>>) => void;
   applyThemePreset: (presetId: string) => void;
 
   // Item management (for features, testimonials, pricing, etc.)
@@ -124,6 +140,13 @@ type EditorState = {
   closeAIEdit: () => void;
   setAIGenerating: (isGenerating: boolean) => void;
   applyAISection: (sectionId: string, newSection: PageSection) => void;
+  openAICommandInput: () => void;
+  closeAICommandInput: () => void;
+  setAILoadingAction: (action: string | null) => void;
+  setAIPendingSuggestion: (suggestion: EditorState["aiPendingSuggestion"]) => void;
+  approveAISuggestion: () => void;
+  rejectAISuggestion: () => void;
+  setAIUsage: (usage: EditorState["aiUsage"]) => void;
 
   // Rich text editor actions
   openRichTextEditor: (sectionId: string, field: string, paragraphIndex: number, content: string) => void;
@@ -218,6 +241,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   isPreviewMode: false,
   aiEditingSectionId: null,
   isAIGenerating: false,
+  aiCommandInputOpen: false,
+  aiLoadingAction: null,
+  aiPendingSuggestion: null,
+  aiUsage: null,
   richTextEditor: {
     isOpen: false,
     sectionId: null,
@@ -536,6 +563,117 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       aiEditingSectionId: null,
       isAIGenerating: false,
     })),
+
+  // New AI actions for Level 1-4 implementation
+  openAICommandInput: () => set({ aiCommandInputOpen: true }),
+
+  closeAICommandInput: () => set({ aiCommandInputOpen: false }),
+
+  setAILoadingAction: (action) => set({ aiLoadingAction: action }),
+
+  setAIPendingSuggestion: (suggestion) => set({ aiPendingSuggestion: suggestion }),
+
+  approveAISuggestion: () =>
+    set((state) => {
+      const suggestion = state.aiPendingSuggestion;
+      if (!suggestion) return state;
+
+      // Handle different suggestion types
+      if (suggestion.type === 'text' && suggestion.sectionId && suggestion.field) {
+        // Apply text improvement to a field
+        return {
+          page: {
+            ...state.page,
+            sections: state.page.sections.map((s) => {
+              if (s.id !== suggestion.sectionId) return s;
+
+              // If it's an item field
+              if (suggestion.itemId) {
+                return {
+                  ...s,
+                  items: s.items?.map((item) =>
+                    item.id === suggestion.itemId
+                      ? { ...item, [suggestion.field!]: suggestion.proposed }
+                      : item
+                  ),
+                };
+              }
+
+              // Regular section content field
+              return {
+                ...s,
+                content: {
+                  ...s.content,
+                  [suggestion.field!]: suggestion.proposed,
+                },
+              };
+            }),
+          },
+          aiPendingSuggestion: null,
+          isDirty: true,
+        };
+      }
+
+      if (suggestion.type === 'section' && suggestion.sectionId) {
+        // Replace entire section
+        const newSection = suggestion.proposed as PageSection;
+        return {
+          page: {
+            ...state.page,
+            sections: state.page.sections.map((s) =>
+              s.id === suggestion.sectionId ? { ...newSection, id: suggestion.sectionId } : s
+            ),
+          },
+          aiPendingSuggestion: null,
+          isDirty: true,
+        };
+      }
+
+      if (suggestion.type === 'page') {
+        // Replace entire page sections
+        const newSections = suggestion.proposed as PageSection[];
+        return {
+          page: {
+            ...state.page,
+            sections: newSections,
+          },
+          aiPendingSuggestion: null,
+          isDirty: true,
+        };
+      }
+
+      if (suggestion.type === 'style' && suggestion.sectionId) {
+        // Apply style suggestions
+        const styleUpdates = suggestion.proposed as Record<string, unknown>;
+        return {
+          page: {
+            ...state.page,
+            sections: state.page.sections.map((s) =>
+              s.id === suggestion.sectionId
+                ? {
+                    ...s,
+                    content: {
+                      ...s.content,
+                      elementStyles: {
+                        ...(s.content.elementStyles || {}),
+                        ...styleUpdates,
+                      },
+                    },
+                  }
+                : s
+            ),
+          },
+          aiPendingSuggestion: null,
+          isDirty: true,
+        };
+      }
+
+      return { aiPendingSuggestion: null };
+    }),
+
+  rejectAISuggestion: () => set({ aiPendingSuggestion: null }),
+
+  setAIUsage: (usage) => set({ aiUsage: usage }),
 
   openRichTextEditor: (sectionId, field, paragraphIndex, content) =>
     set({
@@ -1250,6 +1388,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       isPreviewMode: false,
       aiEditingSectionId: null,
       isAIGenerating: false,
+      aiCommandInputOpen: false,
+      aiLoadingAction: null,
+      aiPendingSuggestion: null,
+      aiUsage: null,
       richTextEditor: {
         isOpen: false,
         sectionId: null,

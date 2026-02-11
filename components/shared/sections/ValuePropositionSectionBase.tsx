@@ -1,6 +1,7 @@
 "use client";
 
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import { getContentWidthClass } from "@/lib/page-schema";
 import { SectionBackground } from "../SectionBackground";
 import DOMPurify from 'dompurify';
 
@@ -8,6 +9,7 @@ export default function ValuePropositionSectionBase({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
 }: BaseSectionProps) {
   const { content } = section;
@@ -48,7 +50,7 @@ export default function ValuePropositionSectionBase({
 
       {/* Content Container */}
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto">
+        <div className={`${getContentWidthClass(contentWidth)} mx-auto`}>
           {/* Badge */}
           {content.showBadge && content.badge && (
             <div className="flex justify-center mb-4 sm:mb-6">

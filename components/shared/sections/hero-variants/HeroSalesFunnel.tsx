@@ -2,12 +2,14 @@
 
 import { motion } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import { getContentWidthClass } from "@/lib/page-schema";
 import { SectionBackground } from "../../SectionBackground";
 
 export default function HeroSalesFunnel({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
   renderImage,
   renderButton,
@@ -64,7 +66,7 @@ export default function HeroSalesFunnel({
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
 
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className={`${getContentWidthClass(contentWidth)} mx-auto text-center`}>
 
           {/* Top Title */}
           {content.topTitle && (
@@ -159,14 +161,14 @@ export default function HeroSalesFunnel({
                   src: content.imageUrl,
                   sectionId: section.id,
                   field: "imageUrl",
-                  className: "w-full max-w-3xl mx-auto rounded-lg",
+                  className: "w-full max-w-2xl mx-auto rounded-lg",
                   alt: "Product",
                 })
               ) : (
                 <img
                   src={content.imageUrl}
                   alt="Product"
-                  className="w-full max-w-3xl mx-auto rounded-lg"
+                  className="w-full max-w-2xl mx-auto rounded-lg"
                 />
               )}
             </motion.div>

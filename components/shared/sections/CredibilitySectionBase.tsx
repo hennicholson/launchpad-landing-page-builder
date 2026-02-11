@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import { getContentWidthClass } from "@/lib/page-schema";
 import SectionButton, { getButtonPropsFromContent } from "./SectionButton";
 import { SectionBackground } from "../SectionBackground";
 
@@ -9,6 +10,7 @@ export default function CredibilitySectionBase({
   section,
   colorScheme,
   typography,
+  contentWidth,
   renderText,
   renderImage,
 }: BaseSectionProps) {
@@ -72,7 +74,7 @@ export default function CredibilitySectionBase({
       )}
 
       {/* Content Card */}
-      <div className="relative max-w-3xl mx-auto px-6 lg:px-8 py-24">
+      <div className={`relative ${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8 py-24`}>
         <motion.div
           className="relative rounded-3xl p-8 lg:p-12 text-center"
           style={{

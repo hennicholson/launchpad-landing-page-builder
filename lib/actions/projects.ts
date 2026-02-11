@@ -8,7 +8,26 @@ import { generateId, defaultPage, type LandingPage, type ProjectSettings } from 
 import { getTemplateByIdOrDefault } from "@/lib/templates";
 import { generateLandingPage } from "@/lib/claude";
 import { revalidatePath } from "next/cache";
-import { deleteSite } from "@/lib/netlify";
+import {
+  deleteSite,
+  addUserCustomDomain,
+  removeUserCustomDomain,
+  getNetlifyTarget,
+  checkDomainSsl,
+  setupNetlifyDns,
+  deleteDnsZone,
+  checkNameserverStatus,
+  removeDomainFromMainSite,
+} from "@/lib/netlify";
+import {
+  validateDomainFormat,
+  getDomainType,
+  generateVerificationToken,
+  getDnsInstructions,
+  verifyDomainOwnership,
+  type DnsInstruction,
+} from "@/lib/domain-verification";
+import type { DomainStatus, DomainType } from "@/lib/schema";
 
 export type Project = {
   id: string;
@@ -156,16 +175,83 @@ export async function getProjects(): Promise<Project[]> {
 }
 
 /**
+ * Wizard data for AI page generation
+ */
+export interface WizardData {
+  businessName: string;
+  productDescription: string;
+  targetAudience: string;
+  colorTheme: "dark" | "light" | "midnight" | "forest" | "ocean" | "sunset" | "custom";
+  vibe: "modern" | "minimal" | "bold" | "professional" | "playful" | "elegant" | "techy";
+  fontPair: "anton-inter" | "playfair-inter" | "space-grotesk-inter" | "poppins-inter" | "inter-inter";
+  pageType: "landing" | "sales-funnel" | "product" | "lead-magnet" | "auto";
+}
+
+/**
+ * Build an enhanced prompt from wizard data
+ */
+function buildPromptFromWizard(wizardData: WizardData, additionalPrompt?: string): string {
+  const fontNames: Record<string, string> = {
+    "anton-inter": "Anton + Inter (Bold & Modern)",
+    "playfair-inter": "Playfair Display + Inter (Elegant & Classic)",
+    "space-grotesk-inter": "Space Grotesk + Inter (Tech & Clean)",
+    "poppins-inter": "Poppins + Inter (Friendly & Rounded)",
+    "inter-inter": "Inter (Clean & Professional)",
+  };
+
+  const pageTypeDescriptions: Record<string, string> = {
+    landing: "standard landing page (hero → features → testimonials → pricing → cta)",
+    "sales-funnel": "sales funnel (hero with urgency → value-prop → offer → testimonials → final CTA)",
+    product: "product page (hero → features → gallery → pricing → faq)",
+    "lead-magnet": "lead magnet page (hero → benefits → form → testimonials)",
+    auto: "appropriate page structure based on the product/service",
+  };
+
+  return `Generate a ${pageTypeDescriptions[wizardData.pageType] || "landing page"} for:
+
+BUSINESS: ${wizardData.businessName}
+PRODUCT/SERVICE: ${wizardData.productDescription}
+${wizardData.targetAudience ? `TARGET AUDIENCE: ${wizardData.targetAudience}` : ""}
+
+STYLE REQUIREMENTS:
+- Design Vibe: ${wizardData.vibe} (${getVibeDescription(wizardData.vibe)})
+- Color Theme: ${wizardData.colorTheme} mode
+- Typography: ${fontNames[wizardData.fontPair] || wizardData.fontPair}
+
+${additionalPrompt ? `ADDITIONAL CONTEXT: ${additionalPrompt}` : ""}
+
+Write compelling copy that speaks directly to the target audience. Use the specified style and tone throughout.`;
+}
+
+function getVibeDescription(vibe: string): string {
+  const descriptions: Record<string, string> = {
+    modern: "clean lines, contemporary feel, cutting-edge",
+    minimal: "lots of whitespace, simple, focused",
+    bold: "strong contrasts, impactful, attention-grabbing",
+    professional: "trustworthy, authoritative, business-focused",
+    playful: "fun, creative, energetic",
+    elegant: "sophisticated, refined, premium feel",
+    techy: "futuristic, innovative, tech-forward",
+  };
+  return descriptions[vibe] || vibe;
+}
+
+/**
  * Create a new project
+ *
+ * For AI generation, pass pre-generated pageData from /api/ai/page endpoint.
+ * This avoids server action timeout issues since the API route has a longer timeout.
  */
 export async function createProject(data: {
   name: string;
   templateId?: string;
   aiPrompt?: string;
+  wizardData?: WizardData;
+  pageData?: LandingPage; // Pre-generated page data from /api/ai/page
 }): Promise<{ success: boolean; projectId?: string; error?: string }> {
   try {
     const user = await requireWhopUser();
-    const { name, templateId, aiPrompt } = data;
+    const { name, templateId, aiPrompt, wizardData, pageData: preGeneratedPage } = data;
 
     if (!name) {
       return { success: false, error: "Project name is required" };
@@ -215,9 +301,18 @@ export async function createProject(data: {
     // Determine page data
     let pageData;
 
-    if (aiPrompt) {
+    if (preGeneratedPage) {
+      // Use pre-generated page data (from /api/ai/page endpoint)
+      // This is the recommended path for AI generation to avoid server action timeout
+      pageData = { ...preGeneratedPage, title: name };
+    } else if (aiPrompt || wizardData) {
+      // Legacy path: generate directly in server action
+      // Warning: This may timeout on Netlify due to server action limits
       try {
-        pageData = await generateLandingPage(aiPrompt);
+        const enhancedPrompt = wizardData
+          ? buildPromptFromWizard(wizardData, aiPrompt)
+          : aiPrompt!;
+        pageData = await generateLandingPage(enhancedPrompt, undefined, wizardData);
         pageData.title = name;
       } catch (aiError) {
         console.error("AI generation failed:", aiError);
@@ -299,6 +394,16 @@ export async function deleteProject(projectId: string): Promise<{ success: boole
 
     if (project.userId !== userData.id) {
       return { success: false, error: "Unauthorized" };
+    }
+
+    // If project has custom domain on Netlify, remove it first
+    if (project.netlifyId && project.customDomain) {
+      try {
+        await removeUserCustomDomain(project.netlifyId, project.customDomain);
+        console.log(`[Projects] Removed custom domain ${project.customDomain} from Netlify`);
+      } catch (domainError) {
+        console.warn(`[Projects] Failed to remove custom domain:`, domainError);
+      }
     }
 
     // If project is deployed to Netlify, delete the site (don't block on failure)
@@ -655,5 +760,670 @@ export async function getDeployStatus(projectId: string): Promise<{ success: boo
       return { success: false, error: "Unauthorized" };
     }
     return { success: false, error: "Failed to fetch deployments" };
+  }
+}
+
+// ============================================
+// Custom Domain Management
+// ============================================
+
+export type CustomDomainConfig = {
+  domain: string | null;
+  status: DomainStatus | null;
+  domainType: DomainType | null;
+  verificationToken: string | null;
+  verifiedAt: Date | null;
+  addedAt: Date | null;
+  error: string | null;
+  dnsInstructions: DnsInstruction[];
+  netlifyTarget: string | null;
+  sslStatus: string | null;
+  // Netlify DNS mode
+  useNetlifyDns: boolean;
+  netlifyDnsZoneId: string | null;
+  nameservers: string[] | null;
+};
+
+/**
+ * Add a custom domain to a project
+ * Only available for Pro and Enterprise plans
+ *
+ * @param projectId - The project ID
+ * @param domain - The domain to add
+ * @param useNetlifyDns - If true, use Netlify DNS (user just changes nameservers)
+ *                        If false, use user-managed DNS (CNAME/A records)
+ */
+export async function addCustomDomain(
+  projectId: string,
+  domain: string,
+  useNetlifyDns: boolean = false
+): Promise<{
+  success: boolean;
+  config?: CustomDomainConfig;
+  error?: string;
+}> {
+  try {
+    const user = await requireWhopUser();
+
+    // Get user from DB
+    const [userData] = await db
+      .select()
+      .from(users)
+      .where(eq(users.whopId, user.id))
+      .limit(1);
+
+    if (!userData) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Check plan allows custom domains
+    const planLimits = PLAN_LIMITS[userData.plan];
+    if (!planLimits.canUseCustomDomain) {
+      return {
+        success: false,
+        error: `Custom domains are only available on Pro and Enterprise plans. Your current plan: ${userData.plan}`,
+      };
+    }
+
+    // Get the project
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, projectId), eq(projects.userId, userData.id)))
+      .limit(1);
+
+    if (!project) {
+      return { success: false, error: "Project not found" };
+    }
+
+    // Validate domain format
+    const validation = validateDomainFormat(domain);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+
+    const normalizedDomain = validation.normalizedDomain!;
+
+    // Check if domain is already used by another project
+    const [existingProject] = await db
+      .select()
+      .from(projects)
+      .where(and(
+        eq(projects.customDomain, normalizedDomain),
+        sql`${projects.id} != ${projectId}`
+      ))
+      .limit(1);
+
+    if (existingProject) {
+      return {
+        success: false,
+        error: "This domain is already connected to another project.",
+      };
+    }
+
+    const domainType = getDomainType(normalizedDomain);
+
+    // Get Netlify target for CNAME instructions
+    let netlifyTarget = "your-site.netlify.app";
+    if (project.netlifyId) {
+      try {
+        netlifyTarget = await getNetlifyTarget(project.netlifyId);
+      } catch {
+        // Use default if we can't get the target
+      }
+    } else if (project.netlifySiteName) {
+      netlifyTarget = `${project.netlifySiteName}.netlify.app`;
+    }
+
+    // Netlify DNS mode - create DNS zone and get nameservers
+    if (useNetlifyDns) {
+      try {
+        const netlifySubdomain = project.netlifySiteName || project.slug;
+        const dnsSetup = await setupNetlifyDns(normalizedDomain, project.netlifyId || "", netlifySubdomain);
+
+        if (!dnsSetup.success) {
+          return {
+            success: false,
+            error: dnsSetup.error || "Failed to set up Netlify DNS",
+          };
+        }
+
+        // Update project with Netlify DNS info
+        await db
+          .update(projects)
+          .set({
+            customDomain: normalizedDomain,
+            customDomainStatus: "pending" as DomainStatus,
+            customDomainType: domainType,
+            customDomainVerificationToken: null, // No TXT verification needed
+            customDomainAddedAt: new Date(),
+            customDomainVerifiedAt: null,
+            customDomainError: null,
+            useNetlifyDns: "true",
+            netlifyDnsZoneId: dnsSetup.zoneId,
+            netlifyNameservers: JSON.stringify(dnsSetup.nameservers),
+            updatedAt: new Date(),
+          })
+          .where(eq(projects.id, projectId));
+
+        return {
+          success: true,
+          config: {
+            domain: normalizedDomain,
+            status: "pending",
+            domainType,
+            verificationToken: null,
+            verifiedAt: null,
+            addedAt: new Date(),
+            error: null,
+            dnsInstructions: [], // No DNS instructions needed - just nameserver change
+            netlifyTarget,
+            sslStatus: null,
+            useNetlifyDns: true,
+            netlifyDnsZoneId: dnsSetup.zoneId || null,
+            nameservers: dnsSetup.nameservers || null,
+          },
+        };
+      } catch (error) {
+        console.error("[Projects] Netlify DNS setup error:", error);
+        return {
+          success: false,
+          error: "Failed to set up Netlify DNS. Please try again.",
+        };
+      }
+    }
+
+    // User-managed DNS mode - generate verification token
+    const verificationToken = generateVerificationToken();
+
+    // Get DNS instructions
+    const dnsInstructions = getDnsInstructions(normalizedDomain, netlifyTarget, verificationToken);
+
+    // Update project with domain info
+    await db
+      .update(projects)
+      .set({
+        customDomain: normalizedDomain,
+        customDomainStatus: "pending" as DomainStatus,
+        customDomainType: domainType,
+        customDomainVerificationToken: verificationToken,
+        customDomainAddedAt: new Date(),
+        customDomainVerifiedAt: null,
+        customDomainError: null,
+        useNetlifyDns: "false",
+        netlifyDnsZoneId: null,
+        netlifyNameservers: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(projects.id, projectId));
+
+    return {
+      success: true,
+      config: {
+        domain: normalizedDomain,
+        status: "pending",
+        domainType,
+        verificationToken,
+        verifiedAt: null,
+        addedAt: new Date(),
+        error: null,
+        dnsInstructions,
+        netlifyTarget,
+        sslStatus: null,
+        useNetlifyDns: false,
+        netlifyDnsZoneId: null,
+        nameservers: null,
+      },
+    };
+  } catch (error) {
+    console.error("[Projects] addCustomDomain error:", error);
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return { success: false, error: "Unauthorized" };
+    }
+    return { success: false, error: "Failed to add custom domain" };
+  }
+}
+
+/**
+ * Verify domain ownership
+ * - For user-managed DNS: Check DNS TXT record
+ * - For Netlify DNS: Check nameserver propagation
+ */
+export async function verifyCustomDomain(
+  projectId: string
+): Promise<{
+  success: boolean;
+  verified?: boolean;
+  status?: DomainStatus;
+  sslStatus?: string;
+  error?: string;
+}> {
+  try {
+    const user = await requireWhopUser();
+
+    // Get user from DB
+    const [userData] = await db
+      .select()
+      .from(users)
+      .where(eq(users.whopId, user.id))
+      .limit(1);
+
+    if (!userData) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Get the project
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, projectId), eq(projects.userId, userData.id)))
+      .limit(1);
+
+    if (!project) {
+      return { success: false, error: "Project not found" };
+    }
+
+    if (!project.customDomain) {
+      return { success: false, error: "No custom domain configured" };
+    }
+
+    // Update status to verifying
+    await db
+      .update(projects)
+      .set({
+        customDomainStatus: "verifying" as DomainStatus,
+        updatedAt: new Date(),
+      })
+      .where(eq(projects.id, projectId));
+
+    const isNetlifyDns = project.useNetlifyDns === "true";
+
+    // Netlify DNS mode - check nameserver propagation
+    if (isNetlifyDns && project.netlifyDnsZoneId) {
+      const nsCheck = await checkNameserverStatus(project.netlifyDnsZoneId);
+
+      if (!nsCheck.success) {
+        await db
+          .update(projects)
+          .set({
+            customDomainStatus: "pending" as DomainStatus,
+            customDomainError: nsCheck.error || "Failed to check nameserver status",
+            updatedAt: new Date(),
+          })
+          .where(eq(projects.id, projectId));
+
+        return {
+          success: true,
+          verified: false,
+          status: "pending",
+          error: nsCheck.error || "Failed to check nameserver status",
+        };
+      }
+
+      if (!nsCheck.verified) {
+        await db
+          .update(projects)
+          .set({
+            customDomainStatus: "pending" as DomainStatus,
+            customDomainError: "Nameservers not yet propagated. This can take up to 48 hours.",
+            updatedAt: new Date(),
+          })
+          .where(eq(projects.id, projectId));
+
+        return {
+          success: true,
+          verified: false,
+          status: "pending",
+          error: "Nameservers not yet propagated. This can take up to 48 hours.",
+        };
+      }
+
+      // Nameservers verified! Domain is now active via Netlify DNS
+      await db
+        .update(projects)
+        .set({
+          customDomainStatus: "active" as DomainStatus,
+          customDomainVerifiedAt: new Date(),
+          customDomainError: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(projects.id, projectId));
+
+      return {
+        success: true,
+        verified: true,
+        status: "active",
+        sslStatus: "ready", // Netlify handles SSL automatically with DNS
+      };
+    }
+
+    // User-managed DNS mode - check TXT record
+    if (!project.customDomainVerificationToken) {
+      return { success: false, error: "No verification token found" };
+    }
+
+    const verification = await verifyDomainOwnership(
+      project.customDomain,
+      project.customDomainVerificationToken
+    );
+
+    if (!verification.verified) {
+      // Update status back to pending with error
+      await db
+        .update(projects)
+        .set({
+          customDomainStatus: "pending" as DomainStatus,
+          customDomainError: verification.error,
+          updatedAt: new Date(),
+        })
+        .where(eq(projects.id, projectId));
+
+      return {
+        success: true,
+        verified: false,
+        status: "pending",
+        error: verification.error,
+      };
+    }
+
+    // Domain verified! Now add to Netlify
+    await db
+      .update(projects)
+      .set({
+        customDomainStatus: "provisioning" as DomainStatus,
+        customDomainVerifiedAt: new Date(),
+        customDomainError: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(projects.id, projectId));
+
+    // Add domain to Netlify site
+    if (project.netlifyId) {
+      const netlifyResult = await addUserCustomDomain(project.netlifyId, project.customDomain);
+
+      if (!netlifyResult.success) {
+        await db
+          .update(projects)
+          .set({
+            customDomainStatus: "failed" as DomainStatus,
+            customDomainError: netlifyResult.error,
+            updatedAt: new Date(),
+          })
+          .where(eq(projects.id, projectId));
+
+        return {
+          success: true,
+          verified: true,
+          status: "failed",
+          error: `Domain verified but failed to add to hosting: ${netlifyResult.error}`,
+        };
+      }
+
+      // Check SSL status
+      const sslCheck = await checkDomainSsl(project.netlifyId, project.customDomain);
+
+      // Update to active
+      await db
+        .update(projects)
+        .set({
+          customDomainStatus: "active" as DomainStatus,
+          customDomainError: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(projects.id, projectId));
+
+      return {
+        success: true,
+        verified: true,
+        status: "active",
+        sslStatus: sslCheck.status,
+      };
+    } else {
+      // No Netlify site yet - mark as verified but note it needs deployment
+      await db
+        .update(projects)
+        .set({
+          customDomainStatus: "active" as DomainStatus,
+          customDomainError: "Domain verified. Deploy your site to activate the custom domain.",
+          updatedAt: new Date(),
+        })
+        .where(eq(projects.id, projectId));
+
+      return {
+        success: true,
+        verified: true,
+        status: "active",
+        error: "Domain verified. Deploy your site to activate the custom domain.",
+      };
+    }
+  } catch (error) {
+    console.error("[Projects] verifyCustomDomain error:", error);
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return { success: false, error: "Unauthorized" };
+    }
+    return { success: false, error: "Failed to verify domain" };
+  }
+}
+
+/**
+ * Remove custom domain from a project
+ */
+export async function removeCustomDomain(
+  projectId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireWhopUser();
+
+    // Get user from DB
+    const [userData] = await db
+      .select()
+      .from(users)
+      .where(eq(users.whopId, user.id))
+      .limit(1);
+
+    if (!userData) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Get the project
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, projectId), eq(projects.userId, userData.id)))
+      .limit(1);
+
+    if (!project) {
+      return { success: false, error: "Project not found" };
+    }
+
+    // If using Netlify DNS, delete the DNS zone and remove from main site
+    if (project.useNetlifyDns === "true") {
+      // Delete DNS zone
+      if (project.netlifyDnsZoneId) {
+        try {
+          await deleteDnsZone(project.netlifyDnsZoneId);
+          console.log(`[Projects] Deleted Netlify DNS zone: ${project.netlifyDnsZoneId}`);
+        } catch (zoneError) {
+          console.warn(`[Projects] Failed to delete DNS zone:`, zoneError);
+        }
+      }
+
+      // Remove domain alias from main site
+      if (project.customDomain) {
+        const result = await removeDomainFromMainSite(project.customDomain);
+        if (!result.success) {
+          console.warn(`[Projects] Failed to remove domain from main site: ${result.error}`);
+        }
+      }
+    }
+
+    // Remove from per-project Netlify site if deployed (for user-managed DNS mode)
+    if (project.netlifyId && project.customDomain && project.useNetlifyDns !== "true") {
+      const result = await removeUserCustomDomain(project.netlifyId, project.customDomain);
+      if (!result.success) {
+        console.warn(`[Projects] Failed to remove domain from Netlify: ${result.error}`);
+      }
+    }
+
+    // Clear all domain fields in database
+    await db
+      .update(projects)
+      .set({
+        customDomain: null,
+        customDomainStatus: null,
+        customDomainType: null,
+        customDomainVerificationToken: null,
+        customDomainVerifiedAt: null,
+        customDomainAddedAt: null,
+        customDomainError: null,
+        useNetlifyDns: "false",
+        netlifyDnsZoneId: null,
+        netlifyNameservers: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(projects.id, projectId));
+
+    return { success: true };
+  } catch (error) {
+    console.error("[Projects] removeCustomDomain error:", error);
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return { success: false, error: "Unauthorized" };
+    }
+    return { success: false, error: "Failed to remove domain" };
+  }
+}
+
+/**
+ * Get custom domain configuration for a project
+ */
+export async function getCustomDomainStatus(
+  projectId: string
+): Promise<{
+  success: boolean;
+  config?: CustomDomainConfig;
+  canUseCustomDomain?: boolean;
+  error?: string;
+}> {
+  try {
+    const user = await requireWhopUser();
+
+    // Get user from DB
+    const [userData] = await db
+      .select()
+      .from(users)
+      .where(eq(users.whopId, user.id))
+      .limit(1);
+
+    if (!userData) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Check plan allows custom domains
+    const planLimits = PLAN_LIMITS[userData.plan];
+
+    // Get the project
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, projectId), eq(projects.userId, userData.id)))
+      .limit(1);
+
+    if (!project) {
+      return { success: false, error: "Project not found" };
+    }
+
+    // If no custom domain configured
+    if (!project.customDomain) {
+      return {
+        success: true,
+        canUseCustomDomain: planLimits.canUseCustomDomain,
+        config: {
+          domain: null,
+          status: null,
+          domainType: null,
+          verificationToken: null,
+          verifiedAt: null,
+          addedAt: null,
+          error: null,
+          dnsInstructions: [],
+          netlifyTarget: null,
+          sslStatus: null,
+          useNetlifyDns: false,
+          netlifyDnsZoneId: null,
+          nameservers: null,
+        },
+      };
+    }
+
+    const isNetlifyDns = project.useNetlifyDns === "true";
+
+    // Get Netlify target
+    let netlifyTarget = "your-site.netlify.app";
+    if (project.netlifyId) {
+      try {
+        netlifyTarget = await getNetlifyTarget(project.netlifyId);
+      } catch {
+        // Use default
+      }
+    } else if (project.netlifySiteName) {
+      netlifyTarget = `${project.netlifySiteName}.netlify.app`;
+    }
+
+    // Get DNS instructions (only for user-managed DNS mode)
+    const dnsInstructions = !isNetlifyDns && project.customDomainVerificationToken
+      ? getDnsInstructions(project.customDomain, netlifyTarget, project.customDomainVerificationToken)
+      : [];
+
+    // Parse nameservers from JSON
+    let nameservers: string[] | null = null;
+    if (project.netlifyNameservers) {
+      try {
+        nameservers = JSON.parse(project.netlifyNameservers);
+      } catch {
+        // Ignore parse errors
+      }
+    }
+
+    // Check SSL status if active
+    let sslStatus: string | null = null;
+    if (project.customDomainStatus === "active") {
+      if (isNetlifyDns) {
+        // Netlify DNS automatically handles SSL
+        sslStatus = "ready";
+      } else if (project.netlifyId) {
+        try {
+          const ssl = await checkDomainSsl(project.netlifyId, project.customDomain);
+          sslStatus = ssl.status;
+        } catch {
+          // Ignore SSL check errors
+        }
+      }
+    }
+
+    return {
+      success: true,
+      canUseCustomDomain: planLimits.canUseCustomDomain,
+      config: {
+        domain: project.customDomain,
+        status: project.customDomainStatus as DomainStatus | null,
+        domainType: project.customDomainType as DomainType | null,
+        verificationToken: project.customDomainVerificationToken,
+        verifiedAt: project.customDomainVerifiedAt,
+        addedAt: project.customDomainAddedAt,
+        error: project.customDomainError,
+        dnsInstructions,
+        netlifyTarget,
+        sslStatus,
+        useNetlifyDns: isNetlifyDns,
+        netlifyDnsZoneId: project.netlifyDnsZoneId,
+        nameservers,
+      },
+    };
+  } catch (error) {
+    console.error("[Projects] getCustomDomainStatus error:", error);
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return { success: false, error: "Unauthorized" };
+    }
+    return { success: false, error: "Failed to get domain status" };
   }
 }

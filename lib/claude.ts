@@ -4,6 +4,10 @@ import { generateId } from "./page-schema";
 import { db } from "./db";
 import { users, PLAN_LIMITS, type PlanType } from "./schema";
 import { eq, sql } from "drizzle-orm";
+import { orchestratePage, type OrchestrationInput, type OrchestrationProgress } from "./ai/orchestrator/index";
+
+// Re-export orchestration types for consumers
+export type { OrchestrationProgress } from "./ai/orchestrator/index";
 
 const client = new Anthropic({
   apiKey: process.env.CLAUDE_API_KEY,
@@ -193,34 +197,210 @@ Important:
 - Keep copy concise but impactful
 - Use modern, professional color schemes`;
 
+/**
+ * Wizard data for enhanced page generation
+ */
+export interface WizardData {
+  businessName: string;
+  productDescription: string;
+  targetAudience: string;
+  colorTheme: "dark" | "light" | "midnight" | "forest" | "ocean" | "sunset" | "custom";
+  vibe: "modern" | "minimal" | "bold" | "professional" | "playful" | "elegant" | "techy";
+  fontPair: "anton-inter" | "playfair-inter" | "space-grotesk-inter" | "poppins-inter" | "inter-inter";
+  pageType: "landing" | "sales-funnel" | "product" | "lead-magnet" | "auto";
+}
+
+// Theme color schemes for each theme option
+const THEME_COLORS: Record<string, { primary: string; secondary: string; accent: string; background: string; text: string }> = {
+  dark: {
+    primary: "#D6FC51",
+    secondary: "#a3c941",
+    accent: "#D6FC51",
+    background: "#0a0a0a",
+    text: "#ffffff",
+  },
+  light: {
+    primary: "#3b82f6",
+    secondary: "#60a5fa",
+    accent: "#f59e0b",
+    background: "#ffffff",
+    text: "#111827",
+  },
+  midnight: {
+    primary: "#818cf8",
+    secondary: "#6366f1",
+    accent: "#a78bfa",
+    background: "#0f172a",
+    text: "#f1f5f9",
+  },
+  forest: {
+    primary: "#22c55e",
+    secondary: "#16a34a",
+    accent: "#a3e635",
+    background: "#052e16",
+    text: "#f0fdf4",
+  },
+  ocean: {
+    primary: "#06b6d4",
+    secondary: "#0891b2",
+    accent: "#2dd4bf",
+    background: "#083344",
+    text: "#ecfeff",
+  },
+  sunset: {
+    primary: "#f97316",
+    secondary: "#fb923c",
+    accent: "#facc15",
+    background: "#1c1917",
+    text: "#fef3c7",
+  },
+};
+
+// Font pairings
+const FONT_PAIRS: Record<string, { heading: string; body: string }> = {
+  "anton-inter": { heading: "Anton", body: "Inter" },
+  "playfair-inter": { heading: "Playfair Display", body: "Inter" },
+  "space-grotesk-inter": { heading: "Space Grotesk", body: "Inter" },
+  "poppins-inter": { heading: "Poppins", body: "Inter" },
+  "inter-inter": { heading: "Inter", body: "Inter" },
+};
+
+function buildEnhancedSystemPrompt(wizardData?: WizardData): string {
+  if (!wizardData) return SYSTEM_PROMPT;
+
+  const colors = THEME_COLORS[wizardData.colorTheme] || THEME_COLORS.dark;
+  const fonts = FONT_PAIRS[wizardData.fontPair] || FONT_PAIRS["inter-inter"];
+
+  const pageTypeInstructions: Record<string, string> = {
+    landing: `
+SECTION STRUCTURE (Standard Landing Page):
+1. Header (navigation)
+2. Hero (main value proposition)
+3. Logo Cloud (social proof)
+4. Features (3-4 key benefits)
+5. Stats (credibility numbers)
+6. Testimonials (2-3 customer quotes)
+7. Pricing (if applicable)
+8. FAQ (3-5 questions)
+9. CTA (final conversion)
+10. Footer`,
+    "sales-funnel": `
+SECTION STRUCTURE (High-Converting Sales Funnel):
+1. Hero (urgency-focused, sales-funnel variant)
+2. Value Proposition (story-based problem/solution)
+3. Features (what they get with benefits)
+4. Creator (trust building, about section)
+5. Offer Details (full value breakdown)
+6. Testimonials (proof and results)
+7. Comparison (vs alternatives)
+8. Pricing (clear offer with urgency)
+9. FAQ (objection handling)
+10. CTA (final push with scarcity)`,
+    product: `
+SECTION STRUCTURE (Product Page):
+1. Header (navigation)
+2. Hero (product showcase)
+3. Features (key product features)
+4. Gallery (product images)
+5. Stats (product metrics)
+6. Testimonials (customer reviews)
+7. Pricing (product pricing)
+8. FAQ (product questions)
+9. CTA (buy now)
+10. Footer`,
+    "lead-magnet": `
+SECTION STRUCTURE (Lead Magnet Page):
+1. Header (minimal navigation)
+2. Hero (lead magnet offer)
+3. Benefits (what they'll learn/get)
+4. Preview (sneak peek of content)
+5. Testimonials (social proof)
+6. CTA (email capture form)
+7. Footer (minimal)`,
+    auto: `
+SECTION STRUCTURE (Based on product/service type):
+Choose the most appropriate structure. Include 7-10 sections with logical flow.`,
+  };
+
+  return `${SYSTEM_PROMPT}
+
+STYLE REQUIREMENTS FOR THIS PAGE:
+- Design Vibe: ${wizardData.vibe}
+${wizardData.vibe === "modern" ? "  → Clean lines, contemporary feel, cutting-edge visuals" : ""}
+${wizardData.vibe === "minimal" ? "  → Lots of whitespace, simple layouts, focused content" : ""}
+${wizardData.vibe === "bold" ? "  → Strong contrasts, impactful headlines, attention-grabbing CTAs" : ""}
+${wizardData.vibe === "professional" ? "  → Trustworthy, authoritative tone, business-focused" : ""}
+${wizardData.vibe === "playful" ? "  → Fun, creative copy, energetic feel" : ""}
+${wizardData.vibe === "elegant" ? "  → Sophisticated, refined, premium positioning" : ""}
+${wizardData.vibe === "techy" ? "  → Futuristic, innovative, tech-forward" : ""}
+
+COLOR SCHEME (Use these exact colors):
+- Primary: ${colors.primary}
+- Secondary: ${colors.secondary}
+- Accent: ${colors.accent}
+- Background: ${colors.background}
+- Text: ${colors.text}
+
+TYPOGRAPHY:
+- Heading Font: ${fonts.heading}
+- Body Font: ${fonts.body}
+
+${pageTypeInstructions[wizardData.pageType] || pageTypeInstructions.landing}
+
+TARGET AUDIENCE: ${wizardData.targetAudience || "General audience"}
+
+IMPORTANT:
+- Write copy that speaks directly to the target audience
+- Use the ${wizardData.vibe} tone throughout all copy
+- Ensure all colors match the scheme above exactly`;
+}
+
+/**
+ * Generate a landing page using the multi-phase AI orchestrator
+ *
+ * This uses a 4-phase approach:
+ * 1. Understanding: Analyze intent and extract product/audience info
+ * 2. Planning: Create blueprint with copy framework (AIDA/PAS/BAB)
+ * 3. Generation: Generate each section with context awareness
+ * 4. Validation: Check quality and auto-fix issues
+ */
 export async function generateLandingPage(
   prompt: string,
-  userId?: string
+  userId?: string,
+  wizardData?: WizardData,
+  onProgress?: (progress: OrchestrationProgress) => void
 ): Promise<LandingPage & { usage?: AIUsageResult }> {
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: MAX_TOKENS.landingPage,
-    system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: `Generate a landing page for: ${prompt}
+  // Convert wizard data to orchestration input format
+  const orchestrationInput: OrchestrationInput = {
+    description: prompt,
+    wizardData: wizardData ? {
+      businessName: wizardData.businessName,
+      productDescription: wizardData.productDescription,
+      targetAudience: wizardData.targetAudience,
+      colorTheme: wizardData.colorTheme,
+      vibe: wizardData.vibe,
+      fontPair: wizardData.fontPair,
+      pageType: wizardData.pageType,
+    } : undefined,
+    preferences: {
+      sectionCount: 7, // Reduced from 9 to speed up generation
+      enableRefinement: false, // Disabled to avoid Netlify timeout
+    },
+  };
 
-Include:
-1. A hero section with a strong headline, subheading, and CTA button
-2. A features/benefits section with 3-4 items
-3. A testimonials section with 2-3 customer quotes
-4. A pricing section if applicable (otherwise skip)
-5. A final CTA section
+  // Run the orchestrator
+  const result = await orchestratePage(orchestrationInput, onProgress);
 
-Make it conversion-focused with professional, persuasive copy. Output only the JSON, no markdown formatting.`,
-      },
-    ],
-  });
+  if (!result.success || !result.page) {
+    console.error("[generateLandingPage] Orchestrator failed:", result.error);
+    throw new Error(result.error || "Failed to generate landing page. Please try again.");
+  }
 
-  // Track token usage
-  const inputTokens = response.usage?.input_tokens || 0;
-  const outputTokens = response.usage?.output_tokens || 0;
+  // Calculate usage and cost
+  const tokensUsed = result.metadata?.tokensUsed || 0;
+  // Estimate input/output split (roughly 70/30 based on typical generation)
+  const inputTokens = Math.round(tokensUsed * 0.7);
+  const outputTokens = Math.round(tokensUsed * 0.3);
   const costCents = calculateCostCents(inputTokens, outputTokens);
 
   // Track usage in database if userId provided
@@ -228,41 +408,10 @@ Make it conversion-focused with professional, persuasive copy. Output only the J
     await trackAIUsage(userId, "copy", inputTokens, outputTokens);
   }
 
-  const text = response.content[0].type === "text" ? response.content[0].text : "";
-
-  // Clean up the response - remove markdown code blocks if present
-  let jsonStr = text.trim();
-  if (jsonStr.startsWith("```json")) {
-    jsonStr = jsonStr.slice(7);
-  } else if (jsonStr.startsWith("```")) {
-    jsonStr = jsonStr.slice(3);
-  }
-  if (jsonStr.endsWith("```")) {
-    jsonStr = jsonStr.slice(0, -3);
-  }
-  jsonStr = jsonStr.trim();
-
-  try {
-    const pageData = JSON.parse(jsonStr) as LandingPage;
-
-    // Ensure all sections have IDs
-    pageData.sections = pageData.sections.map((section) => ({
-      ...section,
-      id: section.id || generateId(),
-      items: section.items?.map((item) => ({
-        ...item,
-        id: item.id || generateId(),
-      })),
-    }));
-
-    return {
-      ...pageData,
-      usage: { inputTokens, outputTokens, costCents },
-    };
-  } catch (error) {
-    console.error("Failed to parse Claude response:", jsonStr);
-    throw new Error("Failed to generate landing page. Please try again.");
-  }
+  return {
+    ...result.page,
+    usage: { inputTokens, outputTokens, costCents },
+  };
 }
 
 export async function regenerateSection(
