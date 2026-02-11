@@ -290,6 +290,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       isDirty: false,
       selectedSectionId: newPage.sections[0]?.id || null,
       elementGroups: newGroups,
+      // Seed history with the initial page state so undo has something to revert to
+      history: [{
+        page: JSON.parse(JSON.stringify(newPage)),
+        groups: Array.from(newGroups.entries()),
+      }],
+      historyIndex: 0,
     });
   },
 
