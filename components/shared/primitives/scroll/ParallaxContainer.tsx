@@ -73,6 +73,31 @@ export interface ParallaxLayersProps {
   className?: string;
 }
 
+interface ParallaxLayerProps {
+  layer: { content: ReactNode; speed: number; className?: string };
+  scrollYProgress: import("framer-motion").MotionValue<number>;
+  index: number;
+}
+
+/** Individual parallax layer — hooks are called unconditionally at the top level. */
+function ParallaxLayer({ layer, scrollYProgress, index }: ParallaxLayerProps) {
+  const range = 100 * layer.speed;
+  const y = useTransform(scrollYProgress, [0, 1], [-range, range]);
+
+  return (
+    <motion.div
+      className={`absolute inset-0 ${layer.className || ""}`}
+      style={{
+        y,
+        zIndex: index,
+        willChange: "transform",
+      }}
+    >
+      {layer.content}
+    </motion.div>
+  );
+}
+
 /**
  * ParallaxLayers
  *
@@ -100,24 +125,14 @@ export function ParallaxLayers({ layers, className = "" }: ParallaxLayersProps) 
 
   return (
     <div ref={ref} className={`relative ${className}`}>
-      {layers.map((layer, index) => {
-        const range = 100 * layer.speed;
-        const y = useTransform(scrollYProgress, [0, 1], [-range, range]);
-
-        return (
-          <motion.div
-            key={index}
-            className={`absolute inset-0 ${layer.className || ""}`}
-            style={{
-              y,
-              zIndex: index,
-              willChange: "transform",
-            }}
-          >
-            {layer.content}
-          </motion.div>
-        );
-      })}
+      {layers.map((layer, index) => (
+        <ParallaxLayer
+          key={index}
+          layer={layer}
+          scrollYProgress={scrollYProgress}
+          index={index}
+        />
+      ))}
     </div>
   );
 }

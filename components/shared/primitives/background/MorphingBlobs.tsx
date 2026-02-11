@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useMemo } from "react";
 import { springConfigs } from "@/lib/animation-utils";
 
 export interface MorphingBlobsProps {
@@ -38,6 +39,12 @@ export function MorphingBlobs({
   size = 300,
   className = "",
 }: MorphingBlobsProps) {
+  // Memoize random blob sizes so they are generated once and remain stable across re-renders
+  const blobSizes = useMemo(
+    () => Array.from({ length: count }, () => size + (Math.random() - 0.5) * 100),
+    [] // eslint-disable-line react-hooks/exhaustive-deps -- intentionally generate once
+  );
+
   return (
     <div className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}>
       {Array.from({ length: count }).map((_, index) => {
@@ -52,14 +59,13 @@ export function MorphingBlobs({
 
         const position = positions[index % positions.length];
         const color = colors[index % colors.length];
-        const blobSize = size + (Math.random() - 0.5) * 100;
         const delay = index * (speed / count);
 
         return (
           <Blob
             key={index}
             color={color}
-            size={blobSize}
+            size={blobSizes[index] ?? size}
             speed={speed}
             blur={blur}
             opacity={opacity}
@@ -111,8 +117,11 @@ function Blob({ color, size, speed, blur, opacity, position, delay }: BlobProps)
     return path;
   };
 
-  // Create multiple morph states
-  const morphStates = Array.from({ length: 4 }, () => generateBlobPath());
+  // Create multiple morph states — memoized so random paths are generated once per mount
+  const morphStates = useMemo(
+    () => Array.from({ length: 4 }, () => generateBlobPath()),
+    [] // eslint-disable-line react-hooks/exhaustive-deps -- intentionally generate once
+  );
 
   return (
     <motion.div

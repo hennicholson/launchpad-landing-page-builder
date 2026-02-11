@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ReactNode } from "react";
+import { ReactNode, useMemo } from "react";
 import { springConfigs } from "@/lib/animation-utils";
 
 export interface FloatingElementsProps {
@@ -36,89 +36,78 @@ export function FloatingElements({
   blur = false,
   className = "",
 }: FloatingElementsProps) {
+  // Memoize all random values so they are generated once and remain stable across re-renders
+  const elementConfigs = useMemo(
+    () =>
+      Array.from({ length: count }, () => ({
+        startX: Math.random() * spread - spread / 2,
+        startY: direction === "random" ? Math.random() * 100 : 0,
+        duration: (15 + Math.random() * 10) / speed,
+        scale: 0.5 + Math.random() * 1,
+        delay: Math.random() * 5,
+        yMovement:
+          direction === "up"
+            ? -100
+            : direction === "down"
+              ? 100
+              : Math.random() > 0.5
+                ? -100
+                : 100,
+        rotation: Math.random() * 360,
+        rotationDirection: Math.random() > 0.5 ? 1 : -1,
+      })),
+    [] // eslint-disable-line react-hooks/exhaustive-deps -- intentionally generate once
+  );
+
   return (
     <div className={`absolute inset-0 pointer-events-none overflow-hidden ${className}`}>
-      {Array.from({ length: count }).map((_, index) => {
-        // Random positioning
-        const startX = Math.random() * spread - spread / 2;
-        const startY = direction === "random" ? Math.random() * 100 : 0;
-
-        // Random animation duration
-        const duration = (15 + Math.random() * 10) / speed;
-
-        // Random size scale
-        const scale = 0.5 + Math.random() * 1;
-
-        // Random delay
-        const delay = Math.random() * 5;
-
-        // Calculate vertical movement based on direction
-        const getYMovement = () => {
-          switch (direction) {
-            case "up":
-              return -100;
-            case "down":
-              return 100;
-            case "random":
-            default:
-              return Math.random() > 0.5 ? -100 : 100;
-          }
-        };
-
-        const yMovement = getYMovement();
-
-        // Random rotation
-        const rotation = Math.random() * 360;
-        const rotationDirection = Math.random() > 0.5 ? 1 : -1;
-
-        return (
-          <motion.div
-            key={index}
-            className="absolute"
-            initial={{
-              left: `${50 + (startX / spread) * 50}%`,
-              top: `${startY}%`,
-              scale: 0,
-              opacity: 0,
-              rotate: rotation,
-            }}
-            animate={{
-              top: `${startY + yMovement}%`,
-              scale: [0, scale, scale, 0],
-              opacity: [0, 0.4, 0.4, 0],
-              rotate: rotation + rotationDirection * 180,
-            }}
-            transition={{
-              duration,
-              delay,
-              repeat: Infinity,
-              repeatType: "loop",
-              ease: "linear",
-              scale: {
-                duration: duration / 2,
-                times: [0, 0.1, 0.9, 1],
-              },
-              opacity: {
-                duration: duration / 2,
-                times: [0, 0.1, 0.9, 1],
-              },
-            }}
-            style={{
-              backdropFilter: blur ? "blur(4px)" : undefined,
-              WebkitBackdropFilter: blur ? "blur(4px)" : undefined,
-              willChange: "transform, opacity",
-            }}
-          >
-            {children || <DefaultShape />}
-          </motion.div>
-        );
-      })}
+      {elementConfigs.map((config, index) => (
+        <motion.div
+          key={index}
+          className="absolute"
+          initial={{
+            left: `${50 + (config.startX / spread) * 50}%`,
+            top: `${config.startY}%`,
+            scale: 0,
+            opacity: 0,
+            rotate: config.rotation,
+          }}
+          animate={{
+            top: `${config.startY + config.yMovement}%`,
+            scale: [0, config.scale, config.scale, 0],
+            opacity: [0, 0.4, 0.4, 0],
+            rotate: config.rotation + config.rotationDirection * 180,
+          }}
+          transition={{
+            duration: config.duration,
+            delay: config.delay,
+            repeat: Infinity,
+            repeatType: "loop",
+            ease: "linear",
+            scale: {
+              duration: config.duration / 2,
+              times: [0, 0.1, 0.9, 1],
+            },
+            opacity: {
+              duration: config.duration / 2,
+              times: [0, 0.1, 0.9, 1],
+            },
+          }}
+          style={{
+            backdropFilter: blur ? "blur(4px)" : undefined,
+            WebkitBackdropFilter: blur ? "blur(4px)" : undefined,
+            willChange: "transform, opacity",
+          }}
+        >
+          {children || <DefaultShape index={index} />}
+        </motion.div>
+      ))}
     </div>
   );
 }
 
-// Default floating shape
-function DefaultShape() {
+// Default floating shape — deterministic selection based on index
+function DefaultShape({ index }: { index: number }) {
   const shapes = [
     // Circle
     <div
@@ -137,5 +126,5 @@ function DefaultShape() {
     />,
   ];
 
-  return shapes[Math.floor(Math.random() * shapes.length)];
+  return shapes[index % shapes.length];
 }

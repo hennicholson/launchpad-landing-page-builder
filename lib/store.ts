@@ -30,13 +30,18 @@ export type ElementStylePanelData = {
   position: { x: number; y: number };
 };
 
+type HistoryEntry = {
+  page: LandingPage;
+  groups: [string, ElementGroup][];
+};
+
 type EditorState = {
   // Page data
   page: LandingPage;
   originalPage: LandingPage | null; // For tracking changes
 
   // Undo/Redo history
-  history: LandingPage[];
+  history: HistoryEntry[];
   historyIndex: number;
   maxHistorySize: number;
 
@@ -261,13 +266,32 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   isFullScreen: false,
   currentEditingBreakpoint: 'desktop' as Breakpoint,
 
-  setPage: (page) =>
+  setPage: (newPage) => {
+    // Reconstruct element groups from elements' groupId properties
+    const newGroups = new Map<string, ElementGroup>();
+    newPage.sections.forEach(section => {
+      section.elements?.forEach(el => {
+        if (el.groupId) {
+          if (!newGroups.has(el.groupId)) {
+            newGroups.set(el.groupId, {
+              id: el.groupId,
+              elementIds: [],
+              bounds: { minX: 0, maxX: 0, minY: 0, maxY: 0 },
+            });
+          }
+          newGroups.get(el.groupId)!.elementIds.push(el.id);
+        }
+      });
+    });
+
     set({
-      page,
-      originalPage: JSON.parse(JSON.stringify(page)),
+      page: newPage,
+      originalPage: JSON.parse(JSON.stringify(newPage)),
       isDirty: false,
-      selectedSectionId: page.sections[0]?.id || null,
-    }),
+      selectedSectionId: newPage.sections[0]?.id || null,
+      elementGroups: newGroups,
+    });
+  },
 
   updateSection: (sectionId, updates) => {
     get().pushHistory();
@@ -759,11 +783,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   // Undo/Redo implementations
   pushHistory: () =>
     set((state) => {
-      const { history, historyIndex, maxHistorySize, page } = state;
+      const { history, historyIndex, maxHistorySize, page, elementGroups } = state;
       // Remove any redo states (states after current index)
       const newHistory = history.slice(0, historyIndex + 1);
-      // Add current page state
-      newHistory.push(JSON.parse(JSON.stringify(page)));
+      // Add current page state and element groups
+      newHistory.push({
+        page: JSON.parse(JSON.stringify(page)),
+        groups: Array.from(elementGroups.entries()),
+      });
       // Limit history size
       if (newHistory.length > maxHistorySize) {
         newHistory.shift();
@@ -780,8 +807,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       if (historyIndex <= 0) return state;
 
       const newIndex = historyIndex - 1;
+      const entry = history[newIndex];
       return {
-        page: JSON.parse(JSON.stringify(history[newIndex])),
+        page: JSON.parse(JSON.stringify(entry.page)),
+        elementGroups: new Map(entry.groups),
         historyIndex: newIndex,
         isDirty: true,
       };
@@ -793,8 +822,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       if (historyIndex >= history.length - 1) return state;
 
       const newIndex = historyIndex + 1;
+      const entry = history[newIndex];
       return {
-        page: JSON.parse(JSON.stringify(history[newIndex])),
+        page: JSON.parse(JSON.stringify(entry.page)),
+        elementGroups: new Map(entry.groups),
         historyIndex: newIndex,
         isDirty: true,
       };
@@ -983,16 +1014,54 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set((state) => {
       const newSelection = new Set(state.selectedElementIds);
       newSelection.delete(elementId);
+
+      // Find the element being removed to check for group membership
+      const section = state.page.sections.find((s) => s.id === sectionId);
+      const removedElement = section?.elements?.find((el) => el.id === elementId);
+      const removedGroupId = removedElement?.groupId;
+
+      // Handle group cleanup
+      let newGroups = state.elementGroups;
+      let updatedSections = state.page.sections.map((s) =>
+        s.id === sectionId
+          ? { ...s, elements: s.elements?.filter((el) => el.id !== elementId) }
+          : s
+      );
+
+      if (removedGroupId) {
+        newGroups = new Map(state.elementGroups);
+        const group = newGroups.get(removedGroupId);
+        if (group) {
+          const remainingIds = group.elementIds.filter((id) => id !== elementId);
+          if (remainingIds.length < 2) {
+            // Dissolve the group: remove from map and clear groupId on remaining element
+            newGroups.delete(removedGroupId);
+            updatedSections = updatedSections.map((s) =>
+              s.id === sectionId
+                ? {
+                    ...s,
+                    elements: s.elements?.map((el) =>
+                      el.groupId === removedGroupId
+                        ? { ...el, groupId: undefined }
+                        : el
+                    ),
+                  }
+                : s
+            );
+          } else {
+            // Update the group with the removed element
+            newGroups.set(removedGroupId, { ...group, elementIds: remainingIds });
+          }
+        }
+      }
+
       return {
         page: {
           ...state.page,
-          sections: state.page.sections.map((s) =>
-            s.id === sectionId
-              ? { ...s, elements: s.elements?.filter((el) => el.id !== elementId) }
-              : s
-          ),
+          sections: updatedSections,
         },
         selectedElementIds: newSelection,
+        elementGroups: newGroups,
         isDirty: true,
       };
     });
@@ -1128,6 +1197,26 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const elementsToGroup = section.elements.filter((el) => elementIds.includes(el.id));
     if (elementsToGroup.length < 2) return null;
 
+    // Remove elements from their old groups first
+    const newGroups = new Map(state.elementGroups);
+    const groupsToDissolve: string[] = [];
+
+    elementsToGroup.forEach((el) => {
+      if (el.groupId && newGroups.has(el.groupId)) {
+        const oldGroup = newGroups.get(el.groupId)!;
+        const remainingIds = oldGroup.elementIds.filter((id) => id !== el.id);
+        if (remainingIds.length < 2) {
+          // Mark for dissolution
+          groupsToDissolve.push(el.groupId);
+        } else {
+          newGroups.set(el.groupId, { ...oldGroup, elementIds: remainingIds });
+        }
+      }
+    });
+
+    // Dissolve old groups that are now too small
+    groupsToDissolve.forEach((gId) => newGroups.delete(gId));
+
     // Calculate bounding box
     const minX = Math.min(...elementsToGroup.map((el) => el.position.x));
     const maxX = Math.max(...elementsToGroup.map((el) => el.position.x));
@@ -1141,8 +1230,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       bounds: { minX, maxX, minY, maxY },
     };
 
-    // Update elements with groupId and add group to map
-    const newGroups = new Map(state.elementGroups);
     newGroups.set(groupId, newGroup);
 
     set({
@@ -1152,11 +1239,16 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           s.id === sectionId
             ? {
                 ...s,
-                elements: s.elements?.map((el) =>
-                  elementIds.includes(el.id)
-                    ? { ...el, groupId }
-                    : el
-                ),
+                elements: s.elements?.map((el) => {
+                  if (elementIds.includes(el.id)) {
+                    return { ...el, groupId };
+                  }
+                  // Clear groupId for elements in dissolved groups
+                  if (el.groupId && groupsToDissolve.includes(el.groupId)) {
+                    return { ...el, groupId: undefined };
+                  }
+                  return el;
+                }),
               }
             : s
         ),
@@ -1204,32 +1296,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const group = state.elementGroups.get(groupId);
     if (!group) return;
 
-    // Move all elements in the group by the delta
-    set({
-      page: {
-        ...state.page,
-        sections: state.page.sections.map((s) =>
-          s.id === sectionId
-            ? {
-                ...s,
-                elements: s.elements?.map((el) =>
-                  el.groupId === groupId
-                    ? {
-                        ...el,
-                        position: {
-                          ...el.position,
-                          x: Math.max(0, Math.min(100, el.position.x + deltaX)),
-                          y: Math.max(0, Math.min(100, el.position.y + deltaY)),
-                        },
-                      }
-                    : el
-                ),
-              }
-            : s
-        ),
-      },
-      isDirty: true,
-    });
+    const bp = state.currentEditingBreakpoint;
 
     // Update group bounds
     const newGroups = new Map(state.elementGroups);
@@ -1243,7 +1310,41 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       },
     };
     newGroups.set(groupId, updatedGroup);
-    set({ elementGroups: newGroups });
+
+    // Move all elements in the group by the delta, respecting breakpoint
+    set({
+      page: {
+        ...state.page,
+        sections: state.page.sections.map((s) =>
+          s.id === sectionId
+            ? {
+                ...s,
+                elements: s.elements?.map((el) => {
+                  if (el.groupId !== groupId) return el;
+                  const newX = Math.max(0, Math.min(100, el.position.x + deltaX));
+                  const newY = Math.max(0, Math.min(100, el.position.y + deltaY));
+
+                  if (bp === 'desktop') {
+                    return {
+                      ...el,
+                      position: {
+                        ...el.position,
+                        x: newX,
+                        y: newY,
+                      },
+                    };
+                  } else {
+                    // For non-desktop breakpoints, create/update breakpoint overrides
+                    return setPositionAtBreakpoint(el, bp, { x: newX, y: newY });
+                  }
+                }),
+              }
+            : s
+        ),
+      },
+      elementGroups: newGroups,
+      isDirty: true,
+    });
   },
 
   getGroupById: (groupId) => {

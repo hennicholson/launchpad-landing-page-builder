@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useAnimationFrame, useMotionTemplate, useMotionValue, useTransform } from "framer-motion";
+import { motion, useAnimationFrame, useMotionTemplate, useMotionValue, MotionValue } from "framer-motion";
 import { useRef } from "react";
 
 export interface AnimatedMeshProps {
@@ -10,6 +10,32 @@ export interface AnimatedMeshProps {
   opacity?: number; // overall opacity, default 0.3
   morphIntensity?: number; // 0-1, how much the gradient morphs, default 0.5
   className?: string;
+}
+
+interface GradientLayerProps {
+  xPos: MotionValue<number>;
+  yPos: MotionValue<number>;
+  color: string;
+  layerOpacity: number;
+  blur: number;
+}
+
+/** Individual gradient layer — hooks are called unconditionally at the top level. */
+function GradientLayer({ xPos, yPos, color, layerOpacity, blur }: GradientLayerProps) {
+  const gradient = useMotionTemplate`radial-gradient(circle at ${xPos}% ${yPos}%, ${color}, transparent 50%)`;
+
+  return (
+    <motion.div
+      className="absolute inset-0"
+      style={{
+        background: gradient as any,
+        opacity: layerOpacity,
+        filter: blur > 0 ? `blur(${blur}px)` : undefined,
+        mixBlendMode: "screen",
+        willChange: "background",
+      }}
+    />
+  );
 }
 
 /**
@@ -65,43 +91,29 @@ export function AnimatedMesh({
     pos3Y.set(50 + Math.cos(seconds * 0.5 + Math.PI / 2) * baseIntensity);
   });
 
-  // Create color stops with positions
-  const getColorStop = (color: string, index: number) => {
-    switch (index % 3) {
-      case 0:
-        return `${color} ${pos1X.get()}% ${pos1Y.get()}%`;
-      case 1:
-        return `${color} ${pos2X.get()}% ${pos2Y.get()}%`;
-      case 2:
-        return `${color} ${pos3X.get()}% ${pos3Y.get()}%`;
-      default:
-        return `${color}`;
-    }
-  };
-
-  // Build radial gradients for each color
-  const gradients = colors.map((color, i) => {
-    const xPos = i === 0 ? pos1X : i === 1 ? pos2X : pos3X;
-    const yPos = i === 0 ? pos1Y : i === 1 ? pos2Y : pos3Y;
-    return useMotionTemplate`radial-gradient(circle at ${xPos}% ${yPos}%, ${color}, transparent 50%)`;
-  });
+  // Map each color index to the corresponding position motion values
+  const positionsByIndex = [
+    { x: pos1X, y: pos1Y },
+    { x: pos2X, y: pos2Y },
+    { x: pos3X, y: pos3Y },
+  ];
 
   return (
     <div className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}>
       {/* Multiple gradient layers for depth */}
-      {gradients.map((gradient, index) => (
-        <motion.div
-          key={index}
-          className="absolute inset-0"
-          style={{
-            background: gradient as any,
-            opacity: opacity / colors.length,
-            filter: blur > 0 ? `blur(${blur}px)` : undefined,
-            mixBlendMode: "screen",
-            willChange: "background",
-          }}
-        />
-      ))}
+      {colors.map((color, index) => {
+        const pos = positionsByIndex[index % positionsByIndex.length];
+        return (
+          <GradientLayer
+            key={index}
+            xPos={pos.x}
+            yPos={pos.y}
+            color={color}
+            layerOpacity={opacity / colors.length}
+            blur={blur}
+          />
+        );
+      })}
     </div>
   );
 }

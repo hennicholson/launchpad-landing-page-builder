@@ -143,9 +143,10 @@ export default function DraggableElement({ element, originalElement, sectionId, 
 
       // Snap to grid if enabled
       if (element.snapToGrid) {
-        const gridPercent = (GRID_SIZE / rect.width) * 100;
-        x = Math.round(x / gridPercent) * gridPercent;
-        y = Math.round(y / gridPercent) * gridPercent;
+        const gridPercentX = (GRID_SIZE / rect.width) * 100;
+        const gridPercentY = (GRID_SIZE / rect.height) * 100;
+        x = Math.round(x / gridPercentX) * gridPercentX;
+        y = Math.round(y / gridPercentY) * gridPercentY;
       }
 
       return {
