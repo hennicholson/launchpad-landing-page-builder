@@ -17,10 +17,6 @@ export async function GET() {
     const headersList = await headers();
     const cookieStore = await cookies();
 
-    // Log ALL headers to see what Whop proxy is forwarding
-    const allHeadersObj = Object.fromEntries([...headersList.entries()]);
-    console.log("[Projects API GET] ALL HEADERS:", JSON.stringify(allHeadersObj, null, 2));
-
     console.log("[Projects API GET] Auth debug:", {
       hasWhopToken: !!headersList.get("x-whop-user-token"),
       hasWhopUserId: !!headersList.get("x-whop-user-id"),

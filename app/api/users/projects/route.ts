@@ -77,11 +77,9 @@ export async function POST(request: NextRequest) {
     // If token provided in body, use SIMPLE verification (no API calls)
     if (token) {
       console.log("[Users/Projects API POST] Using simple token verification");
-      console.log("[Users/Projects API POST] Token length:", token.length);
-      console.log("[Users/Projects API POST] Token preview:", token.substring(0, 50) + "...");
 
       const verified = verifyTokenSimple(token);
-      console.log("[Users/Projects API POST] Verification result:", JSON.stringify(verified));
+      console.log("[Users/Projects API POST] Token verification:", verified ? "success" : "failed");
 
       if (!verified) {
         console.log("[Users/Projects API POST] Token verification failed - verified is null");

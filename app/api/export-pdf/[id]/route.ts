@@ -91,7 +91,7 @@ export async function POST(
     }
 
     return NextResponse.json(
-      { error: "Failed to start PDF export", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Failed to start PDF export" },
       { status: 500 }
     );
   }
@@ -196,7 +196,7 @@ export async function GET(
     }
 
     return NextResponse.json(
-      { error: "Failed to process PDF request", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Failed to process PDF request" },
       { status: 500 }
     );
   }

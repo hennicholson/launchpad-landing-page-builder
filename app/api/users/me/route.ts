@@ -29,13 +29,12 @@ export async function POST(request: Request) {
       });
     }
 
-    console.log("[Users/Me POST] Got token from body, length:", token.length);
-    console.log("[Users/Me POST] Token preview:", token.substring(0, 50) + "...");
+    console.log("[Users/Me POST] Got token from body");
 
     // Use SIMPLE verification - just decode JWT, no API calls
     const verified = verifyTokenSimple(token);
 
-    console.log("[Users/Me POST] Verification result:", JSON.stringify(verified));
+    console.log("[Users/Me POST] Token verification:", verified ? "success" : "failed");
 
     if (!verified) {
       console.log("[Users/Me POST] Token verification failed - verified is null");
@@ -56,7 +55,7 @@ export async function POST(request: Request) {
     }
 
     const userId = generateUUIDFromString(verified.userId);
-    console.log("[Users/Me POST] Verified user:", verified.userId, "UUID:", userId, "email:", verified.email, "name:", verified.name);
+    console.log("[Users/Me POST] Verified user successfully");
 
     // Look up user in database
     let internalUser = null;
@@ -157,10 +156,7 @@ export async function POST(request: Request) {
     });
   } catch (e: unknown) {
     console.error("Error in /api/users/me POST:", e);
-    if (e instanceof Error) {
-      return NextResponse.json({ error: e.message }, { status: 500 });
-    }
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -344,14 +340,6 @@ export async function GET() {
     });
   } catch (e: unknown) {
     console.error("Error in /api/users/me:", e);
-
-    if (e instanceof Error) {
-      return NextResponse.json(
-        { error: e.message },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import Whop from "@whop/sdk";
 import { LAUNCHPAD_PRO_PLAN_ID } from "@/lib/constants";
+import { getWhopUser } from "@/lib/whop";
 
 export async function POST() {
   try {
+    const user = await getWhopUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const client = new Whop({
       apiKey: process.env.WHOP_API_KEY!,
     });

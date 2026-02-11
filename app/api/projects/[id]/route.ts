@@ -169,13 +169,12 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting project:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-    if (errorMessage === "Unauthorized") {
+    if (error instanceof Error && error.message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     return NextResponse.json(
-      { error: "Failed to delete project", details: errorMessage },
+      { error: "Failed to delete project" },
       { status: 500 }
     );
   }

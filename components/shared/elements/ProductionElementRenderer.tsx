@@ -1,5 +1,6 @@
 "use client";
 
+import DOMPurify from "dompurify";
 import { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import type { PageElement, BadgeVariant, IconVariant, DividerVariant, ButtonVariant, ButtonSize, FontWeight, ShadowSize, Breakpoint } from "@/lib/page-schema";
@@ -908,7 +909,7 @@ function HtmlElement({ element, scaleFactor = 1 }: { element: PageElement; scale
         overflow: height ? "auto" : undefined,
         fontSize: `${Math.max(12, 14 * scaleFactor)}px`,
       }}
-      dangerouslySetInnerHTML={{ __html: htmlContent }}
+      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlContent) }}
     />
   );
 }

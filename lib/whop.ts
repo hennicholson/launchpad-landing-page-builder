@@ -28,35 +28,28 @@ export function generateUUIDFromString(input: string): string {
  */
 export function verifyTokenSimple(token: string): { userId: string; email: string | null; name: string | null } | null {
   try {
-    console.log("[verifyTokenSimple] Verifying token, length:", token.length);
-
     const parts = token.split(".");
-    console.log("[verifyTokenSimple] Token has", parts.length, "parts");
 
     if (parts.length !== 3) {
-      console.log("[verifyTokenSimple] Invalid JWT format - expected 3 parts, got", parts.length);
+      console.log("[verifyTokenSimple] Invalid JWT format");
       return null;
     }
 
     // Decode the payload (middle part)
     const base64Payload = parts[1];
-    console.log("[verifyTokenSimple] Base64 payload length:", base64Payload.length);
 
     const decodedPayload = Buffer.from(base64Payload, "base64").toString();
-    console.log("[verifyTokenSimple] Decoded payload:", decodedPayload.substring(0, 200));
 
     const payload = JSON.parse(decodedPayload);
-    console.log("[verifyTokenSimple] Parsed payload keys:", Object.keys(payload));
 
     const userId = payload.sub || payload.user_id || payload.id;
-    console.log("[verifyTokenSimple] Extracted userId:", userId);
 
     if (!userId) {
-      console.log("[verifyTokenSimple] No user ID found in JWT payload. Available keys:", Object.keys(payload));
+      console.log("[verifyTokenSimple] No user ID found in JWT payload");
       return null;
     }
 
-    console.log("[verifyTokenSimple] Successfully decoded token for user:", userId, "email:", payload.email, "name:", payload.name || payload.username);
+    console.log("[verifyTokenSimple] Successfully verified token for user");
 
     return {
       userId,
@@ -64,7 +57,7 @@ export function verifyTokenSimple(token: string): { userId: string; email: strin
       name: payload.name || payload.username || null,
     };
   } catch (error) {
-    console.error("[verifyTokenSimple] JWT decode failed:", error);
+    console.error("[verifyTokenSimple] JWT decode failed");
     return null;
   }
 }
@@ -331,11 +324,7 @@ export async function validateWhopAuthWithSDK(): Promise<{ userId: string; appId
       c.get("x-whop-user-token")?.value ||
       "";
 
-    console.log("[Whop SDK] Validating token with official SDK...", {
-      hasCookieToken: !!c.get("whop_user_token")?.value,
-      hasHeaderToken: !!h.get("x-whop-user-token"),
-      tokenLength: token?.length || 0,
-    });
+    console.log("[Whop SDK] Validating token with official SDK...");
 
     if (!token) {
       console.log("[Whop SDK] No token found in cookies or headers");
@@ -477,7 +466,7 @@ export async function getWhopUser(): Promise<WhopUser | null> {
     }
 
     const finalSource = token ? (tokenSource === "headers" ? "headers" : "cookies") : "none";
-    console.log("[getWhopUser] Token present:", !!token, "source:", finalSource, "length:", token?.length || 0);
+    console.log("[getWhopUser] Token present:", !!token, "source:", finalSource);
 
     if (!token) {
       console.log("[getWhopUser] No token found in headers or cookies");

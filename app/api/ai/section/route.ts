@@ -204,8 +204,9 @@ Return ONLY the modified section with the new variant as valid JSON.
 
       section = normalizeSection(validation.section!);
     } catch (e) {
+      console.error("[API /ai/section] Failed to parse section:", e);
       return NextResponse.json(
-        { error: `Failed to parse section: ${e instanceof Error ? e.message : "Unknown error"}` },
+        { error: "Failed to parse AI response" },
         { status: 500 }
       );
     }
@@ -228,7 +229,7 @@ Return ONLY the modified section with the new variant as valid JSON.
   } catch (error) {
     console.error("[API /ai/section] Error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

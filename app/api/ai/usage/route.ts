@@ -38,7 +38,7 @@ export async function GET() {
   } catch (error) {
     console.error("[API /ai/usage] Error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

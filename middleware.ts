@@ -95,7 +95,7 @@ export async function middleware(request: NextRequest) {
   // IMPORTANT: sameSite: 'none' + secure: true required for cross-origin iframe (Whop)
   if (whopToken) {
     response.cookies.set('whop_user_token', whopToken, {
-      httpOnly: false, // Allow JS access for debugging
+      httpOnly: true,
       secure: true,    // Required for sameSite: 'none'
       sameSite: 'none', // Allow cross-origin iframe requests
       path: '/',
@@ -105,7 +105,7 @@ export async function middleware(request: NextRequest) {
 
   if (whopUserId) {
     response.cookies.set('whop_user_id', whopUserId, {
-      httpOnly: false,
+      httpOnly: true,
       secure: true,
       sameSite: 'none',
       path: '/',

@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
+import { verifyAdminSession } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
 // POST /api/migrate - Run database migrations
 export async function POST() {
   try {
+    const session = await verifyAdminSession();
+    if (!session.authenticated) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const dbUrl = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
     if (!dbUrl) {
       return NextResponse.json({ error: "Database URL not configured" }, { status: 500 });
@@ -167,7 +173,7 @@ export async function POST() {
   } catch (error) {
     console.error("Migration error:", error);
     return NextResponse.json(
-      { error: "Migration failed", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Migration failed" },
       { status: 500 }
     );
   }
@@ -176,6 +182,11 @@ export async function POST() {
 // GET /api/migrate - Check migration status
 export async function GET() {
   try {
+    const session = await verifyAdminSession();
+    if (!session.authenticated) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const dbUrl = process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL;
     if (!dbUrl) {
       return NextResponse.json({ error: "Database URL not configured" }, { status: 500 });
@@ -197,7 +208,7 @@ export async function GET() {
   } catch (error) {
     console.error("Check error:", error);
     return NextResponse.json(
-      { error: "Check failed", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Check failed" },
       { status: 500 }
     );
   }

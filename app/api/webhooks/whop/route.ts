@@ -50,21 +50,14 @@ export async function POST(request: Request) {
       webhookData = whopsdk.webhooks.unwrap(rawBody, { headers });
       console.log("[Whop Webhook] SDK verification successful");
     } catch (verifyError) {
-      console.error("[Whop Webhook] SDK verification failed:", verifyError);
-      // Fallback: try parsing without verification for debugging
-      console.log("[Whop Webhook] Attempting to parse without verification for logging...");
-      try {
-        const parsed = JSON.parse(rawBody);
-        console.log("[Whop Webhook] Raw payload:", JSON.stringify(parsed, null, 2));
-      } catch {}
+      console.error("[Whop Webhook] SDK verification failed");
       return NextResponse.json({ error: "Webhook verification failed" }, { status: 401 });
     }
 
     const eventType = webhookData.type || webhookData.action || "unknown";
     const data = webhookData.data || webhookData;
 
-    console.log(`[Whop Webhook] Event type: ${eventType}`);
-    console.log(`[Whop Webhook] Data:`, JSON.stringify(data, null, 2));
+    console.log('[Whop Webhook] Received event:', data.event || eventType || 'unknown');
 
     // Helper to update user plan with fallback
     async function updateUserPlan(whopUserId: string, newPlan: "pro" | "free") {

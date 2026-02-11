@@ -3,6 +3,7 @@ import Whop from "@whop/sdk";
 import { db } from "@/lib/db";
 import { topupPlans } from "@/lib/schema";
 import { eq } from "drizzle-orm";
+import { getWhopUser } from "@/lib/whop";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,11 @@ export const runtime = "nodejs";
  */
 export async function POST(request: NextRequest) {
   try {
+    const user = await getWhopUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { planId } = body;
 
@@ -101,6 +107,11 @@ export async function POST(request: NextRequest) {
  * Alternative GET endpoint for simpler integrations
  */
 export async function GET(request: NextRequest) {
+  const user = await getWhopUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const planId = request.nextUrl.searchParams.get("planId");
 
   if (!planId) {

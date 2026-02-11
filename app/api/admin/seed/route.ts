@@ -8,7 +8,10 @@ export async function POST(request: NextRequest) {
     const { username, password, secretKey } = await request.json();
 
     // Require secret key for seeding (prevents unauthorized account creation)
-    const expectedSecret = process.env.ADMIN_SEED_SECRET || "launchpad-seed-2024";
+    const expectedSecret = process.env.ADMIN_SEED_SECRET;
+    if (!expectedSecret) {
+      return NextResponse.json({ error: "Seed endpoint not configured" }, { status: 503 });
+    }
     if (secretKey !== expectedSecret) {
       return NextResponse.json(
         { error: "Invalid secret key" },

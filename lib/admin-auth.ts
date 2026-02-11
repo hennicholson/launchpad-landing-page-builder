@@ -71,8 +71,11 @@ export async function authenticateAdmin(
 
     // Store session in cookie (signed with a hash)
     const sessionPayload = Buffer.from(JSON.stringify(sessionData)).toString("base64");
+    const secret = process.env.ADMIN_SECRET;
+    if (!secret) throw new Error("ADMIN_SECRET environment variable is required");
+
     const signature = crypto
-      .createHmac("sha256", process.env.ADMIN_SECRET || "launchpad-admin-secret")
+      .createHmac("sha256", secret)
       .update(sessionPayload)
       .digest("hex");
 
@@ -113,8 +116,11 @@ export async function verifyAdminSession(): Promise<{
     }
 
     // Verify signature
+    const secret = process.env.ADMIN_SECRET;
+    if (!secret) throw new Error("ADMIN_SECRET environment variable is required");
+
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.ADMIN_SECRET || "launchpad-admin-secret")
+      .createHmac("sha256", secret)
       .update(payload)
       .digest("hex");
 

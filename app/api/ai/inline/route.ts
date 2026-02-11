@@ -94,7 +94,7 @@ Return ONLY the improved text. No quotes, no explanation, just the new text.
   } catch (error) {
     console.error("[API /ai/inline] Error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     // Check if DATABASE_URL is available
     if (!process.env.DATABASE_URL) {
       console.error('DATABASE_URL is not set');
-      return NextResponse.json({ error: 'Database not configured', debug: 'No DATABASE_URL' }, { status: 500 });
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
 
     const sql = neon(process.env.DATABASE_URL);
@@ -39,7 +39,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ slug: null, domain, domainWithoutWww });
   } catch (error) {
     console.error('Domain lookup error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: 'Lookup failed', details: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: 'Lookup failed' }, { status: 500 });
   }
 }

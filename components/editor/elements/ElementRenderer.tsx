@@ -1,5 +1,6 @@
 "use client";
 
+import DOMPurify from "dompurify";
 import { motion } from "framer-motion";
 import type { PageElement, BadgeVariant, IconVariant, DividerVariant } from "@/lib/page-schema";
 import { getAnimationVariants } from "@/lib/element-animation-utils";
@@ -456,7 +457,7 @@ function HtmlElement({
       <div
         className="prose prose-invert prose-sm max-w-none"
         style={{ fontSize: `${Math.max(12, 14 * scaleFactor)}px` }}
-        dangerouslySetInnerHTML={{ __html: htmlContent }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlContent) }}
       />
       {isSelected && (
         <div className="absolute -top-6 left-0 px-2 py-0.5 bg-[#D6FC51] text-black text-[10px] font-medium rounded">
