@@ -294,14 +294,37 @@ export default function DraggableElement({ element, originalElement, sectionId, 
         break;
     }
 
+    // Calculate position adjustments for top/left resize handles
+    // When resizing from the left or top, the element's position needs to shift
+    // to keep the opposite edge anchored
+    let positionUpdates: Partial<ElementPosition> = {};
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (rect) {
+      const widthChange = newWidth - currentWidth;
+      const heightChange = newHeight - currentHeight;
+
+      // For 'w', 'nw', 'sw' handles: adjust x position
+      if (direction === 'w' || direction === 'nw' || direction === 'sw') {
+        const xDeltaPercent = (widthChange / rect.width) * 100;
+        positionUpdates.x = element.position.x - xDeltaPercent;
+      }
+
+      // For 'n', 'nw', 'ne' handles: adjust y position
+      if (direction === 'n' || direction === 'nw' || direction === 'ne') {
+        const yDeltaPercent = (heightChange / rect.height) * 100;
+        positionUpdates.y = element.position.y - yDeltaPercent;
+      }
+    }
+
     // Update element position with new dimensions - use breakpoint-aware function
     updateElementAtBreakpoint(sectionId, element.id, {
       position: {
         width: Math.round(newWidth),
         height: Math.round(newHeight),
+        ...positionUpdates,
       }
     });
-  }, [element.position, element.id, sectionId, updateElementAtBreakpoint]);
+  }, [element.position, element.id, sectionId, updateElementAtBreakpoint, containerRef]);
 
   return (
     <div

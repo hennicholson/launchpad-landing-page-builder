@@ -269,7 +269,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       selectedSectionId: page.sections[0]?.id || null,
     }),
 
-  updateSection: (sectionId, updates) =>
+  updateSection: (sectionId, updates) => {
+    get().pushHistory();
     set((state) => ({
       page: {
         ...state.page,
@@ -278,9 +279,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         ),
       },
       isDirty: true,
-    })),
+    }));
+  },
 
-  updateSectionContent: (sectionId, content) =>
+  updateSectionContent: (sectionId, content) => {
+    get().pushHistory();
     set((state) => ({
       page: {
         ...state.page,
@@ -291,9 +294,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         ),
       },
       isDirty: true,
-    })),
+    }));
+  },
 
-  addSection: (type, afterId, options) =>
+  addSection: (type, afterId, options) => {
+    get().pushHistory();
     set((state) => {
       const newSection = createSection(type, options);
       const sections = [...state.page.sections];
@@ -310,9 +315,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         selectedSectionId: newSection.id,
         isDirty: true,
       };
-    }),
+    });
+  },
 
-  removeSection: (sectionId) =>
+  removeSection: (sectionId) => {
+    get().pushHistory();
     set((state) => {
       const sections = state.page.sections.filter((s) => s.id !== sectionId);
       const wasSelected = state.selectedSectionId === sectionId;
@@ -324,9 +331,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           : state.selectedSectionId,
         isDirty: true,
       };
-    }),
+    });
+  },
 
-  moveSection: (sectionId, direction) =>
+  moveSection: (sectionId, direction) => {
+    get().pushHistory();
     set((state) => {
       const sections = [...state.page.sections];
       const index = sections.findIndex((s) => s.id === sectionId);
@@ -343,15 +352,19 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         page: { ...state.page, sections },
         isDirty: true,
       };
-    }),
+    });
+  },
 
-  reorderSections: (sections) =>
+  reorderSections: (sections) => {
+    get().pushHistory();
     set((state) => ({
       page: { ...state.page, sections },
       isDirty: true,
-    })),
+    }));
+  },
 
-  duplicateSection: (sectionId) =>
+  duplicateSection: (sectionId) => {
+    get().pushHistory();
     set((state) => {
       const sections = [...state.page.sections];
       const index = sections.findIndex((s) => s.id === sectionId);
@@ -362,11 +375,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       const duplicate: PageSection = {
         ...JSON.parse(JSON.stringify(original)),
         id: generateId(),
-        items: original.items?.map((item) => ({
-          ...item,
-          id: generateId(),
-        })),
       };
+      duplicate.items = duplicate.items?.map((item) => ({
+        ...item,
+        id: generateId(),
+      }));
 
       sections.splice(index + 1, 0, duplicate);
 
@@ -375,7 +388,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         selectedSectionId: duplicate.id,
         isDirty: true,
       };
-    }),
+    });
+  },
 
   selectSection: (sectionId) => {
     const { selectedItemId, page } = get();
@@ -430,7 +444,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       };
     }),
 
-  addItem: (sectionId) =>
+  addItem: (sectionId) => {
+    get().pushHistory();
     set((state) => ({
       page: {
         ...state.page,
@@ -447,9 +462,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         ),
       },
       isDirty: true,
-    })),
+    }));
+  },
 
-  updateItem: (sectionId, itemId, updates) =>
+  updateItem: (sectionId, itemId, updates) => {
+    get().pushHistory();
     set((state) => ({
       page: {
         ...state.page,
@@ -465,9 +482,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         ),
       },
       isDirty: true,
-    })),
+    }));
+  },
 
   removeItem: (sectionId, itemId) => {
+    get().pushHistory();
     const { selectedItemId } = get();
     set((state) => ({
       page: {
@@ -551,7 +570,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setAIGenerating: (isGenerating) => set({ isAIGenerating: isGenerating }),
 
-  applyAISection: (sectionId, newSection) =>
+  applyAISection: (sectionId, newSection) => {
+    get().pushHistory();
     set((state) => ({
       page: {
         ...state.page,
@@ -562,7 +582,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       isDirty: true,
       aiEditingSectionId: null,
       isAIGenerating: false,
-    })),
+    }));
+  },
 
   // New AI actions for Level 1-4 implementation
   openAICommandInput: () => set({ aiCommandInputOpen: true }),
@@ -755,26 +776,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   undo: () =>
     set((state) => {
-      const { history, historyIndex, page } = state;
-      if (historyIndex < 0) return state;
+      const { history, historyIndex } = state;
+      if (historyIndex <= 0) return state;
 
-      // If we're at the end, save current state first
-      let newHistory = [...history];
-      let newIndex = historyIndex;
-
-      if (historyIndex === history.length - 1) {
-        // Save current state before undoing
-        newHistory = [...history, JSON.parse(JSON.stringify(page))];
-        newIndex = historyIndex;
-      } else {
-        newIndex = historyIndex - 1;
-      }
-
-      if (newIndex < 0) return state;
-
+      const newIndex = historyIndex - 1;
       return {
-        page: JSON.parse(JSON.stringify(newHistory[newIndex])),
-        history: newHistory,
+        page: JSON.parse(JSON.stringify(history[newIndex])),
         historyIndex: newIndex,
         isDirty: true,
       };
@@ -795,7 +802,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   canUndo: () => {
     const state = get();
-    return state.historyIndex >= 0;
+    return state.historyIndex > 0;
   },
 
   canRedo: () => {
@@ -803,7 +810,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     return state.historyIndex < state.history.length - 1;
   },
 
-  updateElementStyle: (sectionId, field, styles, itemId) =>
+  updateElementStyle: (sectionId, field, styles, itemId) => {
+    get().pushHistory();
     set((state) => {
       if (itemId) {
         // Check if it's a nav link (id starts with "nav-link-")
@@ -894,10 +902,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           isDirty: true,
         };
       }
-    }),
+    });
+  },
 
   // Element manipulation actions
-  addElement: (sectionId, type, position) =>
+  addElement: (sectionId, type, position) => {
+    get().pushHistory();
     set((state) => {
       const newElement: PageElement = {
         id: generateId(),
@@ -923,9 +933,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         rightPanelTab: 'settings',     // Auto-switch to settings tab
         isDirty: true,
       };
-    }),
+    });
+  },
 
-  updateElement: (sectionId, elementId, updates) =>
+  updateElement: (sectionId, elementId, updates) => {
+    get().pushHistory();
     set((state) => ({
       page: {
         ...state.page,
@@ -941,9 +953,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         ),
       },
       isDirty: true,
-    })),
+    }));
+  },
 
-  updateElementContent: (sectionId, elementId, content) =>
+  updateElementContent: (sectionId, elementId, content) => {
+    get().pushHistory();
     set((state) => ({
       page: {
         ...state.page,
@@ -961,9 +975,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         ),
       },
       isDirty: true,
-    })),
+    }));
+  },
 
-  removeElement: (sectionId, elementId) =>
+  removeElement: (sectionId, elementId) => {
+    get().pushHistory();
     set((state) => {
       const newSelection = new Set(state.selectedElementIds);
       newSelection.delete(elementId);
@@ -979,7 +995,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         selectedElementIds: newSelection,
         isDirty: true,
       };
-    }),
+    });
+  },
 
   moveElement: (sectionId, elementId, position) =>
     set((state) => ({
@@ -1102,6 +1119,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   createGroup: (sectionId, elementIds) => {
     if (elementIds.length < 2) return null;
 
+    get().pushHistory();
     const state = get();
     const section = state.page.sections.find((s) => s.id === sectionId);
     if (!section?.elements) return null;
@@ -1151,6 +1169,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
 
   ungroupElements: (sectionId, groupId) => {
+    get().pushHistory();
     const state = get();
     const group = state.elementGroups.get(groupId);
     if (!group) return;

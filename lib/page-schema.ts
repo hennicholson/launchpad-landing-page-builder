@@ -181,7 +181,7 @@ export type Breakpoint = 'mobile' | 'tablet' | 'desktop';
 export const BREAKPOINT_WIDTHS: Record<Breakpoint, number> = {
   mobile: 375,
   tablet: 768,
-  desktop: 896,
+  desktop: 1280,
 };
 
 // Per-breakpoint override for any element property
