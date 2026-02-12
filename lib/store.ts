@@ -434,34 +434,41 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     });
   },
 
-  updateColorScheme: (colors) =>
+  updateColorScheme: (colors) => {
+    get().pushHistory();
     set((state) => ({
       page: {
         ...state.page,
         colorScheme: { ...state.page.colorScheme, ...colors },
       },
       isDirty: true,
-    })),
+    }));
+  },
 
-  updateTypography: (typography) =>
+  updateTypography: (typography) => {
+    get().pushHistory();
     set((state) => ({
       page: {
         ...state.page,
         typography: { ...state.page.typography, ...typography },
       },
       isDirty: true,
-    })),
+    }));
+  },
 
-  updatePageMeta: (meta) =>
+  updatePageMeta: (meta) => {
+    get().pushHistory();
     set((state) => ({
       page: {
         ...state.page,
         ...meta,
       },
       isDirty: true,
-    })),
+    }));
+  },
 
-  applyThemePreset: (presetId) =>
+  applyThemePreset: (presetId) => {
+    get().pushHistory();
     set((state) => {
       const preset = THEME_PRESETS[presetId];
       if (!preset) return state;
@@ -472,7 +479,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         },
         isDirty: true,
       };
-    }),
+    });
+  },
 
   addItem: (sectionId) => {
     get().pushHistory();
@@ -558,7 +566,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setPreviewMode: (isPreview) => set({ isPreviewMode: isPreview, editingField: null }),
 
-  updateFieldValue: (sectionId, field, value, itemId) =>
+  updateFieldValue: (sectionId, field, value, itemId) => {
+    get().pushHistory();
     set((state) => {
       if (itemId) {
         // Update item field
@@ -592,7 +601,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           isDirty: true,
         };
       }
-    }),
+    });
+  },
 
   openAIEdit: (sectionId) => set({ aiEditingSectionId: sectionId }),
 
@@ -624,7 +634,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setAIPendingSuggestion: (suggestion) => set({ aiPendingSuggestion: suggestion }),
 
-  approveAISuggestion: () =>
+  approveAISuggestion: () => {
+    get().pushHistory();
     set((state) => {
       const suggestion = state.aiPendingSuggestion;
       if (!suggestion) return state;
@@ -720,7 +731,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       }
 
       return { aiPendingSuggestion: null };
-    }),
+    });
+  },
 
   rejectAISuggestion: () => set({ aiPendingSuggestion: null }),
 
@@ -748,7 +760,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       },
     }),
 
-  updateRichTextContent: (sectionId, field, paragraphIndex, htmlContent) =>
+  updateRichTextContent: (sectionId, field, paragraphIndex, htmlContent) => {
+    get().pushHistory();
     set((state) => ({
       page: {
         ...state.page,
@@ -778,7 +791,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         paragraphIndex: null,
         initialContent: '',
       },
-    })),
+    }));
+  },
 
   openElementStylePanel: (data) => set({ elementStylePanel: data, rightPanelTab: 'style' }),
 
@@ -1128,7 +1142,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   clearElementSelection: () =>
     set({ selectedElementIds: new Set<string>() }),
 
-  duplicateElement: (sectionId, elementId) =>
+  duplicateElement: (sectionId, elementId) => {
+    get().pushHistory();
     set((state) => {
       const section = state.page.sections.find((s) => s.id === sectionId);
       const element = section?.elements?.find((el) => el.id === elementId);
@@ -1157,9 +1172,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         selectedElementIds: new Set([duplicate.id]),
         isDirty: true,
       };
-    }),
+    });
+  },
 
-  reorderElement: (sectionId, elementId, direction) =>
+  reorderElement: (sectionId, elementId, direction) => {
+    get().pushHistory();
     set((state) => {
       const section = state.page.sections.find((s) => s.id === sectionId);
       if (!section?.elements) return state;
@@ -1185,7 +1202,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         },
         isDirty: true,
       };
-    }),
+    });
+  },
 
   // Alignment guides
   setActiveGuides: (guides) => set({ activeGuides: guides }),
@@ -1374,6 +1392,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   // Breakpoint-aware element update
   // Updates element properties, saving to breakpoint overrides if not desktop
   updateElementAtBreakpoint: (sectionId, elementId, updates, breakpoint) => {
+    get().pushHistory();
     const state = get();
     const bp = breakpoint ?? state.currentEditingBreakpoint;
     const section = state.page.sections.find((s) => s.id === sectionId);
@@ -1432,6 +1451,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   // Breakpoint-aware content update
   updateElementContentAtBreakpoint: (sectionId, elementId, content, breakpoint) => {
+    get().pushHistory();
     const state = get();
     const bp = breakpoint ?? state.currentEditingBreakpoint;
     const section = state.page.sections.find((s) => s.id === sectionId);
@@ -1463,6 +1483,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   clearElementBreakpointOverrides: (sectionId, elementId, breakpoint) => {
     if (breakpoint === 'desktop') return; // Can't clear desktop
 
+    get().pushHistory();
     set((state) => {
       const section = state.page.sections.find((s) => s.id === sectionId);
       const element = section?.elements?.find((el) => el.id === elementId);

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { PageElement, ElementPosition } from "@/lib/page-schema";
-import { useEditorStoreOrPublished, type AlignmentGuide, type ActiveGuides } from "@/lib/store";
+import { useEditorStoreOrPublished, useEditorStore, type AlignmentGuide, type ActiveGuides } from "@/lib/store";
 import { ElementRenderer } from "./index";
 import ResizeHandles, { type ResizeDirection } from "./ResizeHandles";
 import { Move, Trash2, Copy, GripVertical, EyeOff, Link, Smartphone } from "lucide-react";
@@ -168,6 +168,7 @@ export default function DraggableElement({ element, originalElement, sectionId, 
       selectElement(sectionId, element.id, isMultiSelect);
 
       if ((e.target as HTMLElement).closest(".drag-handle")) {
+        useEditorStore.getState().pushHistory();
         setIsDragging(true);
         const pixelPos = getPixelPosition();
         setDragOffset({
@@ -428,7 +429,7 @@ export default function DraggableElement({ element, originalElement, sectionId, 
         {isSelected && isResizable && !isPreviewMode && (
           <ResizeHandles
             onResize={handleResize}
-            onResizeStart={() => setIsResizing(true)}
+            onResizeStart={() => { useEditorStore.getState().pushHistory(); setIsResizing(true); }}
             onResizeEnd={() => setIsResizing(false)}
           />
         )}
