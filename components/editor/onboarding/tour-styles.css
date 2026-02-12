@@ -1,0 +1,112 @@
+/* Custom driver.js styles for LaunchPad dark editor theme */
+.driver-popover.launchpad-tour-popover {
+  background: rgba(24, 24, 27, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  color: #fff;
+  max-width: 320px;
+  padding: 0;
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  padding: 16px 20px 4px;
+  margin: 0;
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-description {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 4px 20px 8px;
+  margin: 0;
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-progress-text {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-footer {
+  padding: 12px 20px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-footer button {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-shadow: none;
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-prev-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-prev-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-next-btn,
+.driver-popover.launchpad-tour-popover .driver-popover-close-btn-text {
+  background: linear-gradient(135deg, #f97316, #f59e0b);
+  color: #000;
+  font-weight: 600;
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-next-btn:hover,
+.driver-popover.launchpad-tour-popover .driver-popover-close-btn-text:hover {
+  background: linear-gradient(135deg, #fb923c, #fbbf24);
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-arrow {
+  border: none;
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-arrow-side-left {
+  border-left-color: rgba(24, 24, 27, 0.97);
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-arrow-side-right {
+  border-right-color: rgba(24, 24, 27, 0.97);
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-arrow-side-top {
+  border-top-color: rgba(24, 24, 27, 0.97);
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-arrow-side-bottom {
+  border-bottom-color: rgba(24, 24, 27, 0.97);
+}
+
+/* Close button in corner */
+.driver-popover.launchpad-tour-popover .driver-popover-close-btn {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 18px;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.driver-popover.launchpad-tour-popover .driver-popover-close-btn:hover {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.1);
+}

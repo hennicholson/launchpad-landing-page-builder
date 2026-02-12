@@ -894,7 +894,7 @@ export default function SectionList() {
   };
 
   return (
-    <div className="w-64 border-r border-white/5 flex flex-col flex-shrink-0 bg-[#0f0f10]">
+    <div className="w-64 border-r border-white/5 flex flex-col flex-shrink-0 bg-[#0f0f10]" data-tour="section-list">
       {/* Tabs */}
       <div className="flex border-b border-white/5 flex-shrink-0">
         <button

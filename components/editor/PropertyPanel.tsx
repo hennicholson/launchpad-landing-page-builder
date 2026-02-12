@@ -148,7 +148,7 @@ function SectionElementsList({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-tour="elements">
       <div className="flex items-center justify-between">
         <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
           Elements in Section
@@ -462,7 +462,7 @@ export default function PropertyPanel() {
   // If element is selected, show element settings panel
   if (selectedElementIds.size > 0) {
     return (
-      <div className="w-80 border-l border-white/5 flex flex-col flex-shrink-0 bg-[#0f0f10] overflow-hidden">
+      <div className="w-80 border-l border-white/5 flex flex-col flex-shrink-0 bg-[#0f0f10] overflow-hidden" data-tour="property-panel">
         {/* Tabs */}
         <div className="flex border-b border-white/5 flex-shrink-0">
           <button

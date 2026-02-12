@@ -244,9 +244,9 @@ export default function Canvas() {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-[#18181b] overflow-hidden">
+    <div className="flex-1 flex flex-col bg-[#18181b] overflow-hidden" data-tour="canvas">
       {/* Preview Mode Toggle */}
-      <div className="sticky top-0 z-50 bg-[#18181b]/80 backdrop-blur-sm border-b border-white/5 px-8 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-50 bg-[#18181b]/80 backdrop-blur-sm border-b border-white/5 px-8 py-3 flex items-center justify-between" data-tour="viewport-controls">
         <div className="flex items-center gap-3">
           <span className="text-sm text-white/60">Mode:</span>
           <div className="flex rounded-lg bg-white/5 p-0.5">
@@ -448,9 +448,13 @@ export default function Canvas() {
               >
                 Start building your page
               </h3>
-              <p className="opacity-50 max-w-sm">
-                Click the button above to add your first section
+              <p className="opacity-50 max-w-sm mb-4">
+                Click the button above to browse 44 section types, or use AI to generate your page.
               </p>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-mono text-white/60">⌘K</kbd>
+                <span className="text-xs text-white/40">Open AI commands anytime</span>
+              </div>
             </div>
           ) : (
             page.sections.map((section, index) => {
