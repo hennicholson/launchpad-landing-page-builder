@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useMemo, useState, useEffect } from "react";
-import type { LandingPage, PageSection, ElementGroup, Breakpoint } from "./page-schema";
+import type { LandingPage, PageSection, PageElement, ElementGroup, Breakpoint } from "./page-schema";
 import { DEFAULT_DESIGN_WIDTH } from "./page-schema";
 import { getCurrentBreakpoint } from "./breakpoint-utils";
 import type { ActiveGuides, ElementStylePanelData } from "./store";
@@ -30,6 +30,10 @@ type PublishedContextType = {
   isFullScreen: false;
   currentEditingBreakpoint: Breakpoint;
 
+  // Responsive editing state (always false in published mode)
+  isResponsiveEditing: false;
+  setResponsiveEditing: (enabled: boolean) => void;
+
   // Viewport width for responsive scaling in published mode
   previewWidth: number;
 
@@ -54,6 +58,13 @@ type PublishedContextType = {
   moveGroupedElements: (sectionId: string, groupId: string, deltaX: number, deltaY: number) => void;
   getGroupById: (groupId: string) => ElementGroup | undefined;
   getElementsInGroup: (sectionId: string, groupId: string) => any[];
+
+  // Element clipboard & grid
+  elementClipboard: PageElement | null;
+  showGrid: boolean;
+  copyElement: (sectionId: string, elementId: string) => void;
+  pasteElement: (sectionId: string) => void;
+  toggleGrid: () => void;
 
   // Full-screen and breakpoint actions (no-ops in published mode)
   setFullScreen: (isFullScreen: boolean) => void;
@@ -119,6 +130,10 @@ export function PublishedProvider({
     isFullScreen: false as const,
     currentEditingBreakpoint: getCurrentBreakpoint(viewportWidth),
 
+    // Responsive editing state (always false in published mode)
+    isResponsiveEditing: false as const,
+    setResponsiveEditing: noop,
+
     // Viewport width for responsive scaling
     // Cap at design width to prevent scaling UP on large screens
     previewWidth: Math.min(viewportWidth, pageData.designCanvasWidth || DEFAULT_DESIGN_WIDTH),
@@ -144,6 +159,13 @@ export function PublishedProvider({
     moveGroupedElements: noop,
     getGroupById: () => undefined,
     getElementsInGroup: () => [],
+
+    // Element clipboard & grid (no-ops/defaults)
+    elementClipboard: null,
+    showGrid: false,
+    copyElement: noop,
+    pasteElement: noop,
+    toggleGrid: noop,
 
     // Full-screen and breakpoint actions (no-ops)
     setFullScreen: noop,

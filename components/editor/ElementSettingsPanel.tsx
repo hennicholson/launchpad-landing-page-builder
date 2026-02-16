@@ -7,20 +7,71 @@ import { ELEMENT_PRESETS, getPreset, hasPresets } from "@/lib/element-presets";
 import ElementPresetBrowser from "./ElementPresetBrowser";
 import {
   Star, Heart, Zap, Check, X, AlertCircle, Info, ArrowRight, Play, Lock, Unlock, Eye, EyeOff, Smartphone, RotateCcw,
+  // Additional icons for expanded library
+  Bookmark, Bell, Calendar, Camera, Clock, Coffee, Crown, Diamond, Download, ExternalLink,
+  Flag, Gift, Globe, Home, Key, Layout, Mail, MapPin, MessageCircle, Music,
+  Package, Phone, Search, Send, Settings, Shield, ShoppingCart, Smile, Sun, Tag,
+  Target, ThumbsUp, Trophy, Upload, Users, Wifi, Monitor, Sparkles, Flame, Award,
+  AtSign, Plus,
 } from "lucide-react";
 import { hasBreakpointOverrides, getOverriddenBreakpoints } from "@/lib/breakpoint-utils";
+import { ALL_AVAILABLE_FONTS } from "@/components/editor/universal-controls/TypographyControls";
 
-// Icon options for icon element
+// Icon options for icon element (expanded library)
 const ICON_OPTIONS = [
+  // Common
   { id: 'star', name: 'Star', icon: Star },
   { id: 'heart', name: 'Heart', icon: Heart },
   { id: 'zap', name: 'Zap', icon: Zap },
   { id: 'check', name: 'Check', icon: Check },
   { id: 'x', name: 'X', icon: X },
+  { id: 'sparkles', name: 'Sparkles', icon: Sparkles },
+  { id: 'flame', name: 'Flame', icon: Flame },
+  { id: 'award', name: 'Award', icon: Award },
+  { id: 'crown', name: 'Crown', icon: Crown },
+  { id: 'trophy', name: 'Trophy', icon: Trophy },
+  { id: 'diamond', name: 'Diamond', icon: Diamond },
+  { id: 'thumbsup', name: 'Thumbs Up', icon: ThumbsUp },
+  { id: 'smile', name: 'Smile', icon: Smile },
+  // Arrows & Navigation
+  { id: 'arrow', name: 'Arrow', icon: ArrowRight },
+  { id: 'download', name: 'Download', icon: Download },
+  { id: 'upload', name: 'Upload', icon: Upload },
+  { id: 'external', name: 'External', icon: ExternalLink },
+  { id: 'search', name: 'Search', icon: Search },
+  { id: 'send', name: 'Send', icon: Send },
+  // Communication
   { id: 'alert', name: 'Alert', icon: AlertCircle },
   { id: 'info', name: 'Info', icon: Info },
-  { id: 'arrow', name: 'Arrow', icon: ArrowRight },
+  { id: 'bell', name: 'Bell', icon: Bell },
+  { id: 'mail', name: 'Mail', icon: Mail },
+  { id: 'phone', name: 'Phone', icon: Phone },
+  { id: 'message', name: 'Message', icon: MessageCircle },
+  // Objects
   { id: 'play', name: 'Play', icon: Play },
+  { id: 'calendar', name: 'Calendar', icon: Calendar },
+  { id: 'camera', name: 'Camera', icon: Camera },
+  { id: 'clock', name: 'Clock', icon: Clock },
+  { id: 'coffee', name: 'Coffee', icon: Coffee },
+  { id: 'gift', name: 'Gift', icon: Gift },
+  { id: 'globe', name: 'Globe', icon: Globe },
+  { id: 'home', name: 'Home', icon: Home },
+  { id: 'key', name: 'Key', icon: Key },
+  { id: 'flag', name: 'Flag', icon: Flag },
+  { id: 'bookmark', name: 'Bookmark', icon: Bookmark },
+  { id: 'music', name: 'Music', icon: Music },
+  { id: 'package', name: 'Package', icon: Package },
+  { id: 'mappin', name: 'Location', icon: MapPin },
+  { id: 'shield', name: 'Shield', icon: Shield },
+  { id: 'cart', name: 'Cart', icon: ShoppingCart },
+  { id: 'settings', name: 'Settings', icon: Settings },
+  { id: 'sun', name: 'Sun', icon: Sun },
+  { id: 'tag', name: 'Tag', icon: Tag },
+  { id: 'target', name: 'Target', icon: Target },
+  { id: 'users', name: 'Users', icon: Users },
+  { id: 'wifi', name: 'Wifi', icon: Wifi },
+  { id: 'monitor', name: 'Monitor', icon: Monitor },
+  { id: 'layout', name: 'Layout', icon: Layout },
 ];
 
 export default function ElementSettingsPanel() {
@@ -35,6 +86,7 @@ export default function ElementSettingsPanel() {
     updateElementContentAtBreakpoint,
     updateElementAtBreakpoint,
     clearElementBreakpointOverrides,
+    moveElementAtBreakpoint,
   } = useEditorStore();
 
   // Get the first selected element ID (for editing, we focus on one at a time)
@@ -206,6 +258,12 @@ export default function ElementSettingsPanel() {
         </button>
       </div>
 
+      {/* Universal Style Controls */}
+      <UniversalStyleControls element={selectedElement} sectionId={selectedSectionId!} onUpdate={handleContentUpdate} />
+
+      {/* Animation Controls */}
+      <AnimationControls element={selectedElement} onUpdate={handleContentUpdate} />
+
       {/* Preset Browser (if presets exist for this type) */}
       {hasPresets(selectedElement.type) && (
         <ElementPresetBrowser
@@ -214,6 +272,12 @@ export default function ElementSettingsPanel() {
           onSelectPreset={handleApplyPreset}
         />
       )}
+
+      {/* Position Section (numeric X/Y) */}
+      <PositionSection
+        element={selectedElement}
+        sectionId={selectedSectionId!}
+      />
 
       {/* Dimensions Section (Figma-like sizing) */}
       <DimensionsSection
@@ -384,6 +448,63 @@ function SectionDivider({ title }: { title: string }) {
   );
 }
 
+// Position section for numeric X/Y inputs
+function PositionSection({
+  element,
+  sectionId,
+}: {
+  element: PageElement;
+  sectionId: string;
+}) {
+  const { moveElementAtBreakpoint } = useEditorStore();
+
+  const handlePositionChange = (axis: 'x' | 'y', value: number) => {
+    const clamped = Math.max(0, Math.min(100, value));
+    moveElementAtBreakpoint(sectionId, element.id, {
+      x: axis === 'x' ? clamped : element.position.x,
+      y: axis === 'y' ? clamped : element.position.y,
+    });
+  };
+
+  return (
+    <div>
+      <SectionDivider title="Position" />
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">X</label>
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              value={Math.round(element.position.x * 10) / 10}
+              onChange={(e) => handlePositionChange('x', parseFloat(e.target.value) || 0)}
+              step={0.5}
+              min={0}
+              max={100}
+              className="w-full px-2 py-1.5 text-xs bg-white/5 border border-white/10 rounded-md text-white focus:outline-none focus:border-[#D6FC51]/50"
+            />
+            <span className="text-[10px] text-white/30">%</span>
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] text-white/40 uppercase tracking-wider mb-1 block">Y</label>
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              value={Math.round(element.position.y * 10) / 10}
+              onChange={(e) => handlePositionChange('y', parseFloat(e.target.value) || 0)}
+              step={0.5}
+              min={0}
+              max={100}
+              className="w-full px-2 py-1.5 text-xs bg-white/5 border border-white/10 rounded-md text-white focus:outline-none focus:border-[#D6FC51]/50"
+            />
+            <span className="text-[10px] text-white/30">%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Dimensions section for Figma-like sizing
 function DimensionsSection({
   element,
@@ -507,6 +628,143 @@ function DimensionsSection({
           Reset to auto
         </button>
       )}
+    </div>
+  );
+}
+
+// ==================== UNIVERSAL STYLE CONTROLS ====================
+
+function UniversalStyleControls({ element, sectionId, onUpdate }: {
+  element: PageElement; sectionId: string; onUpdate: (u: Partial<ElementContent>) => void
+}) {
+  const { reorderElement } = useEditorStore();
+
+  return (
+    <div className="space-y-4">
+      <SectionDivider title="Style" />
+
+      {/* Opacity */}
+      <SliderInput
+        label="Opacity"
+        value={Math.round((element.content.opacity ?? 1) * 100)}
+        min={0} max={100} step={5} unit="%"
+        onChange={(v) => onUpdate({ opacity: v / 100 })}
+      />
+
+      {/* Rotation */}
+      <SliderInput
+        label="Rotation"
+        value={element.content.rotation ?? 0}
+        min={-180} max={180} step={1} unit="°"
+        onChange={(v) => onUpdate({ rotation: v === 0 ? undefined : v })}
+      />
+
+      {/* Layer Order */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-white/50">Layer Order</label>
+        <div className="flex gap-1">
+          <button
+            onClick={() => reorderElement(sectionId, element.id, 'up')}
+            className="flex-1 py-2 text-[10px] font-medium rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors"
+          >
+            Bring Forward
+          </button>
+          <button
+            onClick={() => reorderElement(sectionId, element.id, 'down')}
+            className="flex-1 py-2 text-[10px] font-medium rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors"
+          >
+            Send Back
+          </button>
+        </div>
+      </div>
+
+      {/* Background Color */}
+      <ColorInput
+        label="Background"
+        value={element.content.elementBgColor || 'transparent'}
+        onChange={(v) => onUpdate({ elementBgColor: v === 'transparent' ? undefined : v })}
+      />
+
+      {/* Border */}
+      <SliderInput
+        label="Border Width"
+        value={element.content.elementBorderWidth ?? 0}
+        min={0} max={8} step={1}
+        onChange={(v) => onUpdate({ elementBorderWidth: v === 0 ? undefined : v })}
+      />
+
+      {(element.content.elementBorderWidth ?? 0) > 0 && (
+        <ColorInput
+          label="Border Color"
+          value={element.content.elementBorderColor || '#ffffff'}
+          onChange={(v) => onUpdate({ elementBorderColor: v })}
+        />
+      )}
+
+      <SliderInput
+        label="Border Radius"
+        value={element.content.elementBorderRadius ?? 0}
+        min={0} max={50} step={1}
+        onChange={(v) => onUpdate({ elementBorderRadius: v === 0 ? undefined : v })}
+      />
+
+      {/* Box Shadow */}
+      <ToggleGroup
+        label="Shadow"
+        options={[
+          { value: 'none' as const, label: 'None' },
+          { value: 'sm' as const, label: 'Small' },
+          { value: 'md' as const, label: 'Medium' },
+          { value: 'lg' as const, label: 'Large' },
+        ]}
+        value={element.content.elementShadow || 'none'}
+        onChange={(v) => onUpdate({ elementShadow: v === 'none' ? undefined : v })}
+        columns={4}
+      />
+    </div>
+  );
+}
+
+// ==================== ANIMATION CONTROLS ====================
+
+function AnimationControls({ element, onUpdate }: { element: PageElement; onUpdate: (u: Partial<ElementContent>) => void }) {
+  const animation = element.content.animation || {};
+
+  const updateAnimation = (key: 'hover' | 'click', value: string) => {
+    const newAnim = { ...animation, [key]: value === 'none' ? undefined : value };
+    if (!newAnim.hover && !newAnim.click) {
+      onUpdate({ animation: undefined });
+    } else {
+      onUpdate({ animation: newAnim });
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <SectionDivider title="Animation" />
+      <ToggleGroup
+        label="Hover Effect"
+        options={[
+          { value: 'none', label: 'None' },
+          { value: 'scale', label: 'Scale' },
+          { value: 'lift', label: 'Lift' },
+          { value: 'bounce', label: 'Bounce' },
+        ]}
+        value={animation.hover || 'none'}
+        onChange={(v) => updateAnimation('hover', v)}
+        columns={4}
+      />
+      <ToggleGroup
+        label="Click Effect"
+        options={[
+          { value: 'none', label: 'None' },
+          { value: 'press', label: 'Press' },
+          { value: 'bounce', label: 'Bounce' },
+        ]}
+        value={animation.click || 'none'}
+        onChange={(v) => updateAnimation('click', v)}
+        columns={3}
+      />
     </div>
   );
 }
@@ -840,6 +1098,21 @@ function TextSettings({ element, onUpdate }: { element: PageElement; onUpdate: (
         />
       </div>
 
+      <SectionDivider title="Font" />
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-white/50">Font Family</label>
+        <select
+          value={content.textFontFamily || ''}
+          onChange={(e) => onUpdate({ textFontFamily: e.target.value || undefined })}
+          className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#D6FC51]/50"
+        >
+          <option value="">Default</option>
+          {ALL_AVAILABLE_FONTS.map((font) => (
+            <option key={font} value={font}>{font}</option>
+          ))}
+        </select>
+      </div>
+
       <SectionDivider title="Typography" />
 
       <SliderInput
@@ -1022,7 +1295,7 @@ function IconSettings({ element, onUpdate }: { element: PageElement; onUpdate: (
     <div className="space-y-4">
       <div>
         <label className="block text-xs font-medium text-white/50 mb-1.5">Icon</label>
-        <div className="grid grid-cols-5 gap-1.5">
+        <div className="grid grid-cols-6 gap-1.5 max-h-48 overflow-y-auto">
           {ICON_OPTIONS.map(({ id, name, icon: Icon }) => (
             <button
               key={id}
@@ -1355,7 +1628,13 @@ function HtmlSettings({ element, onUpdate }: { element: PageElement; onUpdate: (
   );
 }
 
+const AVAILABLE_PLATFORMS = [
+  'twitter', 'instagram', 'linkedin', 'youtube', 'github', 'facebook',
+  'tiktok', 'discord', 'threads', 'twitch', 'website', 'email',
+];
+
 function SocialSettings({ element, onUpdate }: { element: PageElement; onUpdate: (u: Partial<ElementContent>) => void }) {
+  const [showAddPlatform, setShowAddPlatform] = useState(false);
   const content = element.content;
   const links = content.socialLinks || [
     { platform: 'twitter', url: '#' },
@@ -1369,6 +1648,21 @@ function SocialSettings({ element, onUpdate }: { element: PageElement; onUpdate:
     onUpdate({ socialLinks: newLinks });
   };
 
+  const removeLink = (index: number) => {
+    const newLinks = links.filter((_, i) => i !== index);
+    onUpdate({ socialLinks: newLinks });
+  };
+
+  const addPlatform = (platform: string) => {
+    const newLinks = [...links, { platform, url: '#' }];
+    onUpdate({ socialLinks: newLinks });
+    setShowAddPlatform(false);
+  };
+
+  // Platforms not yet added
+  const usedPlatforms = links.map((l) => l.platform);
+  const availablePlatforms = AVAILABLE_PLATFORMS.filter((p) => !usedPlatforms.includes(p));
+
   return (
     <div className="space-y-4">
       <div>
@@ -1376,7 +1670,7 @@ function SocialSettings({ element, onUpdate }: { element: PageElement; onUpdate:
         <div className="space-y-2">
           {links.map((link, index) => (
             <div key={index} className="flex items-center gap-2">
-              <span className="text-xs text-white/40 w-16 capitalize">{link.platform}</span>
+              <span className="text-xs text-white/40 w-16 capitalize truncate">{link.platform}</span>
               <input
                 type="text"
                 value={link.url}
@@ -1384,9 +1678,51 @@ function SocialSettings({ element, onUpdate }: { element: PageElement; onUpdate:
                 className="flex-1 px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-[#D6FC51]/50"
                 placeholder="https://..."
               />
+              <button
+                onClick={() => removeLink(index)}
+                className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors"
+                title="Remove"
+              >
+                <X className="w-3 h-3" />
+              </button>
             </div>
           ))}
         </div>
+
+        {/* Add Platform */}
+        {availablePlatforms.length > 0 && (
+          <div className="mt-2">
+            {showAddPlatform ? (
+              <div className="space-y-1">
+                <div className="grid grid-cols-3 gap-1 max-h-32 overflow-y-auto">
+                  {availablePlatforms.map((platform) => (
+                    <button
+                      key={platform}
+                      onClick={() => addPlatform(platform)}
+                      className="py-1.5 text-[10px] font-medium rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors capitalize"
+                    >
+                      {platform}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setShowAddPlatform(false)}
+                  className="text-[10px] text-white/30 hover:text-white/50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAddPlatform(true)}
+                className="flex items-center gap-1 mt-1 text-[10px] font-medium text-[#D6FC51]/70 hover:text-[#D6FC51] transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+                Add Platform
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <SectionDivider title="Style" />

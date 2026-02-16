@@ -131,7 +131,9 @@ export default function FeaturesIllustratedBase({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
-      }}
+        '--section-body-font': `'${bodyFont}', sans-serif`,
+        fontFamily: `'${bodyFont}', sans-serif`,
+      } as React.CSSProperties}
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       <div className="container relative z-10 mx-auto px-4">

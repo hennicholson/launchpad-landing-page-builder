@@ -14,8 +14,28 @@ function escapeHtml(text: string): string {
     .replace(/'/g, "&#039;");
 }
 
-function generateGoogleFontsUrl(typography: Typography): string {
-  const fonts = new Set([typography.headingFont, typography.bodyFont]);
+function generateGoogleFontsUrl(page: LandingPage): string {
+  const fonts = new Set<string>();
+  if (page.typography?.headingFont) fonts.add(page.typography.headingFont);
+  if (page.typography?.bodyFont) fonts.add(page.typography.bodyFont);
+
+  // Collect per-section font overrides
+  for (const section of page.sections || []) {
+    if (section.content.sectionHeadingFont) fonts.add(section.content.sectionHeadingFont);
+    if (section.content.sectionBodyFont) fonts.add(section.content.sectionBodyFont);
+
+    // Element fonts
+    for (const element of section.elements || []) {
+      if (element.content.textFontFamily) fonts.add(element.content.textFontFamily);
+      if (element.breakpointOverrides?.mobile?.content?.textFontFamily) {
+        fonts.add(element.breakpointOverrides.mobile.content.textFontFamily);
+      }
+      if (element.breakpointOverrides?.tablet?.content?.textFontFamily) {
+        fonts.add(element.breakpointOverrides.tablet.content.textFontFamily);
+      }
+    }
+  }
+
   const fontParams = Array.from(fonts)
     .map((font) => `family=${font.replace(/\s+/g, "+")}:wght@400;500;600;700`)
     .join("&");
@@ -1198,7 +1218,7 @@ function renderSection(section: PageSection, colorScheme: ColorScheme, typograph
 export function renderLandingPage(page: LandingPage, settings?: ProjectSettings, forPdf?: boolean): string {
   const { colorScheme, typography, sections } = page;
 
-  const fontsUrl = generateGoogleFontsUrl(typography);
+  const fontsUrl = generateGoogleFontsUrl(page);
   const cssVariables = generateCssVariables(colorScheme, typography);
 
   const sectionsHtml = sections

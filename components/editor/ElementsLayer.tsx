@@ -77,34 +77,35 @@ function AlignmentGuides() {
 export default function ElementsLayer({ section, previewWidth: previewWidthProp }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const storeOrContext = useEditorStoreOrPublished();
-  const { isPreviewMode, page, currentEditingBreakpoint } = storeOrContext;
+  const { isPreviewMode, isResponsiveEditing, page, currentEditingBreakpoint } = storeOrContext;
+  const showGrid = (storeOrContext as any).showGrid ?? false;
 
   // Use previewWidth from props (editor mode) or context (published mode)
   const previewWidth = previewWidthProp ?? (storeOrContext as { previewWidth?: number }).previewWidth;
 
   // Calculate scale factor for responsive preview
   const scaleFactor = useMemo(() => {
-    // No scaling in edit mode
-    if (!isPreviewMode || !previewWidth) return 1;
+    // No scaling in normal edit mode (desktop)
+    if ((!isPreviewMode && !isResponsiveEditing) || !previewWidth) return 1;
     // Calculate scale based on preview width vs design width
     const designWidth = page.designCanvasWidth || DEFAULT_DESIGN_WIDTH;
     return getScaleFactor(previewWidth, designWidth);
-  }, [isPreviewMode, previewWidth, page.designCanvasWidth]);
+  }, [isPreviewMode, isResponsiveEditing, previewWidth, page.designCanvasWidth]);
 
-  // Get elements with breakpoint overrides applied (in preview mode)
+  // Get elements with breakpoint overrides applied (in preview mode or responsive editing mode)
   const effectiveElements = useMemo(() => {
     if (!section.elements) return [];
 
-    // In preview mode, apply breakpoint overrides
-    if (isPreviewMode) {
+    // In preview mode or responsive editing mode, apply breakpoint overrides
+    if (isPreviewMode || isResponsiveEditing) {
       return section.elements
         .map((element) => getElementAtBreakpoint(element, currentEditingBreakpoint))
         .filter((element) => element.visible !== false);
     }
 
-    // In edit mode, show all elements (base values)
+    // In normal edit mode, show all elements (base values)
     return section.elements;
-  }, [section.elements, isPreviewMode, currentEditingBreakpoint]);
+  }, [section.elements, isPreviewMode, isResponsiveEditing, currentEditingBreakpoint]);
 
   if (effectiveElements.length === 0) {
     return null;
@@ -118,6 +119,20 @@ export default function ElementsLayer({ section, previewWidth: previewWidthProp 
     >
       {/* Alignment guides overlay */}
       <AlignmentGuides />
+
+      {/* Grid overlay */}
+      {showGrid && !isPreviewMode && (
+        <div
+          className="absolute inset-0 pointer-events-none z-0"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(214, 252, 81, 0.05) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(214, 252, 81, 0.05) 1px, transparent 1px)
+            `,
+            backgroundSize: '5% 5%',
+          }}
+        />
+      )}
 
       {/* Each element is interactive individually - no wrapper div that blocks section clicks */}
       {effectiveElements.map((element) => {

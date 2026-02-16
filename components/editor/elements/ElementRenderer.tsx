@@ -25,6 +25,12 @@ import {
   Youtube,
   Github,
   Facebook,
+  // Expanded icon library
+  Bookmark, Bell, Calendar, Camera, Clock, Coffee, Crown, Diamond, Download, ExternalLink,
+  Flag, Gift, Globe, Home, Key, Layout, Mail, MapPin, MessageCircle, Music,
+  Package, Phone, Search, Send, Settings, Shield, ShoppingCart, Smile, Sun, Tag,
+  Target, ThumbsUp, Trophy, Upload, Users, Wifi, Monitor, Sparkles, Flame, Award,
+  AtSign,
 } from "lucide-react";
 
 type Props = {
@@ -35,20 +41,60 @@ type Props = {
   onClick: (e: React.MouseEvent) => void;
 };
 
-// Icon mapping for the icon element
+// Icon mapping for the icon element (expanded)
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   star: Star,
   heart: Heart,
   zap: Zap,
   check: Check,
   x: X,
+  sparkles: Sparkles,
+  flame: Flame,
+  award: Award,
+  crown: Crown,
+  trophy: Trophy,
+  diamond: Diamond,
+  thumbsup: ThumbsUp,
+  smile: Smile,
+  arrow: ArrowRight,
+  download: Download,
+  upload: Upload,
+  external: ExternalLink,
+  search: Search,
+  send: Send,
   alert: AlertCircle,
   info: Info,
-  arrow: ArrowRight,
+  bell: Bell,
+  mail: Mail,
+  phone: Phone,
+  message: MessageCircle,
   play: Play,
+  calendar: Calendar,
+  camera: Camera,
+  clock: Clock,
+  coffee: Coffee,
+  gift: Gift,
+  globe: Globe,
+  home: Home,
+  key: Key,
+  flag: Flag,
+  bookmark: Bookmark,
+  music: Music,
+  package: Package,
+  mappin: MapPin,
+  shield: Shield,
+  cart: ShoppingCart,
+  settings: Settings,
+  sun: Sun,
+  tag: Tag,
+  target: Target,
+  users: Users,
+  wifi: Wifi,
+  monitor: Monitor,
+  layout: Layout,
 };
 
-// Social icon mapping
+// Social icon mapping (expanded)
 const SOCIAL_ICON_MAP: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   twitter: Twitter,
   instagram: Instagram,
@@ -56,6 +102,12 @@ const SOCIAL_ICON_MAP: Record<string, React.ComponentType<{ className?: string; 
   youtube: Youtube,
   github: Github,
   facebook: Facebook,
+  tiktok: Globe,
+  discord: MessageCircle,
+  threads: AtSign,
+  twitch: Monitor,
+  website: Globe,
+  email: Mail,
 };
 
 // Badge variant styles

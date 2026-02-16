@@ -339,6 +339,10 @@ export default function StatsSectionBase({
   const headingFont = typography.headingFont;
   const bodyFont = typography.bodyFont;
 
+  // Per-section overrides
+  const headingSizeScale = content.sectionHeadingSizeScale ?? 1;
+  const textAlign = content.sectionTextAlign;
+
   // Get variant
   const variant: StatsVariant = content.statsVariant || "cards";
 
@@ -525,7 +529,10 @@ export default function StatsSectionBase({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
-      }}
+        '--section-heading-font': `'${headingFont}', sans-serif`,
+        '--section-body-font': `'${bodyFont}', sans-serif`,
+        fontFamily: `'${bodyFont}', sans-serif`,
+      } as React.CSSProperties}
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       {/* Background pattern */}
@@ -541,6 +548,7 @@ export default function StatsSectionBase({
         {/* Header */}
         <motion.div
           className="text-center mb-16"
+          style={{ textAlign: textAlign || undefined }}
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -569,7 +577,11 @@ export default function StatsSectionBase({
           {content.showHeading !== false && content.heading && (
             <h2
               className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95]"
-              style={{ color: textColor, fontFamily: headingFont }}
+              style={{
+                color: textColor,
+                fontFamily: `'${headingFont}', sans-serif`,
+                ...(headingSizeScale !== 1 ? { fontSize: `${headingSizeScale}em`, lineHeight: 1.1 } : {}),
+              }}
             >
               {renderText ? (
                 renderText({

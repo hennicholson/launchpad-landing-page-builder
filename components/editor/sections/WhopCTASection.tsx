@@ -2,6 +2,7 @@
 
 import type { PageSection } from "@/lib/page-schema";
 import { useEditorStoreOrPublished } from "@/lib/store";
+import { getSectionTypography } from "@/lib/section-overrides";
 import { FloatingCTABand } from "@/components/shared/sections/whop-university";
 import EditableText from "../EditableText";
 import EditableImage from "../EditableImage";
@@ -17,7 +18,7 @@ export default function WhopCTASection({ section }: Props) {
     <FloatingCTABand
       section={section}
       colorScheme={page.colorScheme}
-      typography={page.typography}
+      typography={getSectionTypography(section, page)}
       contentWidth={page.contentWidth}
       renderText={(props) => (
         <EditableText

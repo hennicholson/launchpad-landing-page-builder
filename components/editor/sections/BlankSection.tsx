@@ -2,6 +2,7 @@
 
 import type { PageSection } from "@/lib/page-schema";
 import { useEditorStoreOrPublished } from "@/lib/store";
+import { getSectionTypography } from "@/lib/section-overrides";
 import BlankSectionBase from "@/components/shared/sections/BlankSectionBase";
 
 type Props = {
@@ -15,7 +16,7 @@ export default function BlankSection({ section }: Props) {
     <BlankSectionBase
       section={section}
       colorScheme={page.colorScheme}
-      typography={page.typography}
+      typography={getSectionTypography(section, page)}
       contentWidth={page.contentWidth}
     />
   );

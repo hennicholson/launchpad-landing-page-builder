@@ -5,6 +5,7 @@ import { DEFAULT_DESIGN_WIDTH } from "@/lib/page-schema";
 import { PublishedProvider } from "@/lib/published-context";
 import SectionRenderer from "@/components/editor/SectionRenderer";
 import ElementsLayer from "@/components/editor/ElementsLayer";
+import PublishedFontLoader from "@/components/published/PublishedFontLoader";
 
 type Props = {
   pageData: LandingPage;
@@ -16,6 +17,8 @@ export default function PublishedPageClient({ pageData, settings }: Props) {
 
   return (
     <PublishedProvider pageData={pageData}>
+      <PublishedFontLoader pageData={pageData} />
+
       {/* Custom CSS from settings */}
       {settings?.customCss && (
         <style dangerouslySetInnerHTML={{ __html: settings.customCss }} />

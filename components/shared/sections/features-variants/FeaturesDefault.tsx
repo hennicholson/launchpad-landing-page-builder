@@ -181,6 +181,10 @@ export default function FeaturesDefault({
   const headingFont = typography.headingFont;
   const bodyFont = typography.bodyFont;
 
+  // Per-section overrides
+  const headingSizeScale = section.content.sectionHeadingSizeScale ?? 1;
+  const textAlign = section.content.sectionTextAlign;
+
   const DEFAULT_PADDING = { top: 64, bottom: 96 };
 
   return (
@@ -191,18 +195,24 @@ export default function FeaturesDefault({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
-      }}
+        '--section-heading-font': `'${headingFont}', sans-serif`,
+        '--section-body-font': `'${bodyFont}', sans-serif`,
+        fontFamily: `'${bodyFont}', sans-serif`,
+      } as React.CSSProperties}
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       <div className={`${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8`}>
         {/* Header with gradient reveal */}
-        <div className="text-center mb-12 overflow-hidden">
+        <div className="text-center mb-12 overflow-hidden" style={{ textAlign: textAlign || undefined }}>
           {/* Title with gradient reveal mask */}
           {content.showHeading !== false && content.heading && (
             <div className="relative">
               <motion.h2
               className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.9]"
-              style={{ fontFamily: headingFont }}
+              style={{
+                fontFamily: `'${headingFont}', sans-serif`,
+                ...(headingSizeScale !== 1 ? { fontSize: `${headingSizeScale}em`, lineHeight: 1.1 } : {}),
+              }}
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true, margin: "-50px" }}

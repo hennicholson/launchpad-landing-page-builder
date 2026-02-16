@@ -102,11 +102,24 @@ type EditorState = {
   // Element groups state (for grouped elements)
   elementGroups: Map<string, ElementGroup>;
 
+  // Element clipboard (copy/paste)
+  elementClipboard: PageElement | null;
+
+  // Grid overlay
+  showGrid: boolean;
+
+  // Toast notifications
+  toasts: { id: string; message: string; type: 'success' | 'error' | 'info' | 'warning'; duration?: number }[];
+
   // Full-screen state
   isFullScreen: boolean;
 
   // Breakpoint editing state
   currentEditingBreakpoint: Breakpoint;
+
+  // Responsive editing state (edit mode at non-desktop viewports)
+  isResponsiveEditing: boolean;
+  setResponsiveEditing: (enabled: boolean) => void;
 
   // Actions
   setPage: (page: LandingPage) => void;
@@ -230,6 +243,17 @@ type EditorState = {
     elementId: string,
     breakpoint: Breakpoint
   ) => void;
+
+  // Element clipboard actions
+  copyElement: (sectionId: string, elementId: string) => void;
+  pasteElement: (sectionId: string) => void;
+
+  // Grid toggle
+  toggleGrid: () => void;
+
+  // Toast actions
+  addToast: (toast: { message: string; type: 'success' | 'error' | 'info' | 'warning'; duration?: number }) => void;
+  removeToast: (id: string) => void;
 };
 
 export const useEditorStore = create<EditorState>((set, get) => ({
@@ -263,8 +287,17 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   selectedItemId: null,
   activeGuides: null,
   elementGroups: new Map<string, ElementGroup>(),
+  elementClipboard: null,
+  showGrid: false,
+  toasts: [],
   isFullScreen: false,
   currentEditingBreakpoint: 'desktop' as Breakpoint,
+  isResponsiveEditing: false,
+
+  setResponsiveEditing: (enabled) => set((state) => ({
+    isResponsiveEditing: enabled,
+    ...(enabled ? {} : { currentEditingBreakpoint: 'desktop' as Breakpoint }),
+  })),
 
   setPage: (newPage) => {
     // Reconstruct element groups from elements' groupId properties
@@ -821,35 +854,35 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       };
     }),
 
-  undo: () =>
-    set((state) => {
-      const { history, historyIndex } = state;
-      if (historyIndex <= 0) return state;
+  undo: () => {
+    const { history, historyIndex } = get();
+    if (historyIndex <= 0) return;
 
-      const newIndex = historyIndex - 1;
-      const entry = history[newIndex];
-      return {
-        page: JSON.parse(JSON.stringify(entry.page)),
-        elementGroups: new Map(entry.groups),
-        historyIndex: newIndex,
-        isDirty: true,
-      };
-    }),
+    const newIndex = historyIndex - 1;
+    const entry = history[newIndex];
+    set({
+      page: JSON.parse(JSON.stringify(entry.page)),
+      elementGroups: new Map(entry.groups),
+      historyIndex: newIndex,
+      isDirty: true,
+    });
+    get().addToast({ message: "Undo", type: "info", duration: 1500 });
+  },
 
-  redo: () =>
-    set((state) => {
-      const { history, historyIndex } = state;
-      if (historyIndex >= history.length - 1) return state;
+  redo: () => {
+    const { history, historyIndex } = get();
+    if (historyIndex >= history.length - 1) return;
 
-      const newIndex = historyIndex + 1;
-      const entry = history[newIndex];
-      return {
-        page: JSON.parse(JSON.stringify(entry.page)),
-        elementGroups: new Map(entry.groups),
-        historyIndex: newIndex,
-        isDirty: true,
-      };
-    }),
+    const newIndex = historyIndex + 1;
+    const entry = history[newIndex];
+    set({
+      page: JSON.parse(JSON.stringify(entry.page)),
+      elementGroups: new Map(entry.groups),
+      historyIndex: newIndex,
+      isDirty: true,
+    });
+    get().addToast({ message: "Redo", type: "info", duration: 1500 });
+  },
 
   canUndo: () => {
     const state = get();
@@ -1519,6 +1552,49 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     });
   },
 
+  copyElement: (sectionId, elementId) => {
+    const state = get();
+    const section = state.page.sections.find((s) => s.id === sectionId);
+    const element = section?.elements?.find((el) => el.id === elementId);
+    if (!element) return;
+    set({ elementClipboard: JSON.parse(JSON.stringify(element)) });
+  },
+
+  pasteElement: (sectionId) => {
+    const state = get();
+    if (!state.elementClipboard) return;
+    get().pushHistory();
+    const cloned: PageElement = JSON.parse(JSON.stringify(state.elementClipboard));
+    const newId = generateId();
+    cloned.id = newId;
+    cloned.position = {
+      ...cloned.position,
+      x: Math.min(cloned.position.x + 3, 100),
+      y: Math.min(cloned.position.y + 3, 100),
+    };
+    set((s) => ({
+      page: {
+        ...s.page,
+        sections: s.page.sections.map((sec) =>
+          sec.id === sectionId
+            ? { ...sec, elements: [...(sec.elements || []), cloned] }
+            : sec
+        ),
+      },
+      selectedElementIds: new Set([newId]),
+      isDirty: true,
+    }));
+  },
+
+  toggleGrid: () => set((state) => ({ showGrid: !state.showGrid })),
+
+  addToast: (toast) => set((state) => ({
+    toasts: [...state.toasts, { ...toast, id: Date.now().toString() + Math.random().toString(36).slice(2) }],
+  })),
+  removeToast: (id) => set((state) => ({
+    toasts: state.toasts.filter((t) => t.id !== id),
+  })),
+
   reset: () =>
     set({
       page: defaultPage,
@@ -1548,8 +1624,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       },
       elementStylePanel: null,
       rightPanelTab: 'settings',
+      elementClipboard: null,
+      showGrid: false,
+      toasts: [],
       isFullScreen: false,
       currentEditingBreakpoint: 'desktop' as Breakpoint,
+      isResponsiveEditing: false,
     }),
 }));
 

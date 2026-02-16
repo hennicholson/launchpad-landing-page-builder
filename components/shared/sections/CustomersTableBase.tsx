@@ -52,7 +52,9 @@ export default function CustomersTableBase({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
-      }}
+        '--section-body-font': `'${typography.bodyFont}', sans-serif`,
+        fontFamily: `'${typography.bodyFont}', sans-serif`,
+      } as React.CSSProperties}
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       <div className="container relative z-10 mx-auto px-4">

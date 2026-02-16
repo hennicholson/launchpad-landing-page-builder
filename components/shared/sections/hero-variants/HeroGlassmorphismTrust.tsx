@@ -113,10 +113,12 @@ export default function HeroGlassmorphismTrust({
       className="relative w-full overflow-hidden"
       style={{
         backgroundColor: bgColor,
-        fontFamily: bodyFont,
+        fontFamily: `'${bodyFont}', sans-serif`,
         paddingTop,
         paddingBottom,
-      }}
+        '--section-heading-font': `'${headingFont}', sans-serif`,
+        '--section-body-font': `'${bodyFont}', sans-serif`,
+      } as React.CSSProperties}
     >
       {/* Scoped Animations */}
       <style>{`

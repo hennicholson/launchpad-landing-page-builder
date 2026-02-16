@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import ElementContextMenu from "../ElementContextMenu";
 import type { PageElement, ElementPosition } from "@/lib/page-schema";
 import { useEditorStoreOrPublished, useEditorStore, type AlignmentGuide, type ActiveGuides } from "@/lib/store";
 import { ElementRenderer } from "./index";
@@ -31,6 +32,7 @@ export default function DraggableElement({ element, originalElement, sectionId, 
     duplicateElement,
     updateElement,
     isPreviewMode,
+    isResponsiveEditing,
     setActiveGuides,
     page,
     moveGroupedElements,
@@ -48,6 +50,7 @@ export default function DraggableElement({ element, originalElement, sectionId, 
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const elementRef = useRef<HTMLDivElement>(null);
 
   const isSelected = selectedElementIds.has(element.id);
@@ -55,8 +58,8 @@ export default function DraggableElement({ element, originalElement, sectionId, 
   const isHidden = element.visible === false;
   const isGrouped = !!element.groupId;
 
-  // In preview mode, completely hide hidden elements
-  if (isPreviewMode && isHidden) {
+  // In preview mode (or responsive editing), completely hide hidden elements
+  if ((isPreviewMode || isResponsiveEditing) && isHidden) {
     return null;
   }
 
@@ -160,7 +163,7 @@ export default function DraggableElement({ element, originalElement, sectionId, 
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (isPreviewMode) return;
+      if (isPreviewMode && !isResponsiveEditing) return;
       e.stopPropagation();
 
       // Shift+click for multi-select
@@ -179,7 +182,7 @@ export default function DraggableElement({ element, originalElement, sectionId, 
         setLastPosition({ x: element.position.x, y: element.position.y });
       }
     },
-    [isPreviewMode, selectElement, sectionId, element.id, getPixelPosition, containerRef, element.position]
+    [isPreviewMode, isResponsiveEditing, selectElement, sectionId, element.id, getPixelPosition, containerRef, element.position]
   );
 
   const handleMouseMove = useCallback(
@@ -254,6 +257,14 @@ export default function DraggableElement({ element, originalElement, sectionId, 
     e.stopPropagation();
     updateElement(sectionId, element.id, { snapToGrid: !element.snapToGrid });
   };
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    if (isPreviewMode && !isResponsiveEditing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    selectElement(sectionId, element.id);
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  }, [isPreviewMode, isResponsiveEditing, selectElement, sectionId, element.id]);
 
   // Handle resize from ResizeHandles
   const handleResize = useCallback((direction: ResizeDirection, deltaX: number, deltaY: number) => {
@@ -335,17 +346,33 @@ export default function DraggableElement({ element, originalElement, sectionId, 
       className={`
         absolute group pointer-events-auto
         ${isDragging ? "opacity-80 z-50" : ""}
-        ${isHidden && !isPreviewMode ? "opacity-40" : ""}
+        ${isHidden && !isPreviewMode && !isResponsiveEditing ? "opacity-40" : ""}
       `}
       style={{
         left: `${element.position.x}%`,
         top: `${element.position.y}%`,
-        transform: "translate(-50%, -50%)",
+        transform: `translate(-50%, -50%)${element.content.rotation ? ` rotate(${element.content.rotation}deg)` : ''}`,
+        opacity: element.content.opacity ?? 1,
+        ...(element.content.elementBgColor ? { backgroundColor: element.content.elementBgColor } : {}),
+        ...(element.content.elementBorderWidth ? {
+          border: `${element.content.elementBorderWidth}px solid ${element.content.elementBorderColor || '#ffffff'}`,
+        } : {}),
+        ...(element.content.elementBorderRadius != null && element.content.elementBorderRadius > 0 ? {
+          borderRadius: `${element.content.elementBorderRadius}px`,
+        } : {}),
+        ...(element.content.elementShadow && element.content.elementShadow !== 'none' ? {
+          boxShadow: {
+            sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+            md: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            lg: '0 10px 15px -3px rgba(0, 0, 0, 0.2)',
+          }[element.content.elementShadow],
+        } : {}),
       }}
       onMouseDown={handleMouseDown}
+      onContextMenu={handleContextMenu}
     >
       {/* Breakpoint indicator - show when element has overrides */}
-      {overriddenBreakpoints.length > 0 && !isPreviewMode && (
+      {overriddenBreakpoints.length > 0 && (!isPreviewMode || isResponsiveEditing) && (
         <div className="absolute -top-6 right-0 flex items-center gap-1 px-2 py-0.5 bg-purple-500/20 border border-purple-500/30 rounded-full z-40">
           <Smartphone className="w-3 h-3 text-purple-300" />
           <span className="text-[10px] text-purple-300 font-medium">
@@ -355,15 +382,15 @@ export default function DraggableElement({ element, originalElement, sectionId, 
       )}
 
       {/* Hidden indicator badge - show when element is hidden and not in preview mode */}
-      {isHidden && !isPreviewMode && (
+      {isHidden && (!isPreviewMode || isResponsiveEditing) && (
         <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 bg-white/20 rounded-full z-40">
           <EyeOff className="w-3 h-3 text-white/60" />
           <span className="text-[10px] text-white/60 font-medium">Hidden</span>
         </div>
       )}
 
-      {/* Element toolbar - only show when selected and not in preview mode */}
-      {isSelected && !isPreviewMode && (
+      {/* Element toolbar - only show when selected and not in preview mode (or responsive editing) */}
+      {isSelected && (!isPreviewMode || isResponsiveEditing) && (
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-1 bg-[#1a1a1c] border border-white/10 rounded-lg shadow-xl z-50">
           {/* Group indicator */}
           {isGrouped && (
@@ -422,11 +449,11 @@ export default function DraggableElement({ element, originalElement, sectionId, 
           sectionId={sectionId}
           isSelected={isSelected}
           scaleFactor={scaleFactor}
-          onClick={(e) => !isPreviewMode && selectElement(sectionId, element.id, e.shiftKey)}
+          onClick={(e) => (!isPreviewMode || isResponsiveEditing) && selectElement(sectionId, element.id, e.shiftKey)}
         />
 
-        {/* Resize handles - only show when selected, resizable, and not in preview mode */}
-        {isSelected && isResizable && !isPreviewMode && (
+        {/* Resize handles - only show when selected, resizable, and not in preview mode (or responsive editing) */}
+        {isSelected && isResizable && (!isPreviewMode || isResponsiveEditing) && (
           <ResizeHandles
             onResize={handleResize}
             onResizeStart={() => { useEditorStore.getState().pushHistory(); setIsResizing(true); }}
@@ -434,6 +461,19 @@ export default function DraggableElement({ element, originalElement, sectionId, 
           />
         )}
       </div>
+
+      {/* Context menu */}
+      {contextMenu && (
+        <ElementContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          sectionId={sectionId}
+          elementId={element.id}
+          isVisible={element.visible !== false}
+          snapToGrid={element.snapToGrid || false}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 }

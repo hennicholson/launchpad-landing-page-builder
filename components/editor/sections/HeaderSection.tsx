@@ -2,6 +2,7 @@
 
 import type { PageSection } from "@/lib/page-schema";
 import { useEditorStoreOrPublished } from "@/lib/store";
+import { getSectionTypography } from "@/lib/section-overrides";
 import HeaderSectionBase from "@/components/shared/sections/HeaderSectionBase";
 import EditableText from "../EditableText";
 import EditableImage from "../EditableImage";
@@ -17,7 +18,7 @@ export default function HeaderSection({ section }: Props) {
     <HeaderSectionBase
       section={section}
       colorScheme={page.colorScheme}
-      typography={page.typography}
+      typography={getSectionTypography(section, page)}
       contentWidth={page.contentWidth}
       renderText={(props) => (
         <EditableText

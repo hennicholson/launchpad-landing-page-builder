@@ -49,20 +49,23 @@ export default function TextElement({ element, sectionId, isSelected, scaleFacto
   const rawMaxWidth = content.textMaxWidth;
   const maxWidth = rawMaxWidth ? rawMaxWidth * scaleFactor : 600 * scaleFactor;
 
+  const textStyles: React.CSSProperties = {
+    fontSize: `${fontSize}px`,
+    fontWeight: fontWeight,
+    color: color,
+    textAlign: textAlign,
+    lineHeight: lineHeight,
+    letterSpacing: letterSpacing,
+    textTransform: textTransform as React.CSSProperties['textTransform'],
+    maxWidth: `${maxWidth}px`,
+  };
+  if (content.textFontFamily) textStyles.fontFamily = `'${content.textFontFamily}', sans-serif`;
+
   return (
     <div
       onClick={onClick}
       className={`${isSelected ? "ring-2 ring-[#D6FC51] ring-offset-2 ring-offset-black rounded" : ""}`}
-      style={{
-        fontSize: `${fontSize}px`,
-        fontWeight: fontWeight,
-        color: color,
-        textAlign: textAlign,
-        lineHeight: lineHeight,
-        letterSpacing: letterSpacing,
-        textTransform: textTransform as React.CSSProperties['textTransform'],
-        maxWidth: `${maxWidth}px`,
-      }}
+      style={textStyles}
     >
       {content.text || "Enter your text here"}
     </div>

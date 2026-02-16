@@ -2,6 +2,7 @@
 
 import type { PageSection } from "@/lib/page-schema";
 import { useEditorStoreOrPublished } from "@/lib/store";
+import { getSectionTypography } from "@/lib/section-overrides";
 import ProcessSectionBase from "@/components/shared/sections/ProcessSectionBase";
 import EditableText from "../EditableText";
 
@@ -16,7 +17,7 @@ export default function ProcessSection({ section }: Props) {
     <ProcessSectionBase
       section={section}
       colorScheme={page.colorScheme}
-      typography={page.typography}
+      typography={getSectionTypography(section, page)}
       contentWidth={page.contentWidth}
       renderText={(props) => (
         <EditableText

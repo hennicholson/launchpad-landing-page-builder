@@ -291,6 +291,11 @@ export default function TestimonialsSectionBase({
 
   // Dynamic typography
   const headingFont = typography.headingFont;
+  const bodyFont = typography.bodyFont;
+
+  // Per-section overrides
+  const headingSizeScale = content.sectionHeadingSizeScale ?? 1;
+  const textAlign = content.sectionTextAlign;
 
   // Get the variant
   const variant: TestimonialVariant = content.testimonialVariant || "scrolling";
@@ -304,13 +309,17 @@ export default function TestimonialsSectionBase({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
-      }}
+        '--section-heading-font': `'${headingFont}', sans-serif`,
+        '--section-body-font': `'${bodyFont}', sans-serif`,
+        fontFamily: `'${bodyFont}', sans-serif`,
+      } as React.CSSProperties}
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       <div className={`${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8`}>
         {/* Header */}
         <motion.div
           className="text-center mb-16"
+          style={{ textAlign: textAlign || undefined }}
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -339,7 +348,11 @@ export default function TestimonialsSectionBase({
           {content.showHeading !== false && content.heading && (
             <h2
               className="text-4xl sm:text-5xl lg:text-6xl uppercase leading-[0.95]"
-              style={{ color: textColor, fontFamily: headingFont }}
+              style={{
+                color: textColor,
+                fontFamily: `'${headingFont}', sans-serif`,
+                ...(headingSizeScale !== 1 ? { fontSize: `${headingSizeScale}em`, lineHeight: 1.1 } : {}),
+              }}
             >
               {renderText ? (
                 renderText({
@@ -356,7 +369,7 @@ export default function TestimonialsSectionBase({
           {content.showSubheading !== false && content.subheading && (
             <span
               className="block mt-4 text-lg max-w-2xl mx-auto"
-              style={{ color: `${textColor}70` }}
+              style={{ color: `${textColor}70`, fontFamily: bodyFont }}
             >
               {renderText ? (
                 renderText({

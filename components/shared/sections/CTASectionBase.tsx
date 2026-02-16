@@ -99,6 +99,8 @@ function CTACentered({
   headingFont,
   bodyFont,
   headingStyle,
+  headingSizeScale = 1,
+  textAlign,
   contentWidth,
   renderText,
 }: {
@@ -110,6 +112,8 @@ function CTACentered({
   headingFont: string;
   bodyFont: string;
   headingStyle: HeadingStyle;
+  headingSizeScale?: number;
+  textAlign?: 'left' | 'center' | 'right';
   contentWidth?: ContentWidth;
   renderText?: BaseSectionProps["renderText"];
 }) {
@@ -117,7 +121,7 @@ function CTACentered({
   const headingStyles = getHeadingStyles(headingStyle, textColor, accentColor, primaryColor);
 
   return (
-    <div className={`relative ${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8 text-center`}>
+    <div className={`relative ${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8`} style={{ textAlign: textAlign || 'center' }}>
       {content.showBadge !== false && content.badge && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -146,7 +150,11 @@ function CTACentered({
         >
           <h2
             className="text-3xl sm:text-5xl lg:text-7xl uppercase leading-[0.95] mb-8"
-            style={{ fontFamily: headingFont, ...headingStyles }}
+            style={{
+              fontFamily: `'${headingFont}', sans-serif`,
+              ...headingStyles,
+              ...(headingSizeScale !== 1 ? { fontSize: `${headingSizeScale}em`, lineHeight: 1.1 } : {}),
+            }}
           >
             {renderText ? renderText({ value: content.heading || "", sectionId: section.id, field: "heading", className: "" }) : content.heading}
           </h2>
@@ -218,6 +226,8 @@ function CTASplit({
   headingFont,
   bodyFont,
   headingStyle,
+  headingSizeScale = 1,
+  textAlign,
   contentWidth,
   renderText,
 }: {
@@ -229,6 +239,8 @@ function CTASplit({
   headingFont: string;
   bodyFont: string;
   headingStyle: HeadingStyle;
+  headingSizeScale?: number;
+  textAlign?: 'left' | 'center' | 'right';
   contentWidth?: ContentWidth;
   renderText?: BaseSectionProps["renderText"];
 }) {
@@ -256,7 +268,11 @@ function CTASplit({
           {content.showHeading !== false && content.heading && (
             <h2
               className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95] mb-6"
-              style={{ fontFamily: headingFont, ...headingStyles }}
+              style={{
+                fontFamily: `'${headingFont}', sans-serif`,
+                ...headingStyles,
+                ...(headingSizeScale !== 1 ? { fontSize: `${headingSizeScale}em`, lineHeight: 1.1 } : {}),
+              }}
             >
               {renderText ? renderText({ value: content.heading || "", sectionId: section.id, field: "heading", className: "" }) : content.heading}
             </h2>
@@ -326,6 +342,7 @@ function CTABanner({
   accentColor,
   headingFont,
   bodyFont,
+  headingSizeScale = 1,
   contentWidth,
   renderText,
 }: {
@@ -335,6 +352,7 @@ function CTABanner({
   accentColor: string;
   headingFont: string;
   bodyFont: string;
+  headingSizeScale?: number;
   contentWidth?: ContentWidth;
   renderText?: BaseSectionProps["renderText"];
 }) {
@@ -360,7 +378,11 @@ function CTABanner({
               {content.showHeading !== false && content.heading && (
                 <h2
                   className="text-2xl sm:text-3xl lg:text-4xl uppercase leading-tight mb-2"
-                  style={{ fontFamily: headingFont, color: bannerTextColor }}
+                  style={{
+                    fontFamily: `'${headingFont}', sans-serif`,
+                    color: bannerTextColor,
+                    ...(headingSizeScale !== 1 ? { fontSize: `${headingSizeScale}em`, lineHeight: 1.1 } : {}),
+                  }}
                 >
                   {renderText ? renderText({ value: content.heading || "", sectionId: section.id, field: "heading", className: "" }) : content.heading}
                 </h2>
@@ -407,6 +429,8 @@ function CTAMinimal({
   headingFont,
   bodyFont,
   headingStyle,
+  headingSizeScale = 1,
+  textAlign,
   contentWidth,
   renderText,
 }: {
@@ -418,6 +442,8 @@ function CTAMinimal({
   headingFont: string;
   bodyFont: string;
   headingStyle: HeadingStyle;
+  headingSizeScale?: number;
+  textAlign?: 'left' | 'center' | 'right';
   contentWidth?: ContentWidth;
   renderText?: BaseSectionProps["renderText"];
 }) {
@@ -425,7 +451,7 @@ function CTAMinimal({
   const headingStyles = getHeadingStyles(headingStyle, textColor, accentColor, primaryColor);
 
   return (
-    <div className={`relative ${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8 text-center`}>
+    <div className={`relative ${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8`} style={{ textAlign: textAlign || 'center' }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -435,7 +461,11 @@ function CTAMinimal({
         {content.showHeading !== false && content.heading && (
           <h2
             className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95] mb-6"
-            style={{ fontFamily: headingFont, ...headingStyles }}
+            style={{
+              fontFamily: `'${headingFont}', sans-serif`,
+              ...headingStyles,
+              ...(headingSizeScale !== 1 ? { fontSize: `${headingSizeScale}em`, lineHeight: 1.1 } : {}),
+            }}
           >
             {renderText ? renderText({ value: content.heading || "", sectionId: section.id, field: "heading", className: "" }) : content.heading}
           </h2>
@@ -488,6 +518,10 @@ export default function CTASectionBase({
   const headingFont = typography.headingFont;
   const bodyFont = typography.bodyFont;
 
+  // Per-section overrides
+  const headingSizeScale = content.sectionHeadingSizeScale ?? 1;
+  const textAlign = content.sectionTextAlign;
+
   // Get variant and heading style
   const variant: CTAVariant = content.ctaVariant || "centered";
   const headingStyle: HeadingStyle = content.headingStyle || "solid";
@@ -501,6 +535,8 @@ export default function CTASectionBase({
     headingFont,
     bodyFont,
     headingStyle,
+    headingSizeScale,
+    textAlign,
     contentWidth,
     renderText,
   };
@@ -514,7 +550,10 @@ export default function CTASectionBase({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
-      }}
+        '--section-heading-font': `'${headingFont}', sans-serif`,
+        '--section-body-font': `'${bodyFont}', sans-serif`,
+        fontFamily: `'${bodyFont}', sans-serif`,
+      } as React.CSSProperties}
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       {/* Background effects (not for banner) */}

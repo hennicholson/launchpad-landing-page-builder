@@ -135,18 +135,33 @@ function getSuggestedSection(sections: PageSection[]): SectionType {
 }
 
 export default function Canvas() {
-  const { page, selectedSectionId, selectSection, isPreviewMode, setPreviewMode, openAIEdit, updateSectionContent, addSection, addElement, currentEditingBreakpoint, setEditingBreakpoint } = useEditorStore();
+  const { page, selectedSectionId, selectSection, isPreviewMode, setPreviewMode, openAIEdit, updateSectionContent, addSection, addElement, currentEditingBreakpoint, setEditingBreakpoint, isResponsiveEditing, setResponsiveEditing, copyElement, pasteElement, duplicateElement, removeElement, moveElementAtBreakpoint, selectedElementIds, selectElement, toggleGrid, showGrid } = useEditorStore();
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
   const [previewViewport, setPreviewViewport] = useState<PreviewViewport>('desktop');
+  const [zoomLevel, setZoomLevel] = useState(100);
+  const ZOOM_LEVELS = [50, 75, 100, 125, 150];
+  const [showShortcutHelp, setShowShortcutHelp] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Derive single selected element ID from the set
+  const selectedElementId = selectedElementIds.size > 0 ? Array.from(selectedElementIds)[0] : null;
 
   // Handle viewport change - also sets the editing breakpoint
   const handleViewportChange = (viewport: PreviewViewport) => {
     setPreviewViewport(viewport);
     // Map viewport to breakpoint (they're the same values)
     setEditingBreakpoint(viewport as Breakpoint);
+
+    // In edit mode, toggle responsive editing
+    if (!isPreviewMode) {
+      if (viewport === 'desktop') {
+        setResponsiveEditing(false);
+      } else {
+        setResponsiveEditing(true);
+      }
+    }
   };
 
   // When exiting preview mode, reset to desktop editing
@@ -156,11 +171,12 @@ export default function Canvas() {
       // Reset to desktop when exiting preview mode
       setPreviewViewport('desktop');
       setEditingBreakpoint('desktop');
+      setResponsiveEditing(false);
     }
   };
 
   // Get preview width based on selected viewport
-  const previewWidth = isPreviewMode ? PREVIEW_VIEWPORTS[previewViewport].width : undefined;
+  const previewWidth = (isPreviewMode || isResponsiveEditing) ? PREVIEW_VIEWPORTS[previewViewport].width : undefined;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -183,6 +199,102 @@ export default function Canvas() {
       }
     }
   }, [selectedSectionId]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip if typing in an input, textarea, or contenteditable
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+
+      // Skip if in pure preview mode (not responsive editing)
+      if (isPreviewMode && !isResponsiveEditing) return;
+
+      const isMeta = e.metaKey || e.ctrlKey;
+
+      // Zoom shortcuts (don't need element selection)
+      if (isMeta && (e.key === '=' || e.key === '+')) {
+        e.preventDefault();
+        setZoomLevel(prev => {
+          const idx = ZOOM_LEVELS.indexOf(prev);
+          return ZOOM_LEVELS[Math.min(ZOOM_LEVELS.length - 1, idx + 1)] || prev;
+        });
+        return;
+      }
+      if (isMeta && e.key === '-') {
+        e.preventDefault();
+        setZoomLevel(prev => {
+          const idx = ZOOM_LEVELS.indexOf(prev);
+          return ZOOM_LEVELS[Math.max(0, idx - 1)] || prev;
+        });
+        return;
+      }
+      if (isMeta && e.key === '0') {
+        e.preventDefault();
+        setZoomLevel(100);
+        return;
+      }
+
+      // Escape - deselect
+      if (e.key === 'Escape') {
+        selectElement(null, null);
+        return;
+      }
+
+      // Need a selected element for the rest
+      if (!selectedSectionId || !selectedElementId) return;
+
+      // Delete / Backspace - remove element
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        removeElement(selectedSectionId, selectedElementId);
+        return;
+      }
+
+      // Cmd+C - copy
+      if (isMeta && e.key === 'c') {
+        copyElement(selectedSectionId, selectedElementId);
+        return; // Don't preventDefault - allow native copy for text
+      }
+
+      // Cmd+V - paste
+      if (isMeta && e.key === 'v') {
+        e.preventDefault();
+        pasteElement(selectedSectionId);
+        return;
+      }
+
+      // Cmd+D - duplicate
+      if (isMeta && e.key === 'd') {
+        e.preventDefault();
+        duplicateElement(selectedSectionId, selectedElementId);
+        return;
+      }
+
+      // Arrow keys - nudge position
+      const nudgeAmount = e.shiftKey ? 0.25 : 1;
+      const section = page.sections.find(s => s.id === selectedSectionId);
+      const el = section?.elements?.find(el => el.id === selectedElementId);
+      if (!el) return;
+
+      let dx = 0, dy = 0;
+      if (e.key === 'ArrowLeft') dx = -nudgeAmount;
+      if (e.key === 'ArrowRight') dx = nudgeAmount;
+      if (e.key === 'ArrowUp') dy = -nudgeAmount;
+      if (e.key === 'ArrowDown') dy = nudgeAmount;
+
+      if (dx !== 0 || dy !== 0) {
+        e.preventDefault();
+        moveElementAtBreakpoint(selectedSectionId, selectedElementId, {
+          x: Math.max(0, Math.min(100, el.position.x + dx)),
+          y: Math.max(0, Math.min(100, el.position.y + dy)),
+        });
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isPreviewMode, isResponsiveEditing, selectedSectionId, selectedElementId, page.sections, selectElement, removeElement, copyElement, pasteElement, duplicateElement, moveElementAtBreakpoint]);
 
   const suggestedSection = getSuggestedSection(page.sections);
 
@@ -283,46 +395,59 @@ export default function Canvas() {
             </button>
           </div>
 
-          {/* Viewport Size Selector - only visible in preview mode */}
-          {isPreviewMode && (
-            <div className="flex items-center gap-2 ml-4 pl-4 border-l border-white/10">
-              <span className="text-xs text-white/40">Viewport:</span>
-              <div className="flex rounded-lg bg-white/5 p-0.5">
-                {(Object.entries(PREVIEW_VIEWPORTS) as [PreviewViewport, typeof PREVIEW_VIEWPORTS[PreviewViewport]][]).map(([key, viewport]) => (
-                  <button
-                    key={key}
-                    onClick={() => handleViewportChange(key)}
-                    className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${
-                      previewViewport === key
-                        ? "bg-white/10 text-white"
-                        : "text-white/40 hover:text-white/60"
-                    }`}
-                    title={`${viewport.label} (${viewport.width}px)`}
-                  >
-                    {key === 'mobile' && (
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                    )}
-                    {key === 'tablet' && (
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                    )}
-                    {key === 'desktop' && (
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    )}
-                    <span>{viewport.width}</span>
-                  </button>
-                ))}
-              </div>
+          {/* Viewport Size Selector - visible in both edit mode and preview mode */}
+          <div className="flex items-center gap-2 ml-4 pl-4 border-l border-white/10">
+            <span className="text-xs text-white/40">Viewport:</span>
+            <div className="flex rounded-lg bg-white/5 p-0.5">
+              {(Object.entries(PREVIEW_VIEWPORTS) as [PreviewViewport, typeof PREVIEW_VIEWPORTS[PreviewViewport]][]).map(([key, viewport]) => (
+                <button
+                  key={key}
+                  onClick={() => handleViewportChange(key)}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1 ${
+                    previewViewport === key
+                      ? isResponsiveEditing && key !== 'desktop'
+                        ? "bg-purple-500/30 text-purple-200"
+                        : "bg-white/10 text-white"
+                      : "text-white/40 hover:text-white/60"
+                  }`}
+                  title={`${viewport.label} (${viewport.width}px)`}
+                >
+                  {key === 'mobile' && (
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                  {key === 'tablet' && (
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                  {key === 'desktop' && (
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                  <span>{viewport.width}</span>
+                </button>
+              ))}
             </div>
+          </div>
+
+          {/* Grid toggle button */}
+          {!isPreviewMode && (
+            <button
+              onClick={toggleGrid}
+              className={`p-1.5 rounded-md transition-colors ${showGrid ? 'bg-[#D6FC51]/20 text-[#D6FC51]' : 'text-white/40 hover:text-white/60'}`}
+              title="Toggle grid overlay"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+              </svg>
+            </button>
           )}
 
-          {/* Breakpoint editing indicator - shown when editing non-desktop */}
-          {currentEditingBreakpoint !== 'desktop' && (
+          {/* Breakpoint editing indicator - shown when editing non-desktop (but not during responsive editing, which has its own banner) */}
+          {currentEditingBreakpoint !== 'desktop' && !isResponsiveEditing && (
             <div className="flex items-center gap-2 ml-4 pl-4 border-l border-white/10">
               <span className="px-2 py-1 rounded-md bg-purple-500/20 text-purple-300 text-xs font-medium flex items-center gap-1.5">
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -333,9 +458,14 @@ export default function Canvas() {
             </div>
           )}
         </div>
-        {!isPreviewMode && (
+        {!isPreviewMode && !isResponsiveEditing && (
           <p className="text-xs text-white/40">
             Click on text or images to edit inline
+          </p>
+        )}
+        {!isPreviewMode && isResponsiveEditing && (
+          <p className="text-xs text-purple-300">
+            Editing {currentEditingBreakpoint} layout at {PREVIEW_VIEWPORTS[previewViewport].width}px
           </p>
         )}
         {isPreviewMode && (
@@ -345,11 +475,13 @@ export default function Canvas() {
         )}
       </div>
 
-      <div className="flex-1 p-8 overflow-hidden">
+      <div className="flex-1 p-8 overflow-hidden relative">
         {/* Preview Container - Scrollable container for template content */}
         <div
           className={`mx-auto rounded-2xl shadow-2xl ring-1 ring-white/10 transition-all duration-300 ${
-            !isPreviewMode ? "ring-[#D6FC51]/20 max-w-4xl" : ""
+            !isPreviewMode && !isResponsiveEditing ? "ring-[#D6FC51]/20 max-w-4xl" : ""
+          } ${
+            isResponsiveEditing ? "ring-purple-500/30" : ""
           }`}
           style={{
             backgroundColor: page.colorScheme.background,
@@ -362,10 +494,45 @@ export default function Canvas() {
             height: 'calc(100vh - 180px)',
             // Smooth scroll when enabled
             scrollBehavior: page.smoothScroll ? 'smooth' : 'auto',
-            // Dynamic width in preview mode based on viewport selection
-            ...(isPreviewMode ? { width: PREVIEW_VIEWPORTS[previewViewport].width, maxWidth: '100%' } : {}),
+            // Dynamic width in preview mode or responsive editing mode based on viewport selection
+            ...((isPreviewMode || isResponsiveEditing) ? { width: PREVIEW_VIEWPORTS[previewViewport].width, maxWidth: '100%' } : {}),
+            // Zoom transform
+            transform: zoomLevel !== 100 ? `scale(${zoomLevel / 100})` : undefined,
+            transformOrigin: 'top center',
           }}
         >
+          {/* Responsive editing banner */}
+          {isResponsiveEditing && !isPreviewMode && (
+            <div className="sticky top-0 z-[60] flex items-center justify-between px-4 py-2 bg-purple-600/90 backdrop-blur-sm border-b border-purple-400/30">
+              <div className="flex items-center gap-2">
+                {currentEditingBreakpoint === 'mobile' ? (
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                )}
+                <span className="text-sm font-medium text-white">
+                  Editing {currentEditingBreakpoint} layout
+                </span>
+                <span className="text-xs text-white/70">
+                  ({PREVIEW_VIEWPORTS[previewViewport].width}px)
+                </span>
+              </div>
+              <button
+                onClick={() => handleViewportChange('desktop')}
+                className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-purple-900 bg-white rounded-md hover:bg-white/90 transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Back to Desktop
+              </button>
+            </div>
+          )}
+
           {page.sections.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[400px] p-12 text-center relative">
               {/* Smart Add Button */}
@@ -576,6 +743,51 @@ export default function Canvas() {
             })
           )}
         </div>
+
+        {/* Zoom controls - bottom right overlay */}
+        {!isPreviewMode && (
+          <div className="absolute bottom-4 right-4 flex items-center gap-1 px-2 py-1 bg-[#1a1a1c] border border-white/10 rounded-lg shadow-xl z-50">
+            <button onClick={() => setZoomLevel(prev => ZOOM_LEVELS[Math.max(0, ZOOM_LEVELS.indexOf(prev) - 1)] || prev)} className="p-1 rounded hover:bg-white/10 text-white/50 text-xs">-</button>
+            <span className="text-xs text-white/60 w-10 text-center">{zoomLevel}%</span>
+            <button onClick={() => setZoomLevel(prev => ZOOM_LEVELS[Math.min(ZOOM_LEVELS.length - 1, ZOOM_LEVELS.indexOf(prev) + 1)] || prev)} className="p-1 rounded hover:bg-white/10 text-white/50 text-xs">+</button>
+          </div>
+        )}
+
+        {/* Keyboard shortcut help - bottom right overlay, next to zoom */}
+        {!isPreviewMode && (
+          <div className="absolute bottom-4 right-36 z-50">
+            <button
+              onClick={() => setShowShortcutHelp(!showShortcutHelp)}
+              className="p-1.5 rounded-lg bg-[#1a1a1c] border border-white/10 shadow-xl text-white/40 hover:text-white/60 transition-colors"
+              title="Keyboard shortcuts"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+            </button>
+            {showShortcutHelp && (
+              <div className="absolute bottom-10 right-0 w-64 bg-[#1a1a1c] border border-white/10 rounded-xl shadow-2xl p-4 space-y-2">
+                <div className="text-xs font-semibold text-white/70 mb-3">Keyboard Shortcuts</div>
+                {[
+                  ['Delete', 'Remove element'],
+                  ['\u2318C', 'Copy element'],
+                  ['\u2318V', 'Paste element'],
+                  ['\u2318D', 'Duplicate'],
+                  ['Escape', 'Deselect'],
+                  ['\u2190\u2191\u2192\u2193', 'Nudge (1%)'],
+                  ['Shift+Arrow', 'Fine nudge (0.25%)'],
+                  ['\u2318+/-', 'Zoom in/out'],
+                  ['\u23180', 'Reset zoom'],
+                ].map(([key, desc]) => (
+                  <div key={key} className="flex items-center justify-between">
+                    <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-[10px] font-mono text-white/60">{key}</kbd>
+                    <span className="text-[11px] text-white/40">{desc}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* AI Edit Modal */}

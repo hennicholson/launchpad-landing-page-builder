@@ -61,7 +61,10 @@ export default function HeroSalesFunnel({
         backgroundColor: bgColor,
         paddingTop: `${paddingTop * 4}px`,
         paddingBottom: `${paddingBottom * 4}px`,
-      }}
+        '--section-heading-font': `'${headingFont}', sans-serif`,
+        '--section-body-font': `'${bodyFont}', sans-serif`,
+        fontFamily: `'${bodyFont}', sans-serif`,
+      } as React.CSSProperties}
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
 

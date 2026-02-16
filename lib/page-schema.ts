@@ -310,6 +310,17 @@ export type ElementContent = {
 
   // Animation (applies to all element types)
   animation?: ElementAnimation;
+
+  // Universal element styling
+  opacity?: number;               // 0-1
+  rotation?: number;              // degrees -180 to 180
+  elementBgColor?: string;        // generic background color
+  elementBorderWidth?: number;    // px
+  elementBorderColor?: string;    // hex
+  elementBorderRadius?: number;   // px
+  elementShadow?: 'none' | 'sm' | 'md' | 'lg';
+  // Text element font family
+  textFontFamily?: string;
 };
 
 // A single element within a section
@@ -572,6 +583,17 @@ export type SectionContent = {
   creatorCredentials?: string[];    // Optional array of credentials
   // Detailed Features section
   introText?: string;               // Brief intro before feature list
+  // Per-section animation override (overrides page-level animationPreset)
+  sectionAnimationPreset?: AnimationPreset;
+  sectionAnimationDelay?: number; // delay in seconds (0-2)
+  // Per-section typography overrides
+  sectionHeadingFont?: string;
+  sectionBodyFont?: string;
+  sectionHeadingSizeScale?: number; // 0.5-2.0 multiplier
+  sectionTextAlign?: 'left' | 'center' | 'right';
+  // Per-section spacing overrides
+  sectionContentGap?: number; // gap in px
+  sectionMaxWidth?: 'narrow' | 'medium' | 'wide' | 'full';
 };
 
 export type PageSection = {

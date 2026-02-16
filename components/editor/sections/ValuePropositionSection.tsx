@@ -2,6 +2,7 @@
 
 import type { PageSection } from "@/lib/page-schema";
 import { useEditorStoreOrPublished } from "@/lib/store";
+import { getSectionTypography } from "@/lib/section-overrides";
 import ValuePropositionSectionBase from "@/components/shared/sections/ValuePropositionSectionBase";
 import EditableText from "../EditableText";
 import EditableRichText from "../EditableRichText";
@@ -17,7 +18,7 @@ export default function ValuePropositionSection({ section }: Props) {
     <ValuePropositionSectionBase
       section={section}
       colorScheme={page.colorScheme}
-      typography={page.typography}
+      typography={getSectionTypography(section, page)}
       contentWidth={page.contentWidth}
       renderText={(props) => {
         // Use EditableRichText for bodyParagraphs (rich text), EditableText for others (plain text)

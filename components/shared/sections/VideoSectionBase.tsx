@@ -656,7 +656,10 @@ export default function VideoSectionBase({
         backgroundColor: bgColor,
         paddingTop: variant === "fullscreen" ? 0 : paddingTop,
         paddingBottom: variant === "fullscreen" ? 0 : paddingBottom,
-      }}
+        '--section-heading-font': `'${headingFont}', sans-serif`,
+        '--section-body-font': `'${bodyFont}', sans-serif`,
+        fontFamily: `'${bodyFont}', sans-serif`,
+      } as React.CSSProperties}
     >
       {variant !== "fullscreen" && <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />}
 

@@ -2,6 +2,7 @@
 
 import type { PageSection } from "@/lib/page-schema";
 import { useEditorStoreOrPublished } from "@/lib/store";
+import { getSectionTypography } from "@/lib/section-overrides";
 import PricingSectionBase from "@/components/shared/sections/PricingSectionBase";
 import EditableText from "../EditableText";
 
@@ -16,7 +17,7 @@ export default function PricingSection({ section }: Props) {
     <PricingSectionBase
       section={section}
       colorScheme={page.colorScheme}
-      typography={page.typography}
+      typography={getSectionTypography(section, page)}
       contentWidth={page.contentWidth}
       renderText={(props) => (
         <EditableText

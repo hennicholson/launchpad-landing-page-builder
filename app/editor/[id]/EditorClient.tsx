@@ -14,6 +14,9 @@ import { useFullScreen, useFullScreenKeyboardShortcut } from "@/lib/useFullScree
 import { AICommandInput, AIPreviewModal, AIGenerationStatus, AIUsageIndicator } from "@/components/editor/ai";
 import { useEditorTour } from "@/components/editor/onboarding/EditorTour";
 import KeyboardShortcuts from "@/components/editor/onboarding/KeyboardShortcuts";
+import { EditorErrorBoundary } from "@/components/editor/EditorErrorBoundary";
+import { ToastContainer } from "@/components/editor/Toast";
+import DynamicFontLoader from "@/components/editor/DynamicFontLoader";
 import { HelpCircle, Keyboard, RotateCcw } from "lucide-react";
 
 type Props = {
@@ -68,7 +71,8 @@ export default function EditorClient({ project, userPlan }: Props) {
   // Onboarding
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showHelpMenu, setShowHelpMenu] = useState(false);
-  const { startTour, autoStartTour } = useEditorTour();
+  const firstSectionId = page?.sections?.[0]?.id || null;
+  const { startTour, autoStartTour } = useEditorTour({ selectSection, firstSectionId });
 
   // Full-screen mode
   const { isFullScreen, toggleFullScreen, isSupported: isFullScreenSupported } = useFullScreen();
@@ -76,20 +80,15 @@ export default function EditorClient({ project, userPlan }: Props) {
   // Enable keyboard shortcut: Cmd/Ctrl + Shift + F
   useFullScreenKeyboardShortcut(toggleFullScreen);
 
-  // Auto-start tour on first visit
-  useEffect(() => {
-    if (initializedRef.current) {
-      return autoStartTour();
-    }
-  }, [autoStartTour]);
-
-  // Initialize the page data from the project (only once)
+  // Initialize the page data from the project (only once), then auto-start tour
   useEffect(() => {
     if (!initializedRef.current && project.pageData) {
       setPage(project.pageData as LandingPage);
       initializedRef.current = true;
+      // Auto-start tour for first-time users (has internal 1.5s delay + localStorage check)
+      return autoStartTour();
     }
-  }, [project.pageData, setPage]);
+  }, [project.pageData, setPage, autoStartTour]);
 
   // Fetch AI usage on mount
   useEffect(() => {
@@ -459,8 +458,8 @@ export default function EditorClient({ project, userPlan }: Props) {
             </button>
             {showHelpMenu && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowHelpMenu(false)} />
-                <div className="absolute right-0 top-full mt-1 w-48 rounded-lg bg-zinc-900/95 border border-white/10 shadow-xl backdrop-blur-xl z-50 overflow-hidden">
+                <div className="fixed inset-0 z-[60]" onClick={() => setShowHelpMenu(false)} />
+                <div className="absolute right-0 top-full mt-1 w-48 rounded-lg bg-zinc-900/95 border border-white/10 shadow-xl backdrop-blur-xl z-[70] overflow-hidden">
                   <button
                     onClick={() => { setShowShortcuts(true); setShowHelpMenu(false); }}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-white/70 hover:bg-white/5 hover:text-white transition-colors"
@@ -641,7 +640,9 @@ export default function EditorClient({ project, userPlan }: Props) {
         <SectionList />
 
         {/* Center - Canvas */}
-        <Canvas />
+        <EditorErrorBoundary>
+          <Canvas />
+        </EditorErrorBoundary>
 
         {/* Right Sidebar - Property Panel */}
         <PropertyPanel />
@@ -769,6 +770,12 @@ export default function EditorClient({ project, userPlan }: Props) {
           </div>
         </div>
       )}
+
+      {/* Dynamic Google Fonts Loader */}
+      <DynamicFontLoader />
+
+      {/* Toast Notifications */}
+      <ToastContainer />
     </div>
   );
 }

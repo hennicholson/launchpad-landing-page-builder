@@ -27,6 +27,10 @@ export default function PricingSectionBase({
   const headingFont = typography.headingFont;
   const bodyFont = typography.bodyFont;
 
+  // Per-section overrides
+  const headingSizeScale = content.sectionHeadingSizeScale ?? 1;
+  const textAlign = content.sectionTextAlign;
+
   // Get the first pricing item
   const pricingItem = items?.[0];
 
@@ -39,7 +43,10 @@ export default function PricingSectionBase({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
-      }}
+        '--section-heading-font': `'${headingFont}', sans-serif`,
+        '--section-body-font': `'${bodyFont}', sans-serif`,
+        fontFamily: `'${bodyFont}', sans-serif`,
+      } as React.CSSProperties}
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />
       {/* Background gradient */}
@@ -52,7 +59,7 @@ export default function PricingSectionBase({
 
       <div className={`relative ${getContentWidthClass(contentWidth)} mx-auto px-6 lg:px-8`}>
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-12" style={{ textAlign: textAlign || undefined }}>
           {/* Badge */}
           {content.showBadge !== false && content.badge && (
             <motion.div
@@ -99,7 +106,11 @@ export default function PricingSectionBase({
           {content.showHeading !== false && content.heading && (
             <motion.h2
               className="text-3xl sm:text-4xl lg:text-5xl uppercase leading-[0.95] mb-4"
-              style={{ color: textColor, fontFamily: headingFont }}
+              style={{
+                color: textColor,
+                fontFamily: `'${headingFont}', sans-serif`,
+                ...(headingSizeScale !== 1 ? { fontSize: `${headingSizeScale}em`, lineHeight: 1.1 } : {}),
+              }}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}

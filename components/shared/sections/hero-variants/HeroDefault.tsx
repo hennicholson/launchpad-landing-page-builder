@@ -48,6 +48,10 @@ export default function HeroDefault({
   const headingFont = typography.headingFont;
   const bodyFont = typography.bodyFont;
 
+  // Per-section overrides
+  const headingSizeScale = content.sectionHeadingSizeScale ?? 1;
+  const textAlign = content.sectionTextAlign;
+
   const DEFAULT_PADDING = { top: 80, bottom: 80 };
 
   // Animation timeline delays (orchestrated)
@@ -71,7 +75,10 @@ export default function HeroDefault({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
-      }}
+        '--section-heading-font': `'${headingFont}', sans-serif`,
+        '--section-body-font': `'${bodyFont}', sans-serif`,
+        fontFamily: `'${bodyFont}', sans-serif`,
+      } as React.CSSProperties}
     >
       {/* ============================================
           LAYER 1: Base Section Background Effect
@@ -174,7 +181,7 @@ export default function HeroDefault({
           MAIN CONTENT CONTAINER
           ============================================ */}
       <div className={`relative z-10 ${getContentWidthClass(contentWidth)} mx-auto px-4 sm:px-6 lg:px-8`}>
-        <div className="text-center space-y-6 md:space-y-8">
+        <div className="text-center space-y-6 md:space-y-8" style={{ textAlign: textAlign || 'center' }}>
           {/* ============================================
               BADGE - Glass Morphism with Magnetic Effect
               ============================================ */}
@@ -245,7 +252,11 @@ export default function HeroDefault({
           {content.showHeading !== false && (
             <motion.h1
               className="text-4xl sm:text-5xl lg:text-7xl xl:text-8xl font-bold leading-[0.95] tracking-tight"
-              style={{ fontFamily: headingFont, color: textColor }}
+              style={{
+                fontFamily: `'${headingFont}', sans-serif`,
+                color: textColor,
+                ...(headingSizeScale !== 1 ? { fontSize: `${headingSizeScale}em`, lineHeight: 1.1 } : {}),
+              }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: ANIMATION_DELAYS.heading }}
