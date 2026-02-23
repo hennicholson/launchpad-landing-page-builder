@@ -455,3 +455,68 @@
     min-width: 300px;
   }
 }
+
+/* --- Tablet breakpoint --- */
+@media (max-width: 768px) {
+  .driver-popover.launchpad-tour-popover {
+    max-width: calc(100vw - 32px);
+    min-width: auto;
+    margin: 0 16px;
+    overflow: hidden;
+  }
+
+  .driver-popover.launchpad-tour-popover.tour-welcome {
+    max-width: calc(100vw - 32px);
+    min-width: auto;
+    margin: 0 16px;
+  }
+}
+
+/* --- Small mobile breakpoint --- */
+@media (max-width: 480px) {
+  .driver-popover.launchpad-tour-popover {
+    min-width: auto !important;
+    max-width: calc(100vw - 24px);
+    margin: 0 12px;
+  }
+
+  .driver-popover.launchpad-tour-popover.tour-welcome {
+    min-width: auto !important;
+    max-width: calc(100vw - 24px);
+    margin: 0 12px;
+  }
+
+  .tour-step-header {
+    padding: 16px 16px 6px;
+  }
+
+  .driver-popover.launchpad-tour-popover .driver-popover-title {
+    padding: 4px 16px 4px;
+    font-size: 14px;
+  }
+
+  .driver-popover.launchpad-tour-popover .driver-popover-description {
+    padding: 4px 16px 6px;
+    font-size: 12px;
+  }
+
+  .driver-popover.launchpad-tour-popover .driver-popover-footer {
+    padding: 12px 16px 16px;
+  }
+
+  .tour-progress-bar {
+    padding: 4px 16px 0 !important;
+  }
+
+  .tour-welcome .tour-step-header {
+    padding: 20px 16px 4px;
+  }
+
+  .tour-welcome .driver-popover-title {
+    font-size: 16px !important;
+  }
+
+  .tour-welcome .driver-popover-description {
+    font-size: 13px !important;
+  }
+}

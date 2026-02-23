@@ -602,8 +602,8 @@ function DividerElement({
   onClick: (e: React.MouseEvent) => void;
 }) {
   const variant: DividerVariant = element.content.dividerVariant || "solid";
-  // Apply scale factor to dimensions
-  const width = (element.content.dividerWidth || 200) * scaleFactor;
+  // Width priority: position.width (from resize) > content.dividerWidth > 200px default
+  const width = (element.position.width ?? element.content.dividerWidth ?? 200) * scaleFactor;
   const thickness = Math.max(1, (element.content.dividerThickness || 1) * scaleFactor);
   const color = element.styles.color || "rgba(255,255,255,0.2)";
 

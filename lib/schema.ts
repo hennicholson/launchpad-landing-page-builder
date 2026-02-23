@@ -20,10 +20,14 @@ export type PlanLimits = {
   deploys: number;
   aiCopyGenerations: number;      // per month, resets, no stacking
   aiComponentGenerations: number; // per month, resets, no stacking
+  voiceBudgetCents: number;       // monthly voice API spend limit in cents (-1 = unlimited, 0 = disabled)
   canPublish: boolean;
   canUseSubdomain: boolean;
   canUseCustomDomain: boolean;    // Pro+ can connect their own domains
+  canUseSeo: boolean;             // Pro+ can use SEO builder
   trackingEnabled: boolean;       // true = we collect funnel analytics
+  canCollectForms: boolean;       // Pro+ can collect form submissions
+  canViewSubmissions: boolean;    // Pro+ can view submissions dashboard
 };
 
 export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
@@ -32,40 +36,56 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     deploys: 3,
     aiCopyGenerations: 0,
     aiComponentGenerations: 0,
+    voiceBudgetCents: 0,          // No voice for free
     canPublish: false,
     canUseSubdomain: false,
     canUseCustomDomain: false,
+    canUseSeo: false,
     trackingEnabled: true,  // We collect data on free funnels
+    canCollectForms: false,
+    canViewSubmissions: false,
   },
   starter: {
     projects: 5,
     deploys: 50,
     aiCopyGenerations: 10,
     aiComponentGenerations: 5,
+    voiceBudgetCents: 0,          // No voice for starter
     canPublish: true,
     canUseSubdomain: false,
     canUseCustomDomain: false,
+    canUseSeo: false,
     trackingEnabled: true,
+    canCollectForms: false,
+    canViewSubmissions: false,
   },
   pro: {
     projects: 7,
     deploys: -1,  // unlimited
     aiCopyGenerations: 25,      // section edits per month
     aiComponentGenerations: 50, // full page generations per month
+    voiceBudgetCents: 500,        // $5.00/month voice budget
     canPublish: true,
     canUseSubdomain: true,
     canUseCustomDomain: true,  // Pro can connect custom domains
+    canUseSeo: true,
     trackingEnabled: false,  // Pro = secure, no tracking
+    canCollectForms: true,
+    canViewSubmissions: true,
   },
   enterprise: {
     projects: -1,  // unlimited
     deploys: -1,   // unlimited
     aiCopyGenerations: -1,  // unlimited
     aiComponentGenerations: -1,  // unlimited
+    voiceBudgetCents: -1,         // Unlimited voice
     canPublish: true,
     canUseSubdomain: true,
     canUseCustomDomain: true,  // Enterprise can connect custom domains
+    canUseSeo: true,
     trackingEnabled: false,
+    canCollectForms: true,
+    canViewSubmissions: true,
   },
 };
 
@@ -94,6 +114,11 @@ export const users = pgTable("users", {
   aiTotalInputTokens: integer("ai_total_input_tokens").default(0).notNull(),
   aiTotalOutputTokens: integer("ai_total_output_tokens").default(0).notNull(),
   aiTotalCostCents: integer("ai_total_cost_cents").default(0).notNull(),  // Lifetime cost in cents
+  // Voice usage tracking (resets monthly like AI counters)
+  voiceMonthlySpendCents: integer("voice_monthly_spend_cents").default(0).notNull(), // Current month spend
+  voiceSpendResetAt: timestamp("voice_spend_reset_at"),  // When to reset monthly voice spend
+  voiceTotalCostCents: integer("voice_total_cost_cents").default(0).notNull(), // Lifetime voice cost
+  voiceTotalSessions: integer("voice_total_sessions").default(0).notNull(), // Lifetime session count
   isAdmin: text("is_admin").default("false"),
   isSuspended: text("is_suspended").default("false"),
   lastLoginAt: timestamp("last_login_at").defaultNow(),
@@ -150,6 +175,27 @@ export const deployments = pgTable("deployments", {
   lastAttemptAt: timestamp("last_attempt_at"),
   buildLogs: text("build_logs"), // Full build logs for debugging
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Voice session status types
+export type VoiceSessionStatus = "active" | "ended" | "error";
+
+// Voice Sessions - tracks each voice agent session for cost accounting
+export const voiceSessions = pgTable("voice_sessions", {
+  id: text("id").primaryKey(), // Short unique ID
+  userId: uuid("user_id").notNull().references(() => users.id),
+  projectId: uuid("project_id").references(() => projects.id),
+  startedAt: timestamp("started_at").defaultNow(),
+  endedAt: timestamp("ended_at"),
+  durationSeconds: integer("duration_seconds"),
+  commandCount: integer("command_count").default(0).notNull(),
+  estimatedCostCents: integer("estimated_cost_cents").default(0).notNull(),
+  // Token usage from OpenAI response.done events (for accurate cost calculation)
+  inputAudioTokens: integer("input_audio_tokens"),
+  outputAudioTokens: integer("output_audio_tokens"),
+  inputTextTokens: integer("input_text_tokens"),
+  outputTextTokens: integer("output_text_tokens"),
+  status: text("status").$type<VoiceSessionStatus>().default("active").notNull(),
 });
 
 export const assets = pgTable("assets", {
@@ -295,6 +341,40 @@ export const creditTransactions = pgTable("credit_transactions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Payment types
+export type PaymentType = "subscription" | "topup";
+
+// Payments - records every Whop payment for revenue reporting
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id),
+  whopPaymentId: text("whop_payment_id").unique(),
+  whopUserId: text("whop_user_id"),
+  amountCents: integer("amount_cents").notNull(),
+  type: text("type").$type<PaymentType>().notNull(),
+  planId: text("plan_id"),
+  productId: text("product_id"),
+  status: text("status").default("succeeded"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Form Submissions - tracks email captures and form data from deployed pages
+export const formSubmissions = pgTable("form_submissions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").references(() => projects.id).notNull(),
+  email: text("email"),
+  fields: jsonb("fields").$type<Record<string, string>>(),
+  sectionId: text("section_id"),
+  sectionType: text("section_type"),
+  sourceUrl: text("source_url"),
+  referrer: text("referrer"),
+  userAgent: text("user_agent"),
+  ipCountry: text("ip_country"),
+  sessionId: text("session_id"),
+  isRead: text("is_read").default("false"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Types for use in application
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -318,3 +398,9 @@ export type CreditTransaction = typeof creditTransactions.$inferSelect;
 export type NewCreditTransaction = typeof creditTransactions.$inferInsert;
 export type PDFExport = typeof pdfExports.$inferSelect;
 export type NewPDFExport = typeof pdfExports.$inferInsert;
+export type FormSubmission = typeof formSubmissions.$inferSelect;
+export type NewFormSubmission = typeof formSubmissions.$inferInsert;
+export type VoiceSession = typeof voiceSessions.$inferSelect;
+export type NewVoiceSession = typeof voiceSessions.$inferInsert;
+export type Payment = typeof payments.$inferSelect;
+export type NewPayment = typeof payments.$inferInsert;

@@ -11,6 +11,7 @@ export default function FooterSectionBase({
   typography,
   renderText,
   renderImage,
+  previewMode,
 }: BaseSectionProps) {
   const { content } = section;
 
@@ -24,14 +25,18 @@ export default function FooterSectionBase({
   const bodyFont = typography.bodyFont;
 
   const DEFAULT_PADDING = { top: 48, bottom: 64 };
+  const PREVIEW_PADDING = { top: 24, bottom: 32 };
+  const padding = previewMode ? PREVIEW_PADDING : DEFAULT_PADDING;
 
   return (
     <footer
       className="relative overflow-hidden"
       style={{
         backgroundColor: bgColor,
-        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
-        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+        paddingTop: content.paddingTop ?? padding.top,
+        paddingBottom: content.paddingBottom ?? padding.bottom,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
       }}
     >
       <SectionBackground effect={content.backgroundEffect} config={content.backgroundConfig} />

@@ -87,12 +87,20 @@ export async function POST(
       }
     }
 
+    // Determine if form collection should be enabled (Pro tier)
+    const formCollectionEnabled = planLimits.canCollectForms;
+
     // Generate project files here (where we have filesystem access for shared components)
     const projectFiles = generateNextJsProject(
       project.pageData as LandingPage,
       (project.settings as ProjectSettings) || undefined,
       undefined, // siteUrl for SEO - will be set after deploy
       trackingEnabled ? {
+        enabled: true,
+        projectId: id,
+        apiUrl: siteUrl,
+      } : undefined,
+      formCollectionEnabled ? {
         enabled: true,
         projectId: id,
         apiUrl: siteUrl,

@@ -131,6 +131,8 @@ export default function FeaturesIllustratedBase({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
         '--section-body-font': `'${bodyFont}', sans-serif`,
         fontFamily: `'${bodyFont}', sans-serif`,
       } as React.CSSProperties}

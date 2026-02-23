@@ -1,0 +1,33 @@
+# LaunchPad
+
+> LaunchPad is an AI-powered landing page builder that lets users create, customize, and publish high-converting landing pages with a visual editor, 43+ section types, drag-and-drop elements, and one-click deployment.
+
+## Key Features
+
+- Visual drag-and-drop editor with real-time preview
+- 43+ section types with multiple design variants per section
+- 11 element types: text, image, button, icon, badge, divider, countdown, social, video, form, HTML
+- AI-powered page generation and copy editing
+- Responsive breakpoint editing (desktop, tablet, mobile)
+- Per-section typography, color, animation, and spacing controls
+- Custom domain support with SSL
+- SEO controls with meta tags, Open Graph, and JSON-LD structured data
+- Export to static HTML, Next.js project, PDF, or copy sheet
+- 12 professionally designed templates
+
+## Templates
+
+- [SaaS Product](https://launchpad.build): Free trial focused landing page
+- [Course Funnel](https://launchpad.build): Online course sales funnel
+- [Agency Funnel](https://launchpad.build): Agency and service business landing page
+- [E-Commerce Funnel](https://launchpad.build): Product sales landing page
+- [Webinar Registration](https://launchpad.build): Event and webinar signup page
+- [Lead Magnet](https://launchpad.build): Ebook and lead generation page
+
+## Section Types
+
+Landing pages built with LaunchPad can include: Hero, Features, Testimonials, Pricing, FAQ, CTA, Stats, Process, Comparison, Video, Gallery, Founders, Logo Cloud, Credibility, Offer, Audience, Header, Footer, and 10 premium Whop University sections.
+
+## Technology
+
+Built with Next.js 15, React, Tailwind CSS, Zustand state management, Supabase for data, and deployed on Netlify.

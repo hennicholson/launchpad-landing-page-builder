@@ -73,12 +73,20 @@ export async function POST(
     const trackingEnabled = planLimits.trackingEnabled;
     const siteUrl = process.env.URL || process.env.DEPLOY_PRIME_URL || "https://launchpad.whop.com";
 
+    // Determine if form collection should be enabled (Pro tier)
+    const formCollectionEnabled = planLimits.canCollectForms;
+
     // Generate project files here (where we have filesystem access for shared components)
     const projectFiles = generateNextJsProject(
       project.pageData as LandingPage,
       (project.settings as ProjectSettings) || undefined,
       undefined, // siteUrl for SEO - will be set after deploy
       trackingEnabled ? {
+        enabled: true,
+        projectId: id,
+        apiUrl: siteUrl,
+      } : undefined,
+      formCollectionEnabled ? {
         enabled: true,
         projectId: id,
         apiUrl: siteUrl,
@@ -124,6 +132,61 @@ export async function POST(
     }
     return NextResponse.json(
       { error: "Failed to start deployment" },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH /api/deploy/[id] - Toggle site visibility (isPublished)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Params }
+) {
+  try {
+    const user = await requireWhopUser();
+    const { id } = await params;
+
+    // Get user's database UUID
+    const [userData] = await db
+      .select()
+      .from(users)
+      .where(eq(users.whopId, user.id))
+      .limit(1);
+
+    if (!userData) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Verify project ownership
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, id), eq(projects.userId, userData.id)))
+      .limit(1);
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
+    // Toggle isPublished
+    const newStatus = project.isPublished === "true" ? "false" : "true";
+
+    await db
+      .update(projects)
+      .set({ isPublished: newStatus, updatedAt: new Date() })
+      .where(eq(projects.id, id));
+
+    return NextResponse.json({
+      success: true,
+      isPublished: newStatus === "true",
+    });
+  } catch (error) {
+    console.error("Error toggling visibility:", error);
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    return NextResponse.json(
+      { error: "Failed to toggle visibility" },
       { status: 500 }
     );
   }

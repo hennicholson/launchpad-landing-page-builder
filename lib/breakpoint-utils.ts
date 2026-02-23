@@ -268,3 +268,26 @@ export function getPropertyAtBreakpoint<K extends keyof PageElement>(
   const effectiveElement = getElementAtBreakpoint(element, breakpoint);
   return effectiveElement[property];
 }
+
+/**
+ * Validate breakpoint overrides for an element.
+ * Checks that position values are within valid bounds (0-100%).
+ */
+export function validateBreakpointOverrides(element: PageElement): { valid: boolean; issues: string[] } {
+  const issues: string[] = [];
+
+  if (element.breakpointOverrides) {
+    for (const [bp, override] of Object.entries(element.breakpointOverrides)) {
+      if (override?.position) {
+        if (override.position.x !== undefined && (override.position.x < 0 || override.position.x > 100)) {
+          issues.push(`${bp}: x position ${override.position.x}% is out of bounds`);
+        }
+        if (override.position.y !== undefined && (override.position.y < 0 || override.position.y > 100)) {
+          issues.push(`${bp}: y position ${override.position.y}% is out of bounds`);
+        }
+      }
+    }
+  }
+
+  return { valid: issues.length === 0, issues };
+}

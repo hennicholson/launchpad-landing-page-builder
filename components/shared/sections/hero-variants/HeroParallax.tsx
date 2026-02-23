@@ -99,6 +99,8 @@ export default function HeroParallax({
           backgroundColor: bgColor,
           paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
           paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+          paddingLeft: content.paddingLeft,
+          paddingRight: content.paddingRight,
         }}
       >
         {/* ========== DEPTH LAYERS BACKGROUND ========== */}

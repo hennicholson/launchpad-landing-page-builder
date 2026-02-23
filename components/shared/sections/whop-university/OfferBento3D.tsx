@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import { DrawCheckmark } from "./primitives/DrawCheckmark";
 import { useEditorStore } from "@/lib/store";
+import { getIconOrFallback } from "@/lib/icons";
 
 /**
  * Offer Bento Grid Section with 3D Tilt Cards
@@ -46,6 +47,8 @@ export function OfferBento3D({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
       }}
     >
       <div className="relative z-10 max-w-7xl mx-auto px-6">
@@ -298,14 +301,17 @@ function TiltCard({
 
         {/* Content */}
         <div className="relative z-10" style={{ transform: "translateZ(20px)" }}>
-          {item.icon && (
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
-              style={{ backgroundColor: `${accentColor}20` }}
-            >
-              <span style={{ color: accentColor }}>{item.icon}</span>
-            </div>
-          )}
+          {item.icon && (() => {
+            const IconComponent = getIconOrFallback(item.icon);
+            return (
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
+                style={{ backgroundColor: `${accentColor}20` }}
+              >
+                <IconComponent className="w-5 h-5" style={{ color: accentColor }} />
+              </div>
+            );
+          })()}
 
           <h3
             className={`font-semibold mb-2 ${isLarge ? "text-xl md:text-2xl" : "text-lg"}`}

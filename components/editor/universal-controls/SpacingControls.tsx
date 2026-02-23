@@ -36,9 +36,27 @@ export function SpacingControls({
           placeholder="64"
         />
       </div>
-      {(section.content.paddingTop !== undefined || section.content.paddingBottom !== undefined) && (
+      <div className="grid grid-cols-2 gap-3">
+        <NumberInput
+          label="Left (px)"
+          value={section.content.paddingLeft}
+          onChange={(v) => updateSectionContent(sectionId, { paddingLeft: v })}
+          min={0}
+          max={200}
+          placeholder="0"
+        />
+        <NumberInput
+          label="Right (px)"
+          value={section.content.paddingRight}
+          onChange={(v) => updateSectionContent(sectionId, { paddingRight: v })}
+          min={0}
+          max={200}
+          placeholder="0"
+        />
+      </div>
+      {(section.content.paddingTop !== undefined || section.content.paddingBottom !== undefined || section.content.paddingLeft !== undefined || section.content.paddingRight !== undefined) && (
         <button
-          onClick={() => updateSectionContent(sectionId, { paddingTop: undefined, paddingBottom: undefined })}
+          onClick={() => updateSectionContent(sectionId, { paddingTop: undefined, paddingBottom: undefined, paddingLeft: undefined, paddingRight: undefined })}
           className="text-[10px] text-white/40 hover:text-white/60 underline transition-colors"
         >
           Reset padding to default

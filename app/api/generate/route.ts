@@ -57,9 +57,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ pageData });
   } catch (error) {
     console.error("Error generating page:", error);
-    if (error instanceof Error && error.message === "Unauthorized") {
+    const message = error instanceof Error ? error.message : "";
+
+    if (message === "Unauthorized") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    if (message.includes("rate limit") || message.includes("429")) {
+      return NextResponse.json(
+        { error: "Rate limit reached, please wait a moment" },
+        { status: 429 }
+      );
+    }
+
+    if (message.includes("timed out") || message.includes("timeout")) {
+      return NextResponse.json(
+        { error: "Generation timed out — try a simpler prompt" },
+        { status: 504 }
+      );
+    }
+
+    if (message.includes("parse") || message.includes("JSON")) {
+      return NextResponse.json(
+        { error: "AI response was invalid, please try again" },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Failed to generate. Please try again." },
       { status: 500 }

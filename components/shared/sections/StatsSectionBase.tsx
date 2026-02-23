@@ -319,6 +319,7 @@ export default function StatsSectionBase({
   colorScheme,
   typography,
   renderText,
+  previewMode,
 }: BaseSectionProps) {
   const { content, items } = section;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -352,6 +353,8 @@ export default function StatsSectionBase({
     : 100;
 
   const DEFAULT_PADDING = { top: 80, bottom: 128 };
+  const PREVIEW_PADDING = { top: 48, bottom: 64 };
+  const activePadding = previewMode ? PREVIEW_PADDING : DEFAULT_PADDING;
 
   // Helper to render text (editable in editor, static in deploy)
   const renderTextContent = (props: Omit<Parameters<NonNullable<typeof renderText>>[0], "sectionId">) => {
@@ -527,8 +530,10 @@ export default function StatsSectionBase({
       className="relative overflow-hidden"
       style={{
         backgroundColor: bgColor,
-        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
-        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+        paddingTop: content.paddingTop ?? activePadding.top,
+        paddingBottom: content.paddingBottom ?? activePadding.bottom,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
         '--section-heading-font': `'${headingFont}', sans-serif`,
         '--section-body-font': `'${bodyFont}', sans-serif`,
         fontFamily: `'${bodyFont}', sans-serif`,

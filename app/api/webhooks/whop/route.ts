@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { Whop } from "@whop/sdk";
 import { db } from "@/lib/db";
-import { users, topupPlans } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import { users, topupPlans, payments } from "@/lib/schema";
+import { eq, or } from "drizzle-orm";
 import { createHash } from "crypto";
 import { LAUNCHPAD_PRO_PRODUCT_ID } from "@/lib/whop";
 import { addCreditsFromTopup } from "@/lib/actions/billing";
@@ -151,6 +151,30 @@ export async function POST(request: Request) {
             await updateUserPlan(userId, "pro");
           } else {
             console.log(`[Whop Webhook] Ignoring payment for different product: ${productId}`);
+          }
+
+          // Store payment record for revenue reporting
+          try {
+            // Resolve internal user ID
+            const internalUserId = generateUUIDFromString(userId);
+            const [existingUser] = await db
+              .select({ id: users.id })
+              .from(users)
+              .where(or(eq(users.whopId, internalUserId), eq(users.whopUniqueId, userId)))
+              .limit(1);
+
+            await db.insert(payments).values({
+              userId: existingUser?.id || null,
+              whopPaymentId: data.id || null,
+              whopUserId: userId,
+              amountCents: amountCents || 0,
+              type: isTopup ? "topup" : "subscription",
+              planId: planId || null,
+              productId: productId || null,
+            }).onConflictDoNothing();
+            console.log(`[Whop Webhook] Payment record stored: ${data.id}`);
+          } catch (paymentErr) {
+            console.error(`[Whop Webhook] Failed to store payment record:`, paymentErr);
           }
         }
         break;

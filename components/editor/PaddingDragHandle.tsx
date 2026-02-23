@@ -117,7 +117,7 @@ export default function PaddingDragHandle({
 
   return (
     <div
-      className={`absolute left-0 right-0 z-20 ${
+      className={`absolute left-0 right-0 z-[35] ${
         position === "top" ? "top-0" : "bottom-0"
       }`}
     >
@@ -141,9 +141,9 @@ export default function PaddingDragHandle({
           }`}
         />
 
-        {/* Center handle button */}
+        {/* Center grip handle — drag affordance only */}
         <div
-          className={`relative flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-150 ${
+          className={`relative flex items-center px-2.5 py-1 rounded-full transition-all duration-150 ${
             isDragging
               ? "bg-[#D6FC51] text-black scale-110 shadow-lg shadow-[#D6FC51]/30"
               : showValue
@@ -152,17 +152,6 @@ export default function PaddingDragHandle({
           }`}
         >
           <GripHorizontal className="w-4 h-4" />
-
-          {/* Padding value */}
-          <span
-            className={`text-xs font-medium font-mono transition-all duration-150 overflow-hidden ${
-              showValue || isDragging
-                ? "max-w-[50px] opacity-100"
-                : "max-w-0 opacity-0"
-            }`}
-          >
-            {displayPadding}px
-          </span>
         </div>
       </div>
 
@@ -180,6 +169,30 @@ export default function PaddingDragHandle({
             borderBottom: position === "top" ? "1px dashed rgba(214, 252, 81, 0.4)" : "none",
           }}
         />
+      )}
+
+      {/* Floating pixel counter — rendered AFTER visualization so it's on top */}
+      {(showValue || isDragging) && displayPadding >= 8 && (
+        <div
+          className={`absolute left-0 right-0 flex justify-center pointer-events-none z-10 ${
+            position === "top" ? "top-0" : "bottom-0"
+          }`}
+          style={{
+            transform: position === "top"
+              ? `translateY(${Math.max(4, Math.min(displayPadding / 2 - 10, displayPadding - 24))}px)`
+              : `translateY(-${Math.max(4, Math.min(displayPadding / 2 + 10, displayPadding - 4))}px)`,
+          }}
+        >
+          <span
+            className={`text-xs font-medium font-mono px-2 py-0.5 rounded transition-all duration-150 ${
+              isDragging
+                ? "bg-[#D6FC51] text-black shadow-md"
+                : "bg-[#D6FC51]/80 text-black/80"
+            }`}
+          >
+            {displayPadding}px
+          </span>
+        </div>
       )}
     </div>
   );

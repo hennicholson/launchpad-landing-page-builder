@@ -10,7 +10,7 @@ import { orchestratePage, type OrchestrationInput, type OrchestrationProgress } 
 export type { OrchestrationProgress } from "./ai/orchestrator/index";
 
 const client = new Anthropic({
-  apiKey: process.env.CLAUDE_API_KEY,
+  apiKey: process.env.ANTHROPIC_ORCHESTRATOR_KEY || process.env.CLAUDE_API_KEY,
 });
 
 // Claude Sonnet 4 pricing (per million tokens)
@@ -414,16 +414,40 @@ export async function generateLandingPage(
   };
 }
 
+/**
+ * Categorize Anthropic SDK errors into user-friendly messages
+ */
+function categorizeAIError(error: unknown): Error {
+  if (error instanceof Anthropic.RateLimitError) {
+    return new Error("rate limit exceeded — please wait a moment and try again");
+  }
+  if (error instanceof Anthropic.AuthenticationError) {
+    return new Error("AI API key not configured. Please check your environment variables.");
+  }
+  if (error instanceof Anthropic.APIConnectionError) {
+    return new Error("Could not connect to AI service — please try again");
+  }
+  if (error instanceof Error && error.message.includes("timed out")) {
+    return new Error("AI request timed out — try a simpler prompt");
+  }
+  if (error instanceof Anthropic.APIError) {
+    return new Error(`AI service error: ${error.message}`);
+  }
+  return new Error("Failed to generate section. Please try again.");
+}
+
 export async function regenerateSection(
   currentPage: LandingPage,
   sectionType: SectionType,
   instructions: string,
   userId?: string
 ): Promise<PageSection & { usage?: AIUsageResult }> {
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: MAX_TOKENS.section,
-    system: `You are an expert landing page designer. Generate a single section for a landing page.
+  let response;
+  try {
+    response = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: MAX_TOKENS.section,
+      system: `You are an expert landing page designer. Generate a single section for a landing page.
 
 Current page context:
 - Title: ${currentPage.title}
@@ -437,15 +461,18 @@ Output ONLY valid JSON for a single section matching this structure:
   "content": { ... },
   "items": [ ... ]
 }`,
-    messages: [
-      {
-        role: "user",
-        content: `Generate a ${sectionType} section with these instructions: ${instructions}
+      messages: [
+        {
+          role: "user",
+          content: `Generate a ${sectionType} section with these instructions: ${instructions}
 
 Output only the JSON, no markdown formatting.`,
-      },
-    ],
-  });
+        },
+      ],
+    });
+  } catch (error) {
+    throw categorizeAIError(error);
+  }
 
   // Track token usage
   const inputTokens = response.usage?.input_tokens || 0;
@@ -523,10 +550,12 @@ export async function regenerateSectionWithContext(
   ]
 }`;
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: MAX_TOKENS.section,
-    system: `You are an expert landing page designer and copywriter. You're editing a ${sectionType} section based on user instructions.
+  let response;
+  try {
+    response = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: MAX_TOKENS.section,
+      system: `You are an expert landing page designer and copywriter. You're editing a ${sectionType} section based on user instructions.
 
 Page context:
 - Title: ${pageContext.title}
@@ -545,15 +574,18 @@ Your task is to modify this section based on the user's instructions while:
 
 Output ONLY valid JSON matching this structure:
 ${sectionSchema}`,
-    messages: [
-      {
-        role: "user",
-        content: `Modify this ${sectionType} section with these instructions: "${instructions}"
+      messages: [
+        {
+          role: "user",
+          content: `Modify this ${sectionType} section with these instructions: "${instructions}"
 
 Keep what works, change what the user requested. Output only valid JSON, no markdown formatting or explanation.`,
-      },
-    ],
-  });
+        },
+      ],
+    });
+  } catch (error) {
+    throw categorizeAIError(error);
+  }
 
   // Track token usage
   const inputTokens = response.usage?.input_tokens || 0;

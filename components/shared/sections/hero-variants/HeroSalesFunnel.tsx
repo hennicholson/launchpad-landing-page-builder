@@ -27,6 +27,8 @@ export default function HeroSalesFunnel({
   // Extract padding
   const paddingTop = content.paddingTop ?? 20;
   const paddingBottom = content.paddingBottom ?? 20;
+  const paddingLeft = content.paddingLeft;
+  const paddingRight = content.paddingRight;
 
   // Badge icon rendering helper
   const renderBadgeIcon = () => {
@@ -61,6 +63,8 @@ export default function HeroSalesFunnel({
         backgroundColor: bgColor,
         paddingTop: `${paddingTop * 4}px`,
         paddingBottom: `${paddingBottom * 4}px`,
+        paddingLeft,
+        paddingRight,
         '--section-heading-font': `'${headingFont}', sans-serif`,
         '--section-body-font': `'${bodyFont}', sans-serif`,
         fontFamily: `'${bodyFont}', sans-serif`,

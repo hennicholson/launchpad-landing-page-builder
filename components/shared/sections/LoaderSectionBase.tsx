@@ -71,7 +71,13 @@ export default function LoaderSectionBase({
       {!isExiting ? (
         <motion.section
           className="relative min-h-screen flex items-center justify-center overflow-hidden"
-          style={{ backgroundColor: bgColor }}
+          style={{
+            backgroundColor: bgColor,
+            paddingTop: content.paddingTop,
+            paddingBottom: content.paddingBottom,
+            paddingLeft: content.paddingLeft,
+            paddingRight: content.paddingRight,
+          }}
           exit={exitVariants[transitionAnimation]}
           transition={{
             duration: content.transitionDuration || 0.8,

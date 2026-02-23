@@ -54,7 +54,7 @@ export type TestimonialVariant = "scrolling" | "twitter-cards" | "screenshots";
 export type VideoVariant = "centered" | "grid" | "side-by-side" | "fullscreen";
 export type GalleryVariant = "bento" | "focusrail";
 export type FeaturesVariant = "default" | "illustrated" | "hover" | "bento" | "table";
-export type HeroVariant = "default" | "animated-preview" | "email-signup" | "sales-funnel" | "glassmorphism-trust";
+export type HeroVariant = "default" | "animated-preview" | "email-signup" | "sales-funnel" | "glassmorphism-trust" | "hero-email-glass" | "hero-form-multi";
 export type LogoSize = "small" | "medium" | "large" | "custom";
 export type TransitionAnimation = "fade" | "slide" | "zoom";
 
@@ -117,6 +117,11 @@ export type ElementStyleOverride = {
   letterSpacing?: string;   // em or px
   lineHeight?: number;      // multiplier
   textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  textDecoration?: 'none' | 'underline' | 'line-through';
+  fontStyle?: 'normal' | 'italic';
+  textShadow?: string;         // CSS text-shadow value
+  webkitTextStroke?: string;   // CSS -webkit-text-stroke value
+  opacity?: number;            // 0-1
 };
 
 // ==================== ELEMENTS SYSTEM ====================
@@ -151,7 +156,7 @@ export type ElementAnimation = {
 
 // Button style variants
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'gradient' | 'neon' | '3d' | 'glass' | 'pill' | 'icon' | 'underline' | 'bounce'
-  | 'animated-generate' | 'liquid' | 'flow' | 'ripple' | 'cartoon' | 'win98';
+  | 'animated-generate' | 'liquid' | 'flow' | 'ripple' | 'cartoon' | 'win98' | 'email-capture';
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
 
 // Badge style variants (extended)
@@ -218,6 +223,11 @@ export type ElementContent = {
   buttonShadow?: ShadowSize;     // Shadow size
   buttonWidth?: WidthMode;       // Width mode: auto, full, or custom px
   buttonActiveText?: string;     // Text shown during loading/active state (for animated buttons)
+
+  // Email Capture (for email-capture button variant)
+  emailCapturePlaceholder?: string;    // Input placeholder text
+  emailCaptureSuccessText?: string;    // Success message after submission
+  emailCaptureButtonText?: string;     // Submit button text
 
   // Image - Basic
   imageUrl?: string;
@@ -382,6 +392,12 @@ export type SectionItem = {
   audienceType?: "for" | "not-for";  // Whether this is a "for" or "not for" item
   // Per-item style overrides for title, description, etc.
   styleOverrides?: Record<string, ElementStyleOverride>;
+  // Whop University / Sales Funnel item fields
+  duration?: string;
+  lessons?: string[];
+  result?: string;
+  quote?: string;
+  name?: string;
 };
 
 export type NavLink = {
@@ -558,6 +574,8 @@ export type SectionContent = {
   // Section-level padding overrides
   paddingTop?: number;      // Custom top padding in pixels
   paddingBottom?: number;   // Custom bottom padding in pixels
+  paddingLeft?: number;     // Custom left padding in pixels
+  paddingRight?: number;    // Custom right padding in pixels
   // Element-level style overrides keyed by field name
   // e.g., { "heading": { fontSize: 48, fontWeight: "bold" }, "subheading": { color: "#ff0000" } }
   elementStyles?: Record<string, ElementStyleOverride>;
@@ -594,6 +612,26 @@ export type SectionContent = {
   // Per-section spacing overrides
   sectionContentGap?: number; // gap in px
   sectionMaxWidth?: 'narrow' | 'medium' | 'wide' | 'full';
+  // Whop University / Sales Funnel sections
+  body?: string;
+  pullQuote?: string;
+  pullQuoteAuthor?: string;
+  solutionTeaser?: string;
+  painPoints?: string[];
+  features?: string[];
+  creatorImageUrl?: string;
+  trustText?: string;
+  credentialBadge?: string;
+  credentials?: string[];
+  highlights?: string[];
+  summary?: string;
+  originalPrice?: string;
+  price?: string;
+  pricePeriod?: string;
+  socialProof?: string;
+  twitterUrl?: string;
+  linkedinUrl?: string;
+  websiteUrl?: string;
 };
 
 export type PageSection = {
@@ -681,6 +719,18 @@ export const THEME_PRESETS: Record<string, { name: string; colorScheme: ColorSch
   },
 };
 
+export type SEOSettings = {
+  metaTitle?: string;
+  metaDescription?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+  canonicalUrl?: string;
+  robots?: string;
+  twitterCard?: 'summary' | 'summary_large_image';
+  jsonLd?: Record<string, any>;
+};
+
 export type LandingPage = {
   title: string;
   description: string;
@@ -694,6 +744,8 @@ export type LandingPage = {
   designCanvasWidth?: number; // Default: 896 (max-w-4xl)
   // Content width for section alignment (narrow=672px, medium=896px, wide=1152px)
   contentWidth?: ContentWidth;
+  // SEO settings
+  seo?: SEOSettings;
 };
 
 export type ProjectSettings = {
@@ -813,6 +865,35 @@ export function createSection(type: SectionType, options?: { ctaVariant?: CTAVar
           backgroundImageUrl: "https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/a72ca2f3-9dd1-4fe4-84ba-fe86468a5237_3840w.webp?w=800&q=80",
           backgroundColor: "#09090b",
           accentColor: "#ffcd75",
+        };
+      } else if (heroVariant === "hero-email-glass") {
+        baseSection.content = {
+          ...baseSection.content,
+          heroVariant,
+          heading: "Join the Future of Creation",
+          subheading: "Get early access to our platform and start building today.",
+          badge: "Early Access",
+          showBadge: true,
+          formPlaceholder: "Enter your email address",
+          formButtonText: "Get Access",
+          buttonText: "Get Access",
+          brands: ["10,000+ Creators", "Trusted Worldwide"],
+          backgroundColor: "#0a0a0a",
+          textColor: "#ffffff",
+        };
+      } else if (heroVariant === "hero-form-multi") {
+        baseSection.content = {
+          ...baseSection.content,
+          heroVariant,
+          heading: "Start Your Free Trial",
+          subheading: "No credit card required. Get started in under 2 minutes.",
+          formPlaceholder: "your@email.com",
+          formButtonText: "Start Free Trial",
+          buttonText: "Start Free Trial",
+          showBadge: true,
+          badge: "Free Trial",
+          backgroundColor: "#0a0a0a",
+          textColor: "#ffffff",
         };
       } else {
         baseSection.content = {
@@ -979,21 +1060,25 @@ export function createSection(type: SectionType, options?: { ctaVariant?: CTAVar
       baseSection.content = {
         ...baseSection.content,
         heading: "What Our Customers Say",
+        subheading: "Real stories from real people",
         testimonialVariant: options?.testimonialVariant || "scrolling",
       };
       baseSection.items = [
-        { id: generateId(), title: "Great product!", description: "This changed everything for our business.", author: "John Doe", role: "CEO" },
+        { id: generateId(), title: "Game Changer", description: "This platform completely transformed our workflow. We shipped 3x faster.", author: "Sarah Chen", role: "CTO at TechFlow", rating: 5 },
+        { id: generateId(), title: "Best Investment", description: "The ROI we've seen has been incredible. Highly recommended.", author: "Marcus Johnson", role: "Founder at LaunchPad", rating: 5 },
+        { id: generateId(), title: "Love It", description: "Simple, powerful, and beautiful. Everything we wanted in a tool.", author: "Emily Park", role: "Product Lead at Acme", rating: 5 },
       ];
       break;
     case "pricing":
       baseSection.content = {
         ...baseSection.content,
-        heading: "Pricing",
-        subheading: "Choose the plan that works for you",
+        heading: "Simple, Transparent Pricing",
+        subheading: "Choose the plan that fits your needs",
       };
       baseSection.items = [
-        { id: generateId(), title: "Starter", price: "$9/mo", description: "Perfect for getting started", features: ["Feature 1", "Feature 2"] },
-        { id: generateId(), title: "Pro", price: "$29/mo", description: "For growing businesses", features: ["Everything in Starter", "Feature 3", "Feature 4"] },
+        { id: generateId(), title: "Starter", price: "$9/mo", description: "Perfect for individuals", features: ["3 Projects", "5GB Storage", "Basic Analytics", "Email Support"], buttonText: "Get Started", buttonLink: "#" },
+        { id: generateId(), title: "Pro", price: "$29/mo", description: "For growing teams", features: ["Unlimited Projects", "50GB Storage", "Advanced Analytics", "Priority Support", "Custom Domain"], popular: true, buttonText: "Start Free Trial", buttonLink: "#" },
+        { id: generateId(), title: "Enterprise", price: "$99/mo", description: "For large organizations", features: ["Everything in Pro", "Unlimited Storage", "SSO & SAML", "Dedicated Manager"], buttonText: "Contact Sales", buttonLink: "#" },
       ];
       break;
     case "cta":
@@ -1012,29 +1097,41 @@ export function createSection(type: SectionType, options?: { ctaVariant?: CTAVar
       baseSection.content = {
         ...baseSection.content,
         heading: "Frequently Asked Questions",
+        subheading: "Everything you need to know",
       };
       baseSection.items = [
-        { id: generateId(), title: "How does it work?", description: "Answer to the question goes here." },
-        { id: generateId(), title: "What's included?", description: "Answer to the question goes here." },
+        { id: generateId(), title: "How does the free trial work?", description: "You get full access to all features for 14 days. No credit card required." },
+        { id: generateId(), title: "Can I change my plan later?", description: "Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately." },
+        { id: generateId(), title: "Is there a money-back guarantee?", description: "Yes! We offer a 30-day money-back guarantee on all paid plans." },
+        { id: generateId(), title: "What payment methods do you accept?", description: "We accept all major credit cards, PayPal, and bank transfers for annual plans." },
       ];
       break;
     case "video":
       baseSection.content = {
         ...baseSection.content,
         heading: "See It In Action",
+        subheading: "Watch a quick walkthrough of our platform",
         videoUrl: "",
         videoVariant: "centered",
         autoplayVideo: false,
         muteVideo: true,
+        videoDuration: "2:30",
       };
       break;
     case "gallery":
       baseSection.content = {
         ...baseSection.content,
-        heading: "Gallery",
+        heading: "Our Work",
+        subheading: "A showcase of our latest projects",
         layout: "grid",
         galleryVariant: "bento",
       };
+      baseSection.items = [
+        { id: generateId(), title: "Brand Identity" },
+        { id: generateId(), title: "Web Design" },
+        { id: generateId(), title: "Mobile App" },
+        { id: generateId(), title: "Dashboard UI" },
+      ];
       break;
     case "header":
       baseSection.content = {
@@ -1105,6 +1202,7 @@ export function createSection(type: SectionType, options?: { ctaVariant?: CTAVar
         priceMonthly: "$25/month",
         buttonText: "Get Access Now",
         buttonLink: "#",
+        showButton: true,
         backgroundColor: "#0a0a0a",
         textColor: "#ffffff",
         accentColor: "#D6FC51",
@@ -1550,6 +1648,207 @@ export function createSection(type: SectionType, options?: { ctaVariant?: CTAVar
           popular: false,
         },
       ];
+      break;
+    // Whop University premium funnel sections
+    case "whop-hero":
+      baseSection.content = {
+        ...baseSection.content,
+        badge: "New Course Available",
+        heading: "Master the Art of Building",
+        accentHeading: "Profitable Digital Products",
+        subheading: "Learn the exact strategies that generated $2M+ in revenue",
+        buttonText: "Enroll Now",
+        buttonLink: "#",
+        secondaryButtonText: "Watch Preview",
+        secondaryButtonLink: "#",
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
+      break;
+    case "whop-value-prop":
+      baseSection.content = {
+        ...baseSection.content,
+        badge: "Why This Course",
+        heading: "Everything You Need to Succeed",
+        subheading: "Three pillars of our proven methodology",
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
+      baseSection.items = [
+        { id: generateId(), title: "Proven Framework", description: "Battle-tested strategies used by 500+ successful creators", icon: "target" },
+        { id: generateId(), title: "Live Mentorship", description: "Weekly live calls with industry experts", icon: "sparkles" },
+        { id: generateId(), title: "Community Access", description: "Join a private network of ambitious creators", icon: "heart" },
+      ];
+      break;
+    case "whop-offer":
+      baseSection.content = {
+        ...baseSection.content,
+        badge: "The Offer",
+        heading: "Everything You Get",
+        subheading: "One investment, lifetime access",
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
+      baseSection.items = [
+        { id: generateId(), title: "Core Course", description: "40+ hours of video content", price: "$997" },
+        { id: generateId(), title: "Templates Pack", description: "50+ ready-to-use templates", price: "$297" },
+        { id: generateId(), title: "Private Community", description: "Lifetime access", price: "$497" },
+      ];
+      break;
+    case "whop-cta":
+      baseSection.content = {
+        ...baseSection.content,
+        heading: "Don't Miss Out",
+        subheading: "Limited spots available for this cohort",
+        buttonText: "Enroll Now",
+        buttonLink: "#",
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
+      break;
+    case "whop-comparison":
+      baseSection.content = {
+        ...baseSection.content,
+        badge: "Comparison",
+        heading: "Why Students Choose Us",
+        subheading: "See how we compare to alternatives",
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
+      baseSection.items = [
+        {
+          id: generateId(),
+          title: "Our Course",
+          features: ["Proven $2M+ framework", "Live weekly coaching", "Private community", "Lifetime updates"],
+        },
+        {
+          id: generateId(),
+          title: "Other Courses",
+          features: ["Generic advice", "No support", "Outdated content"],
+        },
+      ];
+      break;
+    case "whop-creator":
+      baseSection.content = {
+        ...baseSection.content,
+        heading: "Your Instructor",
+        creatorName: "Your Name",
+        creatorRole: "Expert & Educator",
+        creatorBio: "Share your story and credentials here. Build trust with your audience by highlighting your experience and achievements.",
+        creatorCredentials: [
+          "10+ years of experience",
+          "1,000+ students mentored",
+          "Featured in major publications",
+        ],
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
+      break;
+    case "whop-curriculum":
+      baseSection.content = {
+        ...baseSection.content,
+        badge: "Curriculum",
+        heading: "What's Inside",
+        subheading: "A comprehensive roadmap to success",
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
+      baseSection.items = [
+        {
+          id: generateId(),
+          title: "Module 1: Foundation",
+          description: "Build your knowledge base",
+          duration: "4 hours",
+          lessons: ["Finding your niche", "Market research", "Setting up"],
+        },
+        {
+          id: generateId(),
+          title: "Module 2: Building",
+          description: "Create your first product",
+          duration: "6 hours",
+          lessons: ["Product ideation", "MVP development", "Design principles"],
+        },
+        {
+          id: generateId(),
+          title: "Module 3: Launch & Scale",
+          description: "Go to market and grow",
+          duration: "5 hours",
+          lessons: ["Launch planning", "Marketing channels", "Scaling strategies"],
+        },
+      ];
+      break;
+    case "whop-results":
+      baseSection.content = {
+        ...baseSection.content,
+        badge: "Student Results",
+        heading: "Real Results",
+        subheading: "From our community of students",
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
+      baseSection.items = [
+        { id: generateId(), title: "Sarah K.", result: "$12K/mo in 90 days", description: "Went from zero to $12K monthly revenue" },
+        { id: generateId(), title: "James M.", result: "Quit 9-5 in 6 months", description: "Replaced his corporate salary" },
+        { id: generateId(), title: "Lisa T.", result: "500+ customers", description: "Built a thriving community from scratch" },
+      ];
+      break;
+    case "whop-testimonials":
+      baseSection.content = {
+        ...baseSection.content,
+        badge: "Testimonials",
+        heading: "What Students Say",
+        subheading: "Hear from our community",
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
+      baseSection.items = [
+        {
+          id: generateId(),
+          title: "Life Changing",
+          description: "This course completely changed my perspective on building a business.",
+          author: "Maria Santos",
+          role: "Course Creator",
+          rating: 5,
+        },
+        {
+          id: generateId(),
+          title: "Worth Every Penny",
+          description: "The only course where I actually got results. Highly recommend.",
+          author: "Tom Wilson",
+          role: "Freelancer",
+          rating: 5,
+        },
+        {
+          id: generateId(),
+          title: "Incredible Value",
+          description: "The live coaching calls alone are worth the price.",
+          author: "Nina Patel",
+          role: "Startup Founder",
+          rating: 5,
+        },
+      ];
+      break;
+    case "whop-final-cta":
+      baseSection.content = {
+        ...baseSection.content,
+        heading: "Your Transformation Starts Now",
+        subheading: "Join students who already made the leap",
+        buttonText: "Enroll Today",
+        buttonLink: "#",
+        bodyText: "30-day money-back guarantee. No questions asked.",
+        backgroundColor: "#141212",
+        textColor: "#FCF6F5",
+        accentColor: "#FA4616",
+      };
       break;
   }
 

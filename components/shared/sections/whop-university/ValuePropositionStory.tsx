@@ -42,6 +42,8 @@ export function ValuePropositionStory({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
       }}
     >
       {/* Subtle grain texture */}

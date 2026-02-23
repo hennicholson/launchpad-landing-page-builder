@@ -39,6 +39,8 @@ export default function OfferSectionBase({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
         '--section-heading-font': `'${headingFont}', sans-serif`,
         '--section-body-font': `'${bodyFont}', sans-serif`,
         fontFamily: `'${bodyFont}', sans-serif`,
@@ -209,7 +211,7 @@ export default function OfferSectionBase({
               )}
 
               {/* CTA Button */}
-              {content.showButton !== false && content.buttonText && (
+              {content.showButton !== false && (
                 <SectionButton
                   text={content.buttonText || "Get Access Now"}
                   link={content.buttonLink || "#"}

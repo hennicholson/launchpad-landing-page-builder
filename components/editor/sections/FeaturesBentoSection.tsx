@@ -1,10 +1,11 @@
+import React from "react";
 import type { PageSection } from "@/lib/page-schema";
 import { useEditorStoreOrPublished } from "@/lib/store";
 import { getSectionTypography } from "@/lib/section-overrides";
 import FeaturesBentoBase from "@/components/shared/sections/FeaturesBentoBase";
 import EditableText from "../EditableText";
 
-export default function FeaturesBentoSection({
+export default React.memo(function FeaturesBentoSection({
   section,
 }: {
   section: PageSection;
@@ -29,4 +30,4 @@ export default function FeaturesBentoSection({
       )}
     />
   );
-}
+});

@@ -5,6 +5,14 @@ const nextConfig: NextConfig = {
     // Temporarily ignore build errors to allow deployment
     ignoreBuildErrors: true,
   },
+  images: {
+    remotePatterns: [
+      { protocol: "https" as const, hostname: "hoirqrkdgbmvpwutwuwj.supabase.co" },
+      { protocol: "https" as const, hostname: "images.unsplash.com" },
+      { protocol: "https" as const, hostname: "api.dicebear.com" },
+      { protocol: "https" as const, hostname: "*.supabase.co" },
+    ],
+  },
   experimental: {
     serverActions: {
       allowedOrigins: [

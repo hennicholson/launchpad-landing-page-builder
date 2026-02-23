@@ -107,6 +107,26 @@ function applyStyleOverride(styles: CSSProperties, override: ElementStyleOverrid
   if (override.textTransform !== undefined) {
     styles.textTransform = override.textTransform;
   }
+
+  if (override.textDecoration !== undefined) {
+    styles.textDecoration = override.textDecoration;
+  }
+
+  if (override.fontStyle !== undefined) {
+    styles.fontStyle = override.fontStyle;
+  }
+
+  if (override.textShadow !== undefined) {
+    styles.textShadow = override.textShadow;
+  }
+
+  if (override.webkitTextStroke !== undefined) {
+    (styles as Record<string, unknown>).WebkitTextStroke = override.webkitTextStroke;
+  }
+
+  if (override.opacity !== undefined) {
+    styles.opacity = override.opacity;
+  }
 }
 
 /**

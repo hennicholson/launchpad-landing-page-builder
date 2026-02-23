@@ -362,36 +362,122 @@ export default function BillingClient({ billingData }: Props) {
           </div>
         </section>
 
-        {/* AI Usage Stats */}
-        {(billingData.aiStats.totalInputTokens > 0 || billingData.aiStats.totalOutputTokens > 0) && (
-          <section className="mb-12">
-            <h2 className="font-['Sora',sans-serif] text-xl font-semibold mb-6 flex items-center gap-3">
-              <span className="w-1 h-6 bg-gradient-to-b from-emerald-400 to-teal-500 rounded-full" />
-              AI Usage Stats
-            </h2>
+        {/* AI & Voice Usage */}
+        <section className="mb-12">
+          <h2 className="font-['Sora',sans-serif] text-xl font-semibold mb-6 flex items-center gap-3">
+            <span className="w-1 h-6 bg-gradient-to-b from-emerald-400 to-teal-500 rounded-full" />
+            Usage Overview
+          </h2>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="rounded-xl bg-[#131314] border border-white/[0.06] p-5 text-center">
-                <div className="text-2xl font-bold text-white font-['Sora',sans-serif]">
-                  {formatNumber(billingData.aiStats.totalInputTokens)}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* AI Text Generation */}
+            <div className="rounded-xl bg-[#131314] border border-white/[0.06] p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                  </svg>
                 </div>
-                <div className="text-xs text-white/40 mt-1">Input Tokens</div>
+                <div>
+                  <div className="font-medium text-white">AI Generation</div>
+                  <div className="text-xs text-white/40">Text & page generation costs</div>
+                </div>
               </div>
-              <div className="rounded-xl bg-[#131314] border border-white/[0.06] p-5 text-center">
-                <div className="text-2xl font-bold text-white font-['Sora',sans-serif]">
-                  {formatNumber(billingData.aiStats.totalOutputTokens)}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-lg font-bold text-white font-['Sora',sans-serif]">
+                    {formatNumber(billingData.aiStats.totalInputTokens + billingData.aiStats.totalOutputTokens)}
+                  </div>
+                  <div className="text-xs text-white/40">Total Tokens</div>
                 </div>
-                <div className="text-xs text-white/40 mt-1">Output Tokens</div>
-              </div>
-              <div className="rounded-xl bg-[#131314] border border-white/[0.06] p-5 text-center">
-                <div className="text-2xl font-bold text-emerald-400 font-['Sora',sans-serif]">
-                  {formatCurrency(billingData.aiStats.totalCostCents)}
+                <div>
+                  <div className="text-lg font-bold text-emerald-400 font-['Sora',sans-serif]">
+                    {formatCurrency(billingData.aiStats.totalCostCents)}
+                  </div>
+                  <div className="text-xs text-white/40">Total Cost</div>
                 </div>
-                <div className="text-xs text-white/40 mt-1">Total AI Cost</div>
               </div>
             </div>
-          </section>
-        )}
+
+            {/* Voice Mode */}
+            <div className="rounded-xl bg-[#131314] border border-white/[0.06] p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-white">Voice Mode</div>
+                  <div className="text-xs text-white/40">
+                    {billingData.voiceStats.monthlyBudgetCents === 0
+                      ? "Not available on your plan"
+                      : billingData.voiceStats.monthlyBudgetCents === -1
+                        ? "Unlimited usage"
+                        : "Monthly budget"}
+                  </div>
+                </div>
+                {billingData.voiceStats.resetAt && billingData.voiceStats.monthlyBudgetCents > 0 && (
+                  <span className="text-xs text-white/30">
+                    Resets {formatDate(billingData.voiceStats.resetAt)}
+                  </span>
+                )}
+              </div>
+
+              {/* Voice budget bar */}
+              {billingData.voiceStats.monthlyBudgetCents > 0 && (() => {
+                const spent = billingData.voiceStats.monthlySpendCents;
+                const budget = billingData.voiceStats.monthlyBudgetCents;
+                const pct = Math.min((spent / budget) * 100, 100);
+                const nearLimit = pct >= 80;
+                const atLimit = spent >= budget;
+                return (
+                  <div className="mb-4">
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className={atLimit ? "text-red-400" : "text-white/70"}>
+                        {formatCurrency(spent)} / {formatCurrency(budget)}
+                      </span>
+                      {atLimit && <span className="text-red-400 text-xs font-medium">Limit reached</span>}
+                    </div>
+                    <div className="h-2 rounded-full bg-purple-500/20">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          atLimit ? "bg-red-500" : nearLimit ? "bg-orange-500" : "bg-purple-500"
+                        }`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-lg font-bold text-white font-['Sora',sans-serif]">
+                    {billingData.voiceStats.totalSessions.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-white/40">Sessions</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-violet-400 font-['Sora',sans-serif]">
+                    {formatCurrency(billingData.voiceStats.totalCostCents)}
+                  </div>
+                  <div className="text-xs text-white/40">Total Cost</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Combined total */}
+          {(billingData.aiStats.totalCostCents > 0 || billingData.voiceStats.totalCostCents > 0) && (
+            <div className="mt-4 rounded-xl bg-gradient-to-r from-emerald-500/5 to-violet-500/5 border border-white/[0.04] px-5 py-3 flex items-center justify-between">
+              <span className="text-sm text-white/50">Combined AI + Voice Cost</span>
+              <span className="font-['Sora',sans-serif] font-bold text-white">
+                {formatCurrency(billingData.aiStats.totalCostCents + billingData.voiceStats.totalCostCents)}
+              </span>
+            </div>
+          )}
+        </section>
 
         {/* Upsells Section (Placeholder) */}
         <section className="mb-12">

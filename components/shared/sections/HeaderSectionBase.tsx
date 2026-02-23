@@ -460,7 +460,7 @@ function Header2(props: HeaderVariantProps) {
             "flex w-full items-center justify-between px-4 md:transition-all md:ease-out",
             scrolled && "md:px-2"
           )}
-          style={{ paddingTop: headerPadding, paddingBottom: headerPadding }}
+          style={{ paddingTop: headerPadding, paddingBottom: headerPadding, paddingLeft: content.paddingLeft, paddingRight: content.paddingRight }}
         >
           {/* Logo area - always takes space to maintain layout */}
           <div className="flex-shrink-0">
@@ -665,7 +665,7 @@ function FloatingHeader(props: HeaderVariantProps) {
           borderColor: `${textColor}10`,
         }}
       >
-        <nav className="mx-auto flex items-center justify-between" style={{ padding: headerPadding }}>
+        <nav className="mx-auto flex items-center justify-between" style={{ padding: headerPadding, paddingLeft: content.paddingLeft, paddingRight: content.paddingRight }}>
           {/* Logo area - always takes space to maintain layout */}
           <div className="flex-shrink-0">
             {content.showLogo !== false && (content.logoUrl || content.logoText) && (
@@ -861,7 +861,7 @@ function SimpleHeader(props: HeaderVariantProps) {
           borderColor: `${textColor}10`,
         }}
       >
-        <nav className="mx-auto flex w-full max-w-4xl items-center justify-between px-4" style={{ paddingTop: headerPadding, paddingBottom: headerPadding }}>
+        <nav className="mx-auto flex w-full max-w-4xl items-center justify-between px-4" style={{ paddingTop: headerPadding, paddingBottom: headerPadding, paddingLeft: content.paddingLeft, paddingRight: content.paddingRight }}>
           {/* Logo area - always takes space to maintain layout */}
           <div className="flex-shrink-0">
             {content.showLogo !== false && (content.logoUrl || content.logoText) && (
@@ -1074,7 +1074,7 @@ function HeaderWithSearch(props: HeaderVariantProps) {
           borderColor: `${textColor}10`,
         }}
       >
-        <nav className="mx-auto flex w-full max-w-4xl items-center justify-between px-4" style={{ paddingTop: headerPadding, paddingBottom: headerPadding }}>
+        <nav className="mx-auto flex w-full max-w-4xl items-center justify-between px-4" style={{ paddingTop: headerPadding, paddingBottom: headerPadding, paddingLeft: content.paddingLeft, paddingRight: content.paddingRight }}>
           {/* Logo area - always takes space to maintain layout */}
           <div className="flex-shrink-0">
             {content.showLogo !== false && (content.logoUrl || content.logoText) && (
@@ -1302,6 +1302,7 @@ export default function HeaderSectionBase({
   typography,
   renderText,
   renderImage,
+  previewMode,
 }: BaseSectionProps) {
   const { content } = section;
   const headerRef = useRef<HTMLElement>(null);
@@ -1370,6 +1371,8 @@ export default function HeaderSectionBase({
         ...getTopStyle(content.headerPosition, 0),
         paddingTop: headerPadding,
         paddingBottom: headerPadding,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
         backgroundColor: resolveHeaderBgColor(customBgColor, pageThemeBgColor, headerOpacity),
         backdropFilter: headerOpacity < 100 ? "blur(12px)" : undefined,
         WebkitBackdropFilter: headerOpacity < 100 ? "blur(12px)" : undefined,

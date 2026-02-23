@@ -324,6 +324,18 @@ export async function createProject(data: {
       pageData = { ...getTemplateByIdOrDefault(templateId || "skinny"), title: name };
     }
 
+    // Replace first founder's name with the actual user's display name
+    if (pageData.sections) {
+      const foundersSection = pageData.sections.find(
+        (s: { type: string }) => s.type === "founders" || s.type === "glass-founders"
+      );
+      if (foundersSection?.items?.length) {
+        const displayName = userData.name || userData.username || name;
+        foundersSection.items[0].title = displayName;
+        foundersSection.items[0].role = "Creator";
+      }
+    }
+
     // Create the project
     let newProject;
     try {
@@ -698,6 +710,72 @@ export async function startDeploy(
       return { success: false, error: "Unauthorized" };
     }
     return { success: false, error: "Failed to publish site" };
+  }
+}
+
+/**
+ * Unpublish a project (take it offline)
+ */
+export async function unpublishProject(
+  projectId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireWhopUser();
+
+    // Get user from DB
+    const [userData] = await db
+      .select()
+      .from(users)
+      .where(eq(users.whopId, user.id))
+      .limit(1);
+
+    if (!userData) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Verify project belongs to user
+    const [project] = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, projectId), eq(projects.userId, userData.id)))
+      .limit(1);
+
+    if (!project) {
+      return { success: false, error: "Project not found" };
+    }
+
+    if (project.isPublished !== "true") {
+      return { success: false, error: "Project is not published" };
+    }
+
+    // Update project: unpublish and clear live URL
+    await db
+      .update(projects)
+      .set({
+        isPublished: "false",
+        liveUrl: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(projects.id, projectId));
+
+    // Create deployment record for history
+    await db
+      .insert(deployments)
+      .values({
+        projectId,
+        status: "unpublished" as any,
+        url: null,
+      });
+
+    revalidatePath("/dashboard");
+
+    return { success: true };
+  } catch (error) {
+    console.error("[Projects] unpublishProject error:", error);
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return { success: false, error: "Unauthorized" };
+    }
+    return { success: false, error: "Failed to unpublish project" };
   }
 }
 

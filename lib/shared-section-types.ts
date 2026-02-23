@@ -39,6 +39,12 @@ export type BaseSectionProps = {
   // If not provided, components render static content
   renderText?: (props: RenderTextProps) => ReactNode;
   renderImage?: (props: RenderImageProps) => ReactNode;
+
+  // When true, section renders in gallery preview mode:
+  // - Framer Motion animations are disabled
+  // - Video embeds show placeholder gradients
+  // - Tighter padding for compact display
+  previewMode?: boolean;
 };
 
 // Helper to create default text renderer (static display)

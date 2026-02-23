@@ -5,6 +5,7 @@ import { useRef, useEffect, useState } from "react";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import { MagneticButton } from "./primitives/MagneticButton";
 import { useEditorStore } from "@/lib/store";
+import { getIconOrFallback } from "@/lib/icons";
 
 /**
  * Final Conversion Section
@@ -81,6 +82,8 @@ export function FinalConversion({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
       }}
     >
       {/* Animated spotlight background */}
@@ -311,7 +314,10 @@ export function FinalConversion({
                     : undefined
                 }
               >
-                <span className="text-xl">{item.icon}</span>
+                {item.icon && (() => {
+                  const IconComp = getIconOrFallback(item.icon);
+                  return <IconComp className="w-5 h-5" style={{ color: accentColor }} />;
+                })()}
                 <span
                   className="text-sm font-medium"
                   style={{ color: `${textColor}80`, fontFamily: bodyFont }}

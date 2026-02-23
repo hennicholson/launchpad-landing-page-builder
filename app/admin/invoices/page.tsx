@@ -189,6 +189,12 @@ export default function AdminInvoicesPage() {
           </div>
           <div className="flex items-center gap-3">
             <Link
+              href="/admin/analytics"
+              className="px-4 py-2 text-sm bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg hover:bg-emerald-500/30 transition-colors"
+            >
+              Analytics
+            </Link>
+            <Link
               href="/admin/deploys"
               className="px-4 py-2 text-sm bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
             >

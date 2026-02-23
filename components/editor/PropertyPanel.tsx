@@ -13,6 +13,8 @@ import ElementSettingsPanel from "./ElementSettingsPanel";
 import { AIQuickActions } from "./ai/AIQuickActions";
 import { Switch } from "@/components/ui/switch";
 import { UniversalSectionControls } from "./universal-controls/UniversalSectionControls";
+import SEOBuilderPanel from "./SEOBuilderPanel";
+import { FONT_CATEGORIES, ALL_AVAILABLE_FONTS } from "./universal-controls/TypographyControls";
 import { CollapsibleSection, RangeSlider, ColorInput, NumberInput, VisibilityToggle, TextInput, TextAreaInput } from "./shared-controls";
 import {
   Type,
@@ -39,6 +41,11 @@ import {
   Code,
   Link,
   Unlink,
+  Italic,
+  Underline,
+  Strikethrough,
+  Sparkles,
+  CircleDot,
 } from "lucide-react";
 import type { PageSection, PageElement, ElementType } from "@/lib/page-schema";
 
@@ -289,6 +296,12 @@ export default function PropertyPanel() {
 
   const selectedSection = useSelectedSection();
   const selectedItemId = useEditorStore((state) => state.selectedItemId);
+  const [settingsSubTab, setSettingsSubTab] = useState<'general' | 'advanced'>('general');
+
+  // Reset sub-tab to 'general' when selected section changes
+  useEffect(() => {
+    setSettingsSubTab('general');
+  }, [selectedSectionId]);
 
   // Create refs for all items (for auto-scroll on selection)
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -370,6 +383,14 @@ export default function PropertyPanel() {
   const [textTransform, setTextTransform] = useState<TextTransform>("none");
   const [lineHeight, setLineHeight] = useState<number>(1.5);
   const [letterSpacing, setLetterSpacing] = useState<string>("0em");
+  const [fontFamily, setFontFamily] = useState<string>("");
+  const [fontStyle, setFontStyleState] = useState<'normal' | 'italic'>("normal");
+  const [textDecoration, setTextDecoration] = useState<'none' | 'underline' | 'line-through'>("none");
+  const [textShadow, setTextShadow] = useState<string>("none");
+  const [webkitTextStroke, setWebkitTextStroke] = useState<string>("");
+  const [textOpacity, setTextOpacity] = useState<number>(1);
+  const [fontSearchOpen, setFontSearchOpen] = useState(false);
+  const [fontSearchQuery, setFontSearchQuery] = useState("");
 
   // Initialize control values from current styles
   useEffect(() => {
@@ -416,6 +437,13 @@ export default function PropertyPanel() {
     } else {
       setLetterSpacing("0em");
     }
+
+    setFontFamily(currentOverride.fontFamily || "");
+    setFontStyleState(currentOverride.fontStyle || "normal");
+    setTextDecoration(currentOverride.textDecoration || "none");
+    setTextShadow(currentOverride.textShadow || "none");
+    setWebkitTextStroke(currentOverride.webkitTextStroke || "");
+    setTextOpacity(currentOverride.opacity ?? 1);
   }, [currentOverride, styleSection, page.colorScheme.text]);
 
   // Update store when values change
@@ -445,6 +473,11 @@ export default function PropertyPanel() {
       letterSpacing: undefined,
       lineHeight: undefined,
       textTransform: undefined,
+      textDecoration: undefined,
+      fontStyle: undefined,
+      textShadow: undefined,
+      webkitTextStroke: undefined,
+      opacity: undefined,
     });
 
     setFontSize(16);
@@ -454,6 +487,12 @@ export default function PropertyPanel() {
     setTextTransform("none");
     setLineHeight(1.5);
     setLetterSpacing("0em");
+    setFontFamily("");
+    setFontStyleState("normal");
+    setTextDecoration("none");
+    setTextShadow("none");
+    setWebkitTextStroke("");
+    setTextOpacity(1);
   }, [elementStylePanel, handleStyleChange, styleSection, page.colorScheme.text]);
 
   const fieldLabel = elementStylePanel?.field
@@ -552,6 +591,9 @@ export default function PropertyPanel() {
               className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50 resize-none"
             />
           </div>
+
+          {/* SEO Builder (Pro feature) */}
+          <SEOBuilderPanel />
 
           {/* Theme Presets */}
           <div className="space-y-3">
@@ -792,6 +834,85 @@ export default function PropertyPanel() {
           />
         </div>
 
+        {/* Font Family */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-xs text-white/50">
+            <Type className="w-3.5 h-3.5" />
+            Font Family
+          </label>
+          <div className="relative">
+            <button
+              onClick={() => setFontSearchOpen(!fontSearchOpen)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white hover:bg-white/10 transition-colors"
+            >
+              <span style={{ fontFamily: fontFamily || undefined }} className={fontFamily ? "" : "text-white/40"}>
+                {fontFamily || "Default (inherit)"}
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 text-white/40 transition-transform ${fontSearchOpen ? "rotate-180" : ""}`} />
+            </button>
+            {fontSearchOpen && (
+              <div className="absolute z-50 mt-1 w-full bg-[#1a1a1c] border border-white/10 rounded-xl shadow-2xl overflow-hidden">
+                <div className="p-2 border-b border-white/5">
+                  <input
+                    type="text"
+                    value={fontSearchQuery}
+                    onChange={(e) => setFontSearchQuery(e.target.value)}
+                    placeholder="Search fonts..."
+                    autoFocus
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-[#D6FC51]/50"
+                  />
+                </div>
+                <div className="max-h-60 overflow-y-auto">
+                  {/* Reset option */}
+                  <button
+                    onClick={() => {
+                      setFontFamily("");
+                      handleStyleChange({ fontFamily: undefined });
+                      setFontSearchOpen(false);
+                      setFontSearchQuery("");
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs hover:bg-white/5 transition-colors ${
+                      !fontFamily ? "text-[#D6FC51]" : "text-white/50"
+                    }`}
+                  >
+                    Default (inherit)
+                  </button>
+                  {FONT_CATEGORIES.map((category) => {
+                    const filtered = category.fonts.filter((f) =>
+                      f.toLowerCase().includes(fontSearchQuery.toLowerCase())
+                    );
+                    if (filtered.length === 0) return null;
+                    return (
+                      <div key={category.label}>
+                        <div className="px-3 py-1.5 text-[9px] font-medium text-white/25 uppercase tracking-wider bg-white/[0.02]">
+                          {category.label}
+                        </div>
+                        {filtered.map((font) => (
+                          <button
+                            key={font}
+                            onClick={() => {
+                              setFontFamily(font);
+                              handleStyleChange({ fontFamily: font });
+                              setFontSearchOpen(false);
+                              setFontSearchQuery("");
+                            }}
+                            className={`w-full text-left px-3 py-2 text-xs hover:bg-white/5 transition-colors ${
+                              fontFamily === font ? "text-[#D6FC51]" : "text-white/70"
+                            }`}
+                            style={{ fontFamily: font }}
+                          >
+                            {font}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Font Weight */}
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-xs text-white/50">
@@ -813,6 +934,33 @@ export default function PropertyPanel() {
                 }`}
               >
                 {weight.charAt(0).toUpperCase() + weight.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Font Style (Italic) */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-xs text-white/50">
+            <Italic className="w-3.5 h-3.5" />
+            Font Style
+          </label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {(["normal", "italic"] as const).map((style) => (
+              <button
+                key={style}
+                onClick={() => {
+                  setFontStyleState(style);
+                  handleStyleChange({ fontStyle: style });
+                }}
+                className={`py-2 text-[10px] rounded-lg transition-all ${
+                  fontStyle === style
+                    ? "bg-[#D6FC51] text-black font-semibold"
+                    : "bg-white/5 text-white/60 hover:bg-white/10"
+                }`}
+                style={{ fontStyle: style }}
+              >
+                {style.charAt(0).toUpperCase() + style.slice(1)}
               </button>
             ))}
           </div>
@@ -931,6 +1079,37 @@ export default function PropertyPanel() {
           </div>
         </div>
 
+        {/* Text Decoration */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-xs text-white/50">
+            <Underline className="w-3.5 h-3.5" />
+            Decoration
+          </label>
+          <div className="grid grid-cols-3 gap-1.5">
+            {([
+              { value: "none" as const, label: "None", icon: Minus },
+              { value: "underline" as const, label: "Under", icon: Underline },
+              { value: "line-through" as const, label: "Strike", icon: Strikethrough },
+            ]).map(({ value, label, icon: Icon }) => (
+              <button
+                key={value}
+                onClick={() => {
+                  setTextDecoration(value);
+                  handleStyleChange({ textDecoration: value });
+                }}
+                className={`py-2 flex items-center justify-center gap-1 text-[10px] rounded-lg transition-all ${
+                  textDecoration === value
+                    ? "bg-[#D6FC51] text-black font-semibold"
+                    : "bg-white/5 text-white/60 hover:bg-white/10"
+                }`}
+              >
+                <Icon className="w-3 h-3" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Line Height */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -977,6 +1156,93 @@ export default function PropertyPanel() {
           />
         </div>
 
+        {/* Text Shadow */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-xs text-white/50">
+            <Sparkles className="w-3.5 h-3.5" />
+            Text Shadow
+          </label>
+          <div className="grid grid-cols-3 gap-1.5">
+            {([
+              { value: "none", label: "None" },
+              { value: "0 1px 2px rgba(0,0,0,0.3)", label: "Subtle" },
+              { value: "0 2px 4px rgba(0,0,0,0.5)", label: "Medium" },
+              { value: "0 4px 8px rgba(0,0,0,0.7)", label: "Strong" },
+              { value: "0 0 10px rgba(214,252,81,0.5), 0 0 20px rgba(214,252,81,0.3)", label: "Glow" },
+              { value: "0 0 5px #fff, 0 0 10px #fff, 0 0 20px currentColor, 0 0 40px currentColor", label: "Neon" },
+            ] as const).map(({ value, label }) => (
+              <button
+                key={label}
+                onClick={() => {
+                  setTextShadow(value);
+                  handleStyleChange({ textShadow: value });
+                }}
+                className={`py-2 text-[10px] rounded-lg transition-all ${
+                  textShadow === value
+                    ? "bg-[#D6FC51] text-black font-semibold"
+                    : "bg-white/5 text-white/60 hover:bg-white/10"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Text Outline/Stroke */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-xs text-white/50">
+            <CircleDot className="w-3.5 h-3.5" />
+            Text Outline
+          </label>
+          <div className="grid grid-cols-4 gap-1.5">
+            {([
+              { value: "", label: "None" },
+              { value: "0.5px currentColor", label: "Thin" },
+              { value: "1px currentColor", label: "Med" },
+              { value: "2px currentColor", label: "Bold" },
+            ] as const).map(({ value, label }) => (
+              <button
+                key={label}
+                onClick={() => {
+                  setWebkitTextStroke(value);
+                  handleStyleChange({ webkitTextStroke: value });
+                }}
+                className={`py-2 text-[10px] rounded-lg transition-all ${
+                  webkitTextStroke === value
+                    ? "bg-[#D6FC51] text-black font-semibold"
+                    : "bg-white/5 text-white/60 hover:bg-white/10"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Opacity */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs text-white/50">Opacity</label>
+            <span className="text-xs text-white/70 font-mono">
+              {Math.round(textOpacity * 100)}%
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={textOpacity}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              setTextOpacity(val);
+              handleStyleChange({ opacity: val });
+            }}
+            className="w-full h-1.5 rounded-full bg-white/10 appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#D6FC51] [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
+          />
+        </div>
+
         {/* Reset Button */}
         <button
           onClick={handleResetStyles}
@@ -990,7 +1256,7 @@ export default function PropertyPanel() {
   };
 
   return (
-    <div className="w-80 border-l border-white/5 flex flex-col flex-shrink-0 bg-[#0f0f10] overflow-hidden" data-tour="property-panel">
+    <div className="w-80 border-l border-white/5 flex flex-col flex-shrink-0 bg-[#0f0f10] overflow-hidden relative" data-tour="property-panel">
       {/* Tabs */}
       <div className="flex border-b border-white/5 flex-shrink-0">
         <button
@@ -1040,6 +1306,30 @@ export default function PropertyPanel() {
             </div>
           </div>
 
+          {/* Sub-tab bar: General / Advanced */}
+          <div className="flex items-center gap-1 px-4 py-2 border-b border-white/5">
+            <button
+              onClick={() => setSettingsSubTab('general')}
+              className={settingsSubTab === 'general'
+                ? "px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 text-white"
+                : "px-3 py-1.5 text-xs rounded-lg text-white/40 hover:text-white/60 hover:bg-white/5 transition-colors"
+              }
+            >
+              General
+            </button>
+            <button
+              onClick={() => setSettingsSubTab('advanced')}
+              className={settingsSubTab === 'advanced'
+                ? "px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 text-white"
+                : "px-3 py-1.5 text-xs rounded-lg text-white/40 hover:text-white/60 hover:bg-white/5 transition-colors"
+              }
+            >
+              Advanced
+            </button>
+          </div>
+
+          {settingsSubTab === 'general' && (
+          <>
           {/* AI Quick Actions */}
           <div className="p-4 border-b border-white/5">
             <AIQuickActions
@@ -1199,6 +1489,8 @@ export default function PropertyPanel() {
                 <option value="email-signup">Email Signup</option>
                 <option value="sales-funnel">Sales Funnel</option>
                 <option value="glassmorphism-trust">Glassmorphism Trust</option>
+                <option value="hero-email-glass">Email Glass</option>
+                <option value="hero-form-multi">Multi-Field Form</option>
               </select>
             </div>
 
@@ -1939,6 +2231,217 @@ export default function PropertyPanel() {
                       >
                         + Add Logo
                       </button>
+                    </CollapsibleSection>
+                  </>
+                );
+              }
+
+              // HERO-EMAIL-GLASS VARIANT
+              if (variant === "hero-email-glass") {
+                return (
+                  <>
+                    <CollapsibleSection title="Content" defaultOpen>
+                      <TextInput
+                        label="Badge"
+                        value={selectedSection.content.badge || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+                        placeholder="Early Access"
+                      />
+                      <TextInput
+                        label="Heading"
+                        value={selectedSection.content.heading || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+                        placeholder="Join the Future of Creation"
+                      />
+                      <TextAreaInput
+                        label="Subheading"
+                        value={selectedSection.content.subheading || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+                        rows={2}
+                      />
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Form Settings" defaultOpen>
+                      <div className="grid grid-cols-2 gap-3">
+                        <TextInput
+                          label="Placeholder"
+                          value={selectedSection.content.formPlaceholder || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { formPlaceholder: v })}
+                          placeholder="Enter your email address"
+                        />
+                        <TextInput
+                          label="Button Text"
+                          value={selectedSection.content.formButtonText || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { formButtonText: v })}
+                          placeholder="Get Access"
+                        />
+                      </div>
+                      <TextInput
+                        label="Form Action URL"
+                        value={selectedSection.content.formAction || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { formAction: v })}
+                        placeholder="/api/subscribe"
+                      />
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Trust Brands">
+                      <ArrayEditor
+                        label="Brand Names"
+                        items={selectedSection.content.brands || []}
+                        onChange={(brands) => updateSectionContent(selectedSectionId, { brands })}
+                        placeholder="Brand Name"
+                      />
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Visibility" defaultOpen={false}>
+                      <div className="space-y-2">
+                        {[
+                          { key: "showBadge", label: "Show Badge" },
+                        ].map(({ key, label }) => (
+                          <label key={key} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedSection.content[key as keyof typeof selectedSection.content] !== false}
+                              onChange={(e) => updateSectionContent(selectedSectionId, { [key]: e.target.checked })}
+                              className="w-4 h-4 rounded border-white/20 bg-black/20 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                            />
+                            <span className="text-sm text-white/70">{label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </CollapsibleSection>
+                  </>
+                );
+              }
+
+              // HERO-FORM-MULTI VARIANT
+              if (variant === "hero-form-multi") {
+                return (
+                  <>
+                    <CollapsibleSection title="Content" defaultOpen>
+                      <TextInput
+                        label="Badge"
+                        value={selectedSection.content.badge || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+                        placeholder="Free Trial"
+                      />
+                      <TextInput
+                        label="Heading"
+                        value={selectedSection.content.heading || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+                        placeholder="Start Your Free Trial"
+                      />
+                      <TextAreaInput
+                        label="Subheading"
+                        value={selectedSection.content.subheading || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+                        rows={2}
+                      />
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Form Settings" defaultOpen>
+                      <TextInput
+                        label="Button Text"
+                        value={selectedSection.content.formButtonText || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { formButtonText: v })}
+                        placeholder="Start Free Trial"
+                      />
+                      <TextInput
+                        label="Form Action URL"
+                        value={selectedSection.content.formAction || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { formAction: v })}
+                        placeholder="/api/subscribe"
+                      />
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title={`Form Fields (${(selectedSection.items || []).length})`} defaultOpen>
+                      {(selectedSection.items || []).map((item, index) => (
+                        <div key={index} className="relative mb-2 p-2 bg-white/5 rounded-lg">
+                          <button
+                            onClick={() => {
+                              const newItems = [...(selectedSection.items || [])];
+                              newItems.splice(index, 1);
+                              updateSectionContent(selectedSectionId, { items: newItems } as any);
+                            }}
+                            className="absolute top-1 right-1 p-1 text-white/40 hover:text-red-400 transition-colors"
+                            title="Delete field"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                          <div className="space-y-2 pr-6">
+                            <TextInput
+                              label="Label"
+                              value={item.title || ""}
+                              onChange={(v) => {
+                                const newItems = [...(selectedSection.items || [])];
+                                newItems[index] = { ...newItems[index], title: v };
+                                updateSectionContent(selectedSectionId, { items: newItems } as any);
+                              }}
+                              placeholder="Field label"
+                            />
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-2">
+                                <label className="text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                                  Type
+                                </label>
+                                <select
+                                  value={item.description || "text"}
+                                  onChange={(e) => {
+                                    const newItems = [...(selectedSection.items || [])];
+                                    newItems[index] = { ...newItems[index], description: e.target.value };
+                                    updateSectionContent(selectedSectionId, { items: newItems } as any);
+                                  }}
+                                  className="w-full px-3 py-2 rounded-md bg-black/20 border border-white/10 text-sm text-white hover:border-white/20 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                                >
+                                  <option value="text">Text</option>
+                                  <option value="email">Email</option>
+                                  <option value="tel">Phone</option>
+                                  <option value="url">URL</option>
+                                </select>
+                              </div>
+                              <TextInput
+                                label="Placeholder"
+                                value={item.icon || ""}
+                                onChange={(v) => {
+                                  const newItems = [...(selectedSection.items || [])];
+                                  newItems[index] = { ...newItems[index], icon: v };
+                                  updateSectionContent(selectedSectionId, { items: newItems } as any);
+                                }}
+                                placeholder="Placeholder text"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => {
+                          const newItems = [...(selectedSection.items || []), { title: "New Field", description: "text", icon: "" }];
+                          updateSectionContent(selectedSectionId, { items: newItems } as any);
+                        }}
+                        className="w-full px-3 py-2 mt-2 rounded-md bg-white/5 border border-white/10 text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                      >
+                        + Add Field
+                      </button>
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Visibility" defaultOpen={false}>
+                      <div className="space-y-2">
+                        {[
+                          { key: "showBadge", label: "Show Badge" },
+                        ].map(({ key, label }) => (
+                          <label key={key} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedSection.content[key as keyof typeof selectedSection.content] !== false}
+                              onChange={(e) => updateSectionContent(selectedSectionId, { [key]: e.target.checked })}
+                              className="w-4 h-4 rounded border-white/20 bg-black/20 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                            />
+                            <span className="text-sm text-white/70">{label}</span>
+                          </label>
+                        ))}
+                      </div>
                     </CollapsibleSection>
                   </>
                 );
@@ -2953,7 +3456,7 @@ export default function PropertyPanel() {
                 />
               </div>
             </CollapsibleSection>
-            <CollapsibleSection title="Button & CTA">
+            <CollapsibleSection title="Button & CTA" defaultOpen>
               <div className="grid grid-cols-2 gap-3">
                 <TextInput
                   label="Button Text"
@@ -3036,7 +3539,7 @@ export default function PropertyPanel() {
                 onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
               />
             </CollapsibleSection>
-            <CollapsibleSection title="Button & CTA">
+            <CollapsibleSection title="Button & CTA" defaultOpen>
               <div className="grid grid-cols-2 gap-3">
                 <TextInput
                   label="Button Text"
@@ -3855,6 +4358,28 @@ export default function PropertyPanel() {
         {/* ==================== BLANK SECTION ==================== */}
         {sectionType === "blank" && (
           <>
+            <CollapsibleSection title="Dimensions" defaultOpen>
+              <div className="space-y-3">
+                <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
+                  Canvas Height
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="100"
+                    max="800"
+                    step="50"
+                    value={selectedSection.content.minHeight || 300}
+                    onChange={(e) => updateSectionContent(selectedSectionId, { minHeight: parseInt(e.target.value) })}
+                    className="flex-1 h-1.5 rounded-full bg-white/10 appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#D6FC51] [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
+                  />
+                  <span className="text-xs text-white/60 font-mono w-14 text-right">
+                    {selectedSection.content.minHeight || 300}px
+                  </span>
+                </div>
+              </div>
+            </CollapsibleSection>
+
             <div className="p-4 rounded-lg bg-white/5 border border-white/10">
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-8 h-8 rounded-lg bg-[#D6FC51]/20 flex items-center justify-center">
@@ -3866,26 +4391,6 @@ export default function PropertyPanel() {
                   <p className="text-sm font-medium text-white/90">Blank Canvas</p>
                   <p className="text-[10px] text-white/50">Build freely with custom elements</p>
                 </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
-                Canvas Height
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="range"
-                  min="100"
-                  max="800"
-                  step="50"
-                  value={selectedSection.content.minHeight || 300}
-                  onChange={(e) => updateSectionContent(selectedSectionId, { minHeight: parseInt(e.target.value) })}
-                  className="flex-1 h-1.5 rounded-full bg-white/10 appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#D6FC51] [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer"
-                />
-                <span className="text-xs text-white/60 font-mono w-14 text-right">
-                  {selectedSection.content.minHeight || 300}px
-                </span>
               </div>
             </div>
           </>
@@ -5583,6 +6088,12 @@ export default function PropertyPanel() {
           </>
         )}
 
+      </div>
+          </>
+          )}
+
+          {settingsSubTab === 'advanced' && (
+          <div className="p-4 space-y-5">
         {/* ==================== UNIVERSAL SECTION CONTROLS ==================== */}
         <UniversalSectionControls
           section={selectedSection}
@@ -5659,7 +6170,9 @@ export default function PropertyPanel() {
           </div>
         )}
 
-      </div>
+          </div>
+          )}
+
     </div>
       )}
     </div>
@@ -6266,6 +6779,7 @@ function SectionButtonSettings({
           </div>
         </div>
       )}
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0f0f10] to-transparent z-10" />
     </div>
   );
 }

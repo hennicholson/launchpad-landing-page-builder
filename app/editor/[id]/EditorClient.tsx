@@ -17,7 +17,8 @@ import KeyboardShortcuts from "@/components/editor/onboarding/KeyboardShortcuts"
 import { EditorErrorBoundary } from "@/components/editor/EditorErrorBoundary";
 import { ToastContainer } from "@/components/editor/Toast";
 import DynamicFontLoader from "@/components/editor/DynamicFontLoader";
-import { HelpCircle, Keyboard, RotateCcw } from "lucide-react";
+import { HelpCircle, Keyboard, RotateCcw, PanelLeft, PanelRight, X } from "lucide-react";
+import { VoiceToggleButton, VoiceAgentPanel } from "@/components/editor/voice";
 
 type Props = {
   project: FullProject;
@@ -38,6 +39,9 @@ export default function EditorClient({ project, userPlan }: Props) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showDraftRecovery, setShowDraftRecovery] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [isPublished, setIsPublished] = useState(project.isPublished === "true");
+  const [togglingVisibility, setTogglingVisibility] = useState(false);
+  const [showVisibilityConfirm, setShowVisibilityConfirm] = useState(false);
   const [aiUsage, setAiUsage] = useState<{
     copyUsed: number;
     copyLimit: number;
@@ -66,6 +70,8 @@ export default function EditorClient({ project, userPlan }: Props) {
     aiPendingSuggestion,
     approveAISuggestion,
     rejectAISuggestion,
+    voicePanelOpen,
+    setVoicePanelOpen,
   } = useEditorStore();
 
   // Onboarding
@@ -74,11 +80,38 @@ export default function EditorClient({ project, userPlan }: Props) {
   const firstSectionId = page?.sections?.[0]?.id || null;
   const { startTour, autoStartTour } = useEditorTour({ selectSection, firstSectionId });
 
+  // Mobile gate banner
+  const [showMobileBanner, setShowMobileBanner] = useState(false);
+
+  // Mobile panel toggles
+  const [showMobileSections, setShowMobileSections] = useState(false);
+  const [showMobileProperties, setShowMobileProperties] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      const dismissed = sessionStorage.getItem("launchpad-mobile-banner-dismissed");
+      if (!dismissed) {
+        setShowMobileBanner(true);
+      }
+    }
+  }, []);
+
+  const dismissMobileBanner = () => {
+    setShowMobileBanner(false);
+    sessionStorage.setItem("launchpad-mobile-banner-dismissed", "true");
+  };
+
   // Full-screen mode
   const { isFullScreen, toggleFullScreen, isSupported: isFullScreenSupported } = useFullScreen();
 
   // Enable keyboard shortcut: Cmd/Ctrl + Shift + F
   useFullScreenKeyboardShortcut(toggleFullScreen);
+
+  // Push user plan into the editor store for feature gating
+  const setUserPlan = useEditorStore((s) => s.setUserPlan);
+  useEffect(() => {
+    setUserPlan(userPlan);
+  }, [userPlan, setUserPlan]);
 
   // Initialize the page data from the project (only once), then auto-start tour
   useEffect(() => {
@@ -251,11 +284,17 @@ export default function EditorClient({ project, userPlan }: Props) {
           openAICommandInput();
         }
       }
+
+      // Cmd/Ctrl + Shift + V: Toggle voice agent
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "v") {
+        e.preventDefault();
+        setVoicePanelOpen(!voicePanelOpen);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isDirty, saving, performAutoSave, undo, redo, canUndo, canRedo, selectSection, aiCommandInputOpen, openAICommandInput, closeAICommandInput]);
+  }, [isDirty, saving, performAutoSave, undo, redo, canUndo, canRedo, selectSection, aiCommandInputOpen, openAICommandInput, closeAICommandInput, voicePanelOpen, setVoicePanelOpen]);
 
   // Check for draft recovery on mount
   useEffect(() => {
@@ -382,8 +421,27 @@ export default function EditorClient({ project, userPlan }: Props) {
     }
   };
 
+  const handleToggleVisibility = async () => {
+    setTogglingVisibility(true);
+    try {
+      const res = await fetch(`/api/deploy/${project.id}`, { method: "PATCH" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to toggle visibility");
+      }
+      const data = await res.json();
+      setIsPublished(data.isPublished);
+      setShowVisibilityConfirm(false);
+    } catch (error) {
+      console.error("Failed to toggle visibility:", error);
+      setSaveError(error instanceof Error ? error.message : "Failed to toggle visibility");
+    } finally {
+      setTogglingVisibility(false);
+    }
+  };
+
   return (
-    <div className="h-screen bg-[#0a0a0b] text-white font-['DM_Sans',sans-serif] flex flex-col overflow-hidden">
+    <div className="h-screen bg-[#0a0a0b] text-white font-['DM_Sans',sans-serif] flex flex-col overflow-hidden overflow-x-hidden">
       {/* Editor Header */}
       <header className="h-14 border-b border-white/5 flex items-center justify-between px-4 flex-shrink-0">
         <div className="flex items-center gap-4">
@@ -424,18 +482,45 @@ export default function EditorClient({ project, userPlan }: Props) {
 
         <div className="flex items-center gap-3" data-tour="header-actions">
           {liveUrl && (
-            <a
-              href={liveUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-sm hover:bg-emerald-500/20 transition-colors"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Live
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-              </svg>
-            </a>
+            <>
+              <a
+                href={liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                  isPublished
+                    ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                    : "bg-white/5 text-white/40 hover:bg-white/10"
+                }`}
+              >
+                {isPublished && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+                {isPublished ? "Live" : "Offline"}
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                </svg>
+              </a>
+              <button
+                onClick={() => setShowVisibilityConfirm(true)}
+                disabled={togglingVisibility}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
+                  isPublished
+                    ? "bg-white/5 border border-white/10 text-white/70 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20"
+                    : "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
+                }`}
+                title={isPublished ? "Take site offline" : "Put site back online"}
+              >
+                {togglingVisibility ? (
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                ) : isPublished ? (
+                  "Take Offline"
+                ) : (
+                  "Go Live"
+                )}
+              </button>
+            </>
           )}
           {/* AI Usage Indicator */}
           {aiUsage && (
@@ -447,6 +532,12 @@ export default function EditorClient({ project, userPlan }: Props) {
               onUpgrade={() => setShowUpgradeModal(true)}
             />
           )}
+          {/* Voice Agent Toggle */}
+          <VoiceToggleButton
+            isEnabled={voicePanelOpen}
+            connectionState={voicePanelOpen ? "listening" : "disconnected"}
+            onToggle={() => setVoicePanelOpen(!voicePanelOpen)}
+          />
           {/* Help button */}
           <div className="relative">
             <button
@@ -521,6 +612,19 @@ export default function EditorClient({ project, userPlan }: Props) {
           >
             {saving ? "Saving..." : "Save"}
           </button>
+          {/* Submissions Button - Pro only */}
+          {(userPlan === "pro" || userPlan === "enterprise") && (
+            <button
+              onClick={() => router.push(`/editor/${project.id}/submissions`)}
+              className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-2"
+              title="Form Submissions"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+              </svg>
+              Submissions
+            </button>
+          )}
           {/* Domain Button - Pro only */}
           {(userPlan === "pro" || userPlan === "enterprise") && (
             <button
@@ -634,18 +738,90 @@ export default function EditorClient({ project, userPlan }: Props) {
         </div>
       )}
 
+      {/* Mobile recommendation banner */}
+      {showMobileBanner && (
+        <div className="mx-4 mt-2 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm flex items-center justify-between gap-3 flex-shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+            </svg>
+            <span>For the best editing experience, we recommend using a desktop browser.</span>
+          </div>
+          <button
+            onClick={dismissMobileBanner}
+            className="text-amber-400 hover:text-amber-300 flex-shrink-0 p-1"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Editor Body */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Section List */}
-        <SectionList />
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Left Sidebar - Section List (hidden below lg, visible on lg+) */}
+        <div className="hidden lg:flex">
+          <SectionList />
+        </div>
+
+        {/* Mobile Section List overlay */}
+        {showMobileSections && (
+          <div className="lg:hidden fixed inset-0 z-40">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileSections(false)} />
+            <div className="absolute left-0 top-14 bottom-0 z-50 w-64 shadow-2xl">
+              <button
+                onClick={() => setShowMobileSections(false)}
+                className="absolute top-2 right-2 z-50 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <X className="w-4 h-4 text-white/70" />
+              </button>
+              <SectionList />
+            </div>
+          </div>
+        )}
+
+        {/* Mobile toggle buttons (visible below lg only) */}
+        <button
+          onClick={() => { setShowMobileSections(true); setShowMobileProperties(false); }}
+          className="lg:hidden fixed left-3 top-[4.5rem] z-30 p-2 rounded-lg bg-zinc-900/90 border border-white/10 shadow-lg hover:bg-zinc-800 transition-colors"
+          title="Show sections"
+        >
+          <PanelLeft className="w-4 h-4 text-white/60" />
+        </button>
+        <button
+          onClick={() => { setShowMobileProperties(true); setShowMobileSections(false); }}
+          className="lg:hidden fixed right-3 top-[4.5rem] z-30 p-2 rounded-lg bg-zinc-900/90 border border-white/10 shadow-lg hover:bg-zinc-800 transition-colors"
+          title="Show properties"
+        >
+          <PanelRight className="w-4 h-4 text-white/60" />
+        </button>
 
         {/* Center - Canvas */}
         <EditorErrorBoundary>
-          <Canvas />
+          <Canvas projectId={project.id} />
         </EditorErrorBoundary>
 
-        {/* Right Sidebar - Property Panel */}
-        <PropertyPanel />
+        {/* Right Sidebar - Property Panel (hidden below lg, visible on lg+) */}
+        <div className="hidden lg:flex">
+          <PropertyPanel />
+        </div>
+
+        {/* Mobile Property Panel overlay */}
+        {showMobileProperties && (
+          <div className="lg:hidden fixed inset-0 z-40">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileProperties(false)} />
+            <div className="absolute right-0 top-14 bottom-0 z-50 w-80 max-w-[calc(100vw-2rem)] shadow-2xl">
+              <button
+                onClick={() => setShowMobileProperties(false)}
+                className="absolute top-2 left-2 z-50 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                <X className="w-4 h-4 text-white/70" />
+              </button>
+              <PropertyPanel />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Deploy Modal */}
@@ -668,6 +844,11 @@ export default function EditorClient({ project, userPlan }: Props) {
           projectId={project.id}
           onClose={() => setShowDomainModal(false)}
         />
+      )}
+
+      {/* Voice Agent Panel */}
+      {voicePanelOpen && (
+        <VoiceAgentPanel onClose={() => setVoicePanelOpen(false)} />
       )}
 
       {/* AI Command Input (Cmd+K) */}
@@ -765,6 +946,55 @@ export default function EditorClient({ project, userPlan }: Props) {
                 className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black text-sm font-bold hover:from-amber-400 hover:to-orange-400 transition-all"
               >
                 Upgrade to Pro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Visibility Toggle Confirmation */}
+      {showVisibilityConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-[#1a1a1b] rounded-2xl border border-white/10 p-6 max-w-sm mx-4 shadow-2xl">
+            <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center" style={{
+              backgroundColor: isPublished ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)",
+            }}>
+              {isPublished ? (
+                <svg className="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              )}
+            </div>
+            <h3 className="font-['Sora',sans-serif] font-semibold text-lg text-center mb-2">
+              {isPublished ? "Take Site Offline?" : "Put Site Back Online?"}
+            </h3>
+            <p className="text-white/40 text-center text-sm mb-6">
+              {isPublished
+                ? "Your site will no longer be accessible to visitors. You can bring it back online at any time."
+                : "Your site will be live and accessible to visitors again."}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowVisibilityConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl bg-white/5 text-white/70 text-sm font-medium hover:bg-white/10 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleToggleVisibility}
+                disabled={togglingVisibility}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 ${
+                  isPublished
+                    ? "bg-red-500 text-white hover:bg-red-600"
+                    : "bg-emerald-500 text-white hover:bg-emerald-600"
+                }`}
+              >
+                {togglingVisibility ? "Updating..." : isPublished ? "Take Offline" : "Go Live"}
               </button>
             </div>
           </div>

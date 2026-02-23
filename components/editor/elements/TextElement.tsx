@@ -27,7 +27,7 @@ const TEXT_TYPE_DEFAULTS: Record<string, { fontSize: number; fontWeight: FontWei
 };
 
 export default function TextElement({ element, sectionId, isSelected, scaleFactor = 1, onClick }: Props) {
-  const { content, styles } = element;
+  const { content, position, styles } = element;
 
   const textType = content.textType || "paragraph";
   const defaults = TEXT_TYPE_DEFAULTS[textType] || TEXT_TYPE_DEFAULTS.paragraph;
@@ -43,11 +43,17 @@ export default function TextElement({ element, sectionId, isSelected, scaleFacto
   const textAlign = content.textAlign ?? "left";
   const lineHeight = content.textLineHeight ?? 1.5;
 
-  // Enhanced styling - scale maxWidth proportionally
+  // Enhanced styling - scale width/maxWidth proportionally
   const letterSpacing = content.textLetterSpacing || 'normal';
   const textTransform = content.textTransform || 'none';
-  const rawMaxWidth = content.textMaxWidth;
-  const maxWidth = rawMaxWidth ? rawMaxWidth * scaleFactor : 600 * scaleFactor;
+
+  // Width priority: position.width (from resize) > content.textMaxWidth > 600px default
+  const hasResizeWidth = position.width != null;
+  const effectiveWidth = hasResizeWidth
+    ? position.width! * scaleFactor
+    : content.textMaxWidth
+      ? content.textMaxWidth * scaleFactor
+      : 600 * scaleFactor;
 
   const textStyles: React.CSSProperties = {
     fontSize: `${fontSize}px`,
@@ -57,7 +63,14 @@ export default function TextElement({ element, sectionId, isSelected, scaleFacto
     lineHeight: lineHeight,
     letterSpacing: letterSpacing,
     textTransform: textTransform as React.CSSProperties['textTransform'],
-    maxWidth: `${maxWidth}px`,
+    // Use firm width when set via resize handle, maxWidth otherwise
+    ...(hasResizeWidth
+      ? { width: `${effectiveWidth}px` }
+      : { maxWidth: `${effectiveWidth}px` }),
+    // Apply height constraint if set via resize handle
+    ...(position.height != null
+      ? { maxHeight: `${position.height * scaleFactor}px`, overflow: 'hidden' as const }
+      : {}),
   };
   if (content.textFontFamily) textStyles.fontFamily = `'${content.textFontFamily}', sans-serif`;
 

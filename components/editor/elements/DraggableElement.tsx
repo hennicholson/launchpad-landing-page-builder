@@ -10,7 +10,7 @@ import { Move, Trash2, Copy, GripVertical, EyeOff, Link, Smartphone } from "luci
 import { hasBreakpointOverrides, getOverriddenBreakpoints } from "@/lib/breakpoint-utils";
 
 // Elements that support visual resizing
-const RESIZABLE_TYPES = ['image', 'video', 'button', 'icon', 'badge', 'countdown', 'form', 'html'];
+const RESIZABLE_TYPES = ['image', 'video', 'button', 'icon', 'badge', 'countdown', 'form', 'html', 'text', 'divider'];
 
 type Props = {
   element: PageElement;
@@ -20,8 +20,8 @@ type Props = {
   scaleFactor?: number; // Scale factor for responsive preview (1 = no scaling)
 };
 
-const GRID_SIZE = 8; // 8px grid for snap-to-grid
-const SNAP_THRESHOLD = 2; // Percentage threshold for snapping to guides
+const GRID_SNAP_PERCENT = 2.5; // 2.5% grid — gives a 40x40 grid at any viewport width
+const SNAP_THRESHOLD = 3; // Percentage threshold for snapping to guides
 
 export default function DraggableElement({ element, originalElement, sectionId, containerRef, scaleFactor = 1 }: Props) {
   const {
@@ -87,11 +87,24 @@ export default function DraggableElement({ element, originalElement, sectionId, 
         // Add element center positions as guides
         horizontalGuides.push(el.position.x);
         verticalGuides.push(el.position.y);
+        // Add edge guides if dimensions are known
+        if (el.position.width) {
+          const containerWidth = containerRef.current?.getBoundingClientRect().width || 1280;
+          const halfWidthPercent = (el.position.width / 2 / containerWidth) * 100;
+          horizontalGuides.push(el.position.x - halfWidthPercent);
+          horizontalGuides.push(el.position.x + halfWidthPercent);
+        }
+        if (el.position.height) {
+          const containerHeight = containerRef.current?.getBoundingClientRect().height || 800;
+          const halfHeightPercent = (el.position.height / 2 / containerHeight) * 100;
+          verticalGuides.push(el.position.y - halfHeightPercent);
+          verticalGuides.push(el.position.y + halfHeightPercent);
+        }
       }
     });
 
     return { horizontal: horizontalGuides, vertical: verticalGuides };
-  }, [page.sections, sectionId, element.id]);
+  }, [page.sections, sectionId, element.id, containerRef]);
 
   // Check if position is near a guide and return snapped position + active guides
   const checkGuideSnapping = useCallback(
@@ -146,10 +159,8 @@ export default function DraggableElement({ element, originalElement, sectionId, 
 
       // Snap to grid if enabled
       if (element.snapToGrid) {
-        const gridPercentX = (GRID_SIZE / rect.width) * 100;
-        const gridPercentY = (GRID_SIZE / rect.height) * 100;
-        x = Math.round(x / gridPercentX) * gridPercentX;
-        y = Math.round(y / gridPercentY) * gridPercentY;
+        x = Math.round(x / GRID_SNAP_PERCENT) * GRID_SNAP_PERCENT;
+        y = Math.round(y / GRID_SNAP_PERCENT) * GRID_SNAP_PERCENT;
       }
 
       return {
@@ -170,7 +181,12 @@ export default function DraggableElement({ element, originalElement, sectionId, 
       const isMultiSelect = e.shiftKey;
       selectElement(sectionId, element.id, isMultiSelect);
 
-      if ((e.target as HTMLElement).closest(".drag-handle")) {
+      const target = e.target as HTMLElement;
+      const isResizeHandle = target.closest('.resize-handle');
+      const isButtonNotDragHandle = target.closest('button:not(.drag-handle)');
+
+      // Start drag if clicking the drag handle OR if element is already selected and not on a resize handle/button
+      if (target.closest(".drag-handle") || (isSelected && !isResizeHandle && !isButtonNotDragHandle)) {
         useEditorStore.getState().pushHistory();
         setIsDragging(true);
         const pixelPos = getPixelPosition();
@@ -182,7 +198,7 @@ export default function DraggableElement({ element, originalElement, sectionId, 
         setLastPosition({ x: element.position.x, y: element.position.y });
       }
     },
-    [isPreviewMode, isResponsiveEditing, selectElement, sectionId, element.id, getPixelPosition, containerRef, element.position]
+    [isPreviewMode, isResponsiveEditing, selectElement, sectionId, element.id, getPixelPosition, containerRef, element.position, isSelected]
   );
 
   const handleMouseMove = useCallback(
@@ -243,20 +259,20 @@ export default function DraggableElement({ element, originalElement, sectionId, 
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     removeElement(sectionId, element.id);
-  };
+  }, [removeElement, sectionId, element.id]);
 
-  const handleDuplicate = (e: React.MouseEvent) => {
+  const handleDuplicate = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     duplicateElement(sectionId, element.id);
-  };
+  }, [duplicateElement, sectionId, element.id]);
 
-  const toggleSnapToGrid = (e: React.MouseEvent) => {
+  const toggleSnapToGrid = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     updateElement(sectionId, element.id, { snapToGrid: !element.snapToGrid });
-  };
+  }, [updateElement, sectionId, element.id, element.snapToGrid]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     if (isPreviewMode && !isResponsiveEditing) return;

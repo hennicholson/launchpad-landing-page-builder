@@ -63,6 +63,7 @@ const VARIANT_COLORS: Record<ButtonVariant, { bg: string; text: string; border?:
   ripple: { bg: "#D6FC51", text: "#000000", border: "#D6FC5180" },
   cartoon: { bg: "#fb923c", text: "#262626", border: "#262626" },
   win98: { bg: "#c0c0c0", text: "#000000" },
+  "email-capture": { bg: "#D6FC51", text: "#000000" },
 };
 
 type Props = {
@@ -299,6 +300,7 @@ function ButtonElement({ element, scaleFactor = 1 }: { element: PageElement; sca
     ripple: "bg-[#D6FC51] text-black border-2 border-[#D6FC51]/50",
     cartoon: "bg-orange-400 text-neutral-800 border-2 border-neutral-800 shadow-[0_4px_0_#262626]",
     win98: "bg-[silver] text-black shadow-[inset_-1px_-1px_#0a0a0a,inset_1px_1px_#fff,inset_-2px_-2px_grey,inset_2px_2px_#dfdfdf]",
+    "email-capture": "bg-[#D6FC51] text-black hover:bg-[#c5eb40]",
   };
 
   // Font weight mapping
@@ -922,7 +924,7 @@ function FormElement({ element, scaleFactor = 1 }: { element: PageElement; scale
   const gap = 8 * scaleFactor;
 
   return (
-    <form className="flex" style={{ gap }} onSubmit={(e) => e.preventDefault()}>
+    <form className="flex" data-lp-form style={{ gap }} onSubmit={(e) => e.preventDefault()}>
       <input
         type="email"
         placeholder={content.formPlaceholder || "Enter your email"}

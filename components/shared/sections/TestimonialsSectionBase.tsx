@@ -281,6 +281,7 @@ export default function TestimonialsSectionBase({
   typography,
   contentWidth,
   renderText,
+  previewMode,
 }: BaseSectionProps) {
   const { content, items } = section;
 
@@ -301,14 +302,18 @@ export default function TestimonialsSectionBase({
   const variant: TestimonialVariant = content.testimonialVariant || "scrolling";
 
   const DEFAULT_PADDING = { top: 80, bottom: 128 };
+  const PREVIEW_PADDING = { top: 48, bottom: 64 };
+  const padding = previewMode ? PREVIEW_PADDING : DEFAULT_PADDING;
 
   return (
     <section
       className="relative overflow-hidden"
       style={{
         backgroundColor: bgColor,
-        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
-        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+        paddingTop: content.paddingTop ?? padding.top,
+        paddingBottom: content.paddingBottom ?? padding.bottom,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
         '--section-heading-font': `'${headingFont}', sans-serif`,
         '--section-body-font': `'${bodyFont}', sans-serif`,
         fontFamily: `'${bodyFont}', sans-serif`,
@@ -320,10 +325,10 @@ export default function TestimonialsSectionBase({
         <motion.div
           className="text-center mb-16"
           style={{ textAlign: textAlign || undefined }}
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
+          initial={previewMode ? false : { opacity: 0, y: 30 }}
+          whileInView={previewMode ? undefined : { opacity: 1, y: 0 }}
+          viewport={previewMode ? undefined : { once: true }}
+          transition={previewMode ? undefined : { duration: 0.6 }}
         >
           {content.showBadge !== false && content.badge && (
             <span

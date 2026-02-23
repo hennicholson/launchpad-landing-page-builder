@@ -505,6 +505,7 @@ export default function CTASectionBase({
   typography,
   contentWidth,
   renderText,
+  previewMode,
 }: BaseSectionProps) {
   const { content } = section;
 
@@ -542,14 +543,18 @@ export default function CTASectionBase({
   };
 
   const DEFAULT_PADDING = { top: 96, bottom: 160 };
+  const PREVIEW_PADDING = { top: 48, bottom: 64 };
+  const padding = previewMode ? PREVIEW_PADDING : DEFAULT_PADDING;
 
   return (
     <section
       className="relative overflow-hidden"
       style={{
         backgroundColor: bgColor,
-        paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
-        paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+        paddingTop: content.paddingTop ?? padding.top,
+        paddingBottom: content.paddingBottom ?? padding.bottom,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
         '--section-heading-font': `'${headingFont}', sans-serif`,
         '--section-body-font': `'${bodyFont}', sans-serif`,
         fontFamily: `'${bodyFont}', sans-serif`,

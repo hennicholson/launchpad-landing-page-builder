@@ -459,6 +459,7 @@ function PositionSection({
   const { moveElementAtBreakpoint } = useEditorStore();
 
   const handlePositionChange = (axis: 'x' | 'y', value: number) => {
+    useEditorStore.getState().pushHistory();
     const clamped = Math.max(0, Math.min(100, value));
     moveElementAtBreakpoint(sectionId, element.id, {
       x: axis === 'x' ? clamped : element.position.x,
@@ -791,10 +792,61 @@ const BUTTON_VARIANT_COLORS: Record<string, { bg: string; text: string; border?:
   ripple: { bg: "#D6FC51", text: "#000000", border: "#D6FC5180" },
   cartoon: { bg: "#fb923c", text: "#262626", border: "#262626" },
   win98: { bg: "#c0c0c0", text: "#000000" },
+  "email-capture": { bg: "#D6FC51", text: "#000000" },
 };
 
 // Fancy button variants that have fixed designs (borderRadius/padding shouldn't be customized)
 const FANCY_BUTTON_VARIANTS = ['glass', 'animated-generate', 'liquid', 'flow', 'ripple', 'cartoon', 'win98'];
+
+function EmailCaptureSettings({ content, onUpdate }: { content: ElementContent; onUpdate: (u: Partial<ElementContent>) => void }) {
+  const { userPlan } = useEditorStore();
+  const isPro = userPlan === "pro" || userPlan === "enterprise";
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <h4 className="text-xs font-medium text-white/70">Email Capture</h4>
+        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-medium">PRO</span>
+      </div>
+      {!isPro ? (
+        <p className="text-xs text-white/40">Upgrade to Pro to collect email submissions from your landing pages.</p>
+      ) : (
+        <>
+          <div>
+            <label className="block text-xs font-medium text-white/50 mb-1.5">Placeholder Text</label>
+            <input
+              type="text"
+              value={content.emailCapturePlaceholder || ''}
+              onChange={(e) => onUpdate({ emailCapturePlaceholder: e.target.value })}
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#D6FC51]/50"
+              placeholder="Enter your email..."
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-white/50 mb-1.5">Button Text</label>
+            <input
+              type="text"
+              value={content.emailCaptureButtonText || ''}
+              onChange={(e) => onUpdate({ emailCaptureButtonText: e.target.value })}
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#D6FC51]/50"
+              placeholder="Subscribe"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-white/50 mb-1.5">Success Message</label>
+            <input
+              type="text"
+              value={content.emailCaptureSuccessText || ''}
+              onChange={(e) => onUpdate({ emailCaptureSuccessText: e.target.value })}
+              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#D6FC51]/50"
+              placeholder="Thanks for subscribing!"
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 function ButtonSettings({ element, onUpdate }: { element: PageElement; onUpdate: (u: Partial<ElementContent>) => void }) {
   const content = element.content;
@@ -841,6 +893,11 @@ function ButtonSettings({ element, onUpdate }: { element: PageElement; onUpdate:
           />
           <p className="text-xs text-white/30 mt-1">Text shown when button is active/loading</p>
         </div>
+      )}
+
+      {/* Email Capture Settings - for email-capture variant */}
+      {content.buttonVariant === 'email-capture' && (
+        <EmailCaptureSettings content={content} onUpdate={onUpdate} />
       )}
 
       <SectionDivider title="Size & Spacing" />

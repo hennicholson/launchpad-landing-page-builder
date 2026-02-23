@@ -25,21 +25,38 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     where: eq(projects.slug, slug),
   });
 
-  if (!project || project.isPublished !== "true") {
+  if (!project) {
     return { title: "Site Not Found" };
+  }
+
+  if (project.isPublished !== "true") {
+    return { title: "Site Offline", robots: "noindex, nofollow" };
   }
 
   const pageData = project.pageData as LandingPage;
   const settings = project.settings as ProjectSettings | undefined;
+  const seo = pageData.seo;
+
+  const title = seo?.metaTitle || pageData.title || project.name;
+  const description = seo?.metaDescription || pageData.description || `${project.name} - Built with Launchpad`;
 
   return {
-    title: pageData.title || project.name,
-    description: pageData.description || `${project.name} - Built with Launchpad`,
-    openGraph: settings?.ogImage
-      ? {
-          images: [{ url: settings.ogImage }],
-        }
-      : undefined,
+    title,
+    description,
+    robots: seo?.robots || 'index, follow',
+    openGraph: {
+      title: seo?.ogTitle || title,
+      description: seo?.ogDescription || description,
+      ...(seo?.ogImage || settings?.ogImage
+        ? { images: [{ url: seo?.ogImage || settings?.ogImage! }] }
+        : {}),
+    },
+    twitter: {
+      card: seo?.twitterCard || 'summary_large_image',
+      title: seo?.ogTitle || title,
+      description: seo?.ogDescription || description,
+    },
+    ...(seo?.canonicalUrl ? { alternates: { canonical: seo.canonicalUrl } } : {}),
     icons: settings?.favicon ? { icon: settings.favicon } : undefined,
   };
 }
@@ -57,26 +74,40 @@ export default async function PublishedSitePage({ params }: Props) {
     where: eq(projects.slug, slug),
   });
 
-  // Must exist and be published
+  // Must exist
   if (!project) {
     notFound();
   }
 
-  if (project.isPublished !== "true") {
-    notFound();
-  }
-
+  const siteIsPublished = project.isPublished === "true";
   const pageData = project.pageData as LandingPage;
   const settings = project.settings as ProjectSettings | undefined;
 
   return (
     <>
-      {/* Custom head content from settings */}
-      {settings?.customHead && (
+      {/* JSON-LD structured data - only for published sites */}
+      {siteIsPublished && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(
+              pageData.seo?.jsonLd || {
+                "@context": "https://schema.org",
+                "@type": "WebPage",
+                name: pageData.seo?.metaTitle || pageData.title || project.name,
+                description: pageData.seo?.metaDescription || pageData.description,
+              }
+            ),
+          }}
+        />
+      )}
+
+      {/* Custom head content from settings - only for published sites */}
+      {siteIsPublished && settings?.customHead && (
         <div dangerouslySetInnerHTML={{ __html: settings.customHead }} />
       )}
 
-      <PublishedPageClient pageData={pageData} settings={settings} />
+      <PublishedPageClient pageData={pageData} settings={settings} isPublished={siteIsPublished} />
     </>
   );
 }

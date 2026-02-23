@@ -110,11 +110,13 @@ export function TextAreaInput({
   value,
   onChange,
   rows = 2,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   rows?: number;
+  placeholder?: string;
 }) {
   return (
     <div className="space-y-2">
@@ -125,6 +127,7 @@ export function TextAreaInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
+        placeholder={placeholder}
         className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50 resize-none"
       />
     </div>

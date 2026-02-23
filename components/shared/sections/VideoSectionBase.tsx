@@ -631,6 +631,7 @@ export default function VideoSectionBase({
   typography,
   renderText,
   renderImage,
+  previewMode,
 }: BaseSectionProps) {
   const { content, items } = section;
 
@@ -645,9 +646,12 @@ export default function VideoSectionBase({
   // Get the variant
   const variant: VideoVariant = content.videoVariant || "centered";
 
-  // Responsive padding (fullscreen has no padding)
-  const paddingTop = content.paddingTop ?? (variant === "fullscreen" ? 0 : 80);
-  const paddingBottom = content.paddingBottom ?? (variant === "fullscreen" ? 0 : 128);
+  // Responsive padding (fullscreen has no padding, preview uses tighter padding)
+  const defaultPad = previewMode ? { top: 48, bottom: 64 } : { top: 80, bottom: 128 };
+  const paddingTop = content.paddingTop ?? (variant === "fullscreen" ? 0 : defaultPad.top);
+  const paddingBottom = content.paddingBottom ?? (variant === "fullscreen" ? 0 : defaultPad.bottom);
+  const paddingLeft = content.paddingLeft;
+  const paddingRight = content.paddingRight;
 
   return (
     <section
@@ -656,6 +660,8 @@ export default function VideoSectionBase({
         backgroundColor: bgColor,
         paddingTop: variant === "fullscreen" ? 0 : paddingTop,
         paddingBottom: variant === "fullscreen" ? 0 : paddingBottom,
+        paddingLeft,
+        paddingRight,
         '--section-heading-font': `'${headingFont}', sans-serif`,
         '--section-body-font': `'${bodyFont}', sans-serif`,
         fontFamily: `'${bodyFont}', sans-serif`,

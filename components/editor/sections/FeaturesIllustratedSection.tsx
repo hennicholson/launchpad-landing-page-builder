@@ -1,10 +1,11 @@
+import React from "react";
 import type { PageSection } from "@/lib/page-schema";
 import { useEditorStoreOrPublished } from "@/lib/store";
 import { getSectionTypography } from "@/lib/section-overrides";
 import FeaturesIllustratedBase from "@/components/shared/sections/FeaturesIllustratedBase";
 import EditableText from "../EditableText";
 
-export default function FeaturesIllustratedSection({
+export default React.memo(function FeaturesIllustratedSection({
   section,
 }: {
   section: PageSection;
@@ -29,4 +30,4 @@ export default function FeaturesIllustratedSection({
       )}
     />
   );
-}
+});

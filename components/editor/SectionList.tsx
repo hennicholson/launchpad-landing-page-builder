@@ -6,6 +6,7 @@ import { useEditorStore } from "@/lib/store";
 import type { SectionType, PageSection, CTAVariant, HeaderVariant, TestimonialVariant, FeaturesVariant } from "@/lib/page-schema";
 import ElementsPanel from "./ElementsPanel";
 import { DropIndicator } from "./DropIndicator";
+import ComponentGallery from "./ComponentGallery";
 
 // CTA Layout variants with visual representations
 const CTA_LAYOUTS: { variant: CTAVariant; label: string; icon: React.ReactNode }[] = [
@@ -715,6 +716,7 @@ export default function SectionList() {
   const [showHeroLayoutPicker, setShowHeroLayoutPicker] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('sections');
   const [sectionCategory, setSectionCategory] = useState<SectionCategory>('basics');
+  const [showGallery, setShowGallery] = useState(false);
   const {
     page,
     selectedSectionId,
@@ -1290,6 +1292,19 @@ export default function SectionList() {
         )}
       </div>
 
+          {/* Browse Components */}
+          <div className="p-3 border-t border-white/5">
+            <button
+              onClick={() => setShowGallery(true)}
+              className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-[#D6FC51]/10 hover:bg-[#D6FC51]/15 ring-1 ring-[#D6FC51]/20 hover:ring-[#D6FC51]/30 text-[#D6FC51] transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+              </svg>
+              <span className="text-sm font-medium">Browse Components</span>
+            </button>
+          </div>
+
           {/* Page Settings */}
           <div className="p-3 border-t border-white/5">
             <button
@@ -1318,6 +1333,8 @@ export default function SectionList() {
           </div>
         </>
       )}
+
+      <ComponentGallery open={showGallery} onOpenChange={setShowGallery} />
     </div>
   );
 }

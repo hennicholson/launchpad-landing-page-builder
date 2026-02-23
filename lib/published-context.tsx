@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState, useEffect } from "react";
+import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from "react";
 import type { LandingPage, PageSection, PageElement, ElementGroup, Breakpoint } from "./page-schema";
 import { DEFAULT_DESIGN_WIDTH } from "./page-schema";
 import { getCurrentBreakpoint } from "./breakpoint-utils";
@@ -181,6 +181,49 @@ export function PublishedProvider({
     <PublishedContext.Provider value={value}>
       {children}
     </PublishedContext.Provider>
+  );
+}
+
+/**
+ * DynamicPublishedProvider - For iframe preview pages.
+ * Receives page data updates via postMessage from the parent window
+ * instead of having static data passed as props.
+ */
+export function DynamicPublishedProvider({ children }: { children: ReactNode }) {
+  const [pageData, setPageData] = useState<LandingPage | null>(null);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Only accept messages from parent window
+      if (event.source !== window.parent) return;
+
+      const msg = event.data;
+      if (msg?.type === 'PAGE_DATA_UPDATE' && msg.page) {
+        setPageData(msg.page);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // Signal that we're ready to receive data
+    window.parent.postMessage({ type: 'IFRAME_READY' }, '*');
+
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  if (!pageData) {
+    // Loading state while waiting for first page data
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-pulse text-white/20 text-sm">Loading preview...</div>
+      </div>
+    );
+  }
+
+  return (
+    <PublishedProvider pageData={pageData}>
+      {children}
+    </PublishedProvider>
   );
 }
 

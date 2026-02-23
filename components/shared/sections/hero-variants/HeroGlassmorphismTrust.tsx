@@ -77,6 +77,8 @@ export default function HeroGlassmorphismTrust({
   // Padding
   const paddingTop = content.paddingTop ?? 96;
   const paddingBottom = content.paddingBottom ?? 80;
+  const paddingLeft = content.paddingLeft;
+  const paddingRight = content.paddingRight;
 
   // Content defaults
   const badge = content.badge || "Award-Winning Design";
@@ -116,6 +118,8 @@ export default function HeroGlassmorphismTrust({
         fontFamily: `'${bodyFont}', sans-serif`,
         paddingTop,
         paddingBottom,
+        paddingLeft,
+        paddingRight,
         '--section-heading-font': `'${headingFont}', sans-serif`,
         '--section-body-font': `'${bodyFont}', sans-serif`,
       } as React.CSSProperties}

@@ -17,14 +17,16 @@ export default function AIEditModal() {
 
   const [prompt, setPrompt] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [lastPrompt, setLastPrompt] = useState<string | null>(null);
 
   const currentSection = page.sections.find((s) => s.id === aiEditingSectionId);
 
-  const handleSubmit = async () => {
-    if (!prompt.trim() || !currentSection) return;
+  const handleGenerate = async (text: string) => {
+    if (!text.trim() || !currentSection) return;
 
     setError(null);
     setAIGenerating(true);
+    setLastPrompt(text);
 
     try {
       const response = await fetch("/api/generate", {
@@ -35,7 +37,7 @@ export default function AIEditModal() {
           sectionId: currentSection.id,
           sectionType: currentSection.type,
           currentSection: currentSection,
-          instructions: prompt,
+          instructions: text,
           pageContext: {
             title: page.title,
             colorScheme: page.colorScheme,
@@ -46,15 +48,30 @@ export default function AIEditModal() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate section");
+        const errData = await response.json().catch(() => ({}));
+        let message = errData.error || "Generation failed";
+        if (response.status === 429) message = "Rate limit reached, please wait a moment";
+        else if (response.status === 401) message = "Session expired — please refresh the page";
+        else if (response.status === 500) message = errData.error || "Generation failed, try a simpler prompt";
+        throw new Error(message);
       }
 
       const newSection = (await response.json()) as PageSection;
       applyAISection(currentSection.id, newSection);
       setPrompt("");
+      setLastPrompt(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setAIGenerating(false);
+    }
+  };
+
+  const handleSubmit = () => handleGenerate(prompt);
+
+  const handleRetry = () => {
+    if (lastPrompt) {
+      setPrompt(lastPrompt);
+      handleGenerate(lastPrompt);
     }
   };
 
@@ -160,8 +177,16 @@ export default function AIEditModal() {
             </div>
 
             {error && (
-              <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
-                {error}
+              <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center justify-between gap-3">
+                <span>{error}</span>
+                {lastPrompt && (
+                  <button
+                    onClick={handleRetry}
+                    className="shrink-0 px-3 py-1 text-xs font-medium bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-md text-red-300 transition-colors"
+                  >
+                    Retry
+                  </button>
+                )}
               </div>
             )}
           </div>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import NewProjectModal from "@/components/dashboard/NewProjectModal";
 import { deleteProject, type Project, type DashboardUser } from "@/lib/actions/projects";
@@ -178,18 +179,18 @@ export default function DashboardClient({ initialProjects, initialUser }: Props)
 
         {/* Header */}
         <header className="relative z-20 border-b border-white/5">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 py-5 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-5 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <img
                 src="/launchpad-logo.png"
                 alt="LaunchPad"
-                className="h-10 w-auto"
+                className="h-8 sm:h-10 w-auto flex-shrink-0"
                 style={{ height: '40px', width: 'auto' }}
               />
               <span className="font-['Sora',sans-serif] text-lg font-semibold text-white hidden sm:block">LaunchPad Dashboard</span>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
               <button
                 onClick={() => setShowTutorial(true)}
                 className="flex items-center gap-2 px-3 py-1.5 text-sm text-white/70 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
@@ -200,9 +201,9 @@ export default function DashboardClient({ initialProjects, initialUser }: Props)
                 </svg>
                 <span className="hidden sm:inline">Tutorial</span>
               </button>
-              <button className="text-sm text-white/50 hover:text-white transition-colors">
+              <Link href="/docs" className="text-sm text-white/50 hover:text-white transition-colors">
                 Docs
-              </button>
+              </Link>
 
               {/* User menu */}
               <div className="relative">
@@ -311,11 +312,11 @@ export default function DashboardClient({ initialProjects, initialUser }: Props)
         </header>
 
         {/* Main content */}
-        <main className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-12">
+        <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
           {/* Create New Project Section */}
-          <div className="mb-12">
-            <h2 className="font-['Sora',sans-serif] text-xl font-semibold mb-10 text-white/90">Create New Project</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl">
+          <div className="mb-8 sm:mb-12">
+            <h2 className="font-['Sora',sans-serif] text-xl font-semibold mb-6 sm:mb-10 text-white/90">Create New Project</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-3xl">
               {/* Start from Scratch */}
               <button
                 onClick={() => {
@@ -384,7 +385,7 @@ export default function DashboardClient({ initialProjects, initialUser }: Props)
             {/* Drag-scrollable Container */}
             <div
               ref={scrollContainerRef}
-              className={`flex space-x-6 overflow-x-auto pt-6 pb-6 scrollbar-hide select-none ${
+              className={`flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6 sm:overflow-x-auto pt-6 pb-6 scrollbar-hide select-none ${
                 isDragging ? 'cursor-grabbing' : 'cursor-grab'
               }`}
               onMouseDown={handleDragStart}
@@ -395,7 +396,7 @@ export default function DashboardClient({ initialProjects, initialUser }: Props)
               {projects.map((project) => (
                 <motion.div
                   key={project.id}
-                  className="relative flex-shrink-0 w-[280px] h-[360px] rounded-2xl cursor-pointer group snap-start"
+                  className="relative flex-shrink-0 w-full sm:w-[280px] h-[360px] rounded-2xl cursor-pointer group snap-start"
                   style={{ backfaceVisibility: 'hidden' }}
                   whileHover={{
                     y: -12,
@@ -471,10 +472,22 @@ export default function DashboardClient({ initialProjects, initialUser }: Props)
                     {/* Footer */}
                     <div className="flex items-center justify-between mt-auto pt-3 border-t border-white/5">
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                          <span className="text-[10px] font-bold text-white">S</span>
-                        </div>
-                        <span className="text-xs text-white/50">Skinny</span>
+                        {whop?.profile_pic_url ? (
+                          <img
+                            src={whop.profile_pic_url}
+                            alt={whop.username || whop.name || "User"}
+                            className="w-5 h-5 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                            <span className="text-[10px] font-bold text-white">
+                              {(whop?.username || whop?.name || user?.username || user?.name || "U").charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <span className="text-xs text-white/50">
+                          {whop?.username || whop?.name || user?.username || user?.name || "User"}
+                        </span>
                       </div>
 
                       {/* Arrow button */}

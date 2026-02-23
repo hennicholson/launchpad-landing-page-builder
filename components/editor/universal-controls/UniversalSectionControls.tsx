@@ -58,7 +58,9 @@ export function UniversalSectionControls({
     section.content.sectionContentGap ||
     section.content.sectionMaxWidth ||
     section.content.paddingTop !== undefined ||
-    section.content.paddingBottom !== undefined
+    section.content.paddingBottom !== undefined ||
+    section.content.paddingLeft !== undefined ||
+    section.content.paddingRight !== undefined
   );
   const hasColorOverride = !!(
     section.content.backgroundColor ||

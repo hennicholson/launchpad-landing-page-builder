@@ -253,8 +253,15 @@ export type TrackingConfig = {
   apiUrl?: string;
 };
 
+// Form collection configuration for email capture on deployed pages
+export type FormCollectionConfig = {
+  enabled: boolean;
+  projectId: string;
+  apiUrl?: string;
+};
+
 // Generate app/layout.tsx
-function generateLayout(page: LandingPage, settings?: ProjectSettings, tracking?: TrackingConfig): string {
+function generateLayout(page: LandingPage, settings?: ProjectSettings, tracking?: TrackingConfig, formCollection?: FormCollectionConfig): string {
   const faviconUrl = settings?.favicon || '/favicon.ico';
   const ogImageUrl = settings?.ogImage || '';
 
@@ -271,6 +278,35 @@ function generateLayout(page: LandingPage, settings?: ProjectSettings, tracking?
           data-lp-api="${tracking.apiUrl || 'https://launchpad.whop.com'}"
           defer
         ></script>`
+    : '';
+
+  // Generate form collection script for email capture (Pro tier)
+  const formCollectionScript = formCollection?.enabled && formCollection?.projectId
+    ? `<script defer>
+        (function(){
+          var LP_FORM_API="${formCollection.apiUrl || 'https://launchpad.whop.com'}/api/forms/${formCollection.projectId}/submit";
+          document.addEventListener("submit",function(e){
+            var f=e.target;
+            if(!f||!f.hasAttribute("data-lp-form"))return;
+            e.preventDefault();
+            var emailInput=f.querySelector('input[type="email"],input[name="email"]');
+            if(!emailInput||!emailInput.value)return;
+            var data={
+              email:emailInput.value,
+              sectionId:f.getAttribute("data-lp-section")||"",
+              sectionType:f.getAttribute("data-lp-section-type")||"",
+              sourceUrl:window.location.href,
+              referrer:document.referrer,
+              sessionId:(typeof crypto!=="undefined"&&crypto.randomUUID)?crypto.randomUUID():""+Date.now()
+            };
+            fetch(LP_FORM_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
+              .then(function(){
+                var msg=f.getAttribute("data-lp-success")||"Thanks for subscribing!";
+                f.innerHTML='<p style="padding:12px;text-align:center;opacity:0.8">'+msg+"</p>";
+              }).catch(function(){});
+          });
+        })();
+        </script>`
     : '';
 
   return `import type { Metadata } from 'next';
@@ -301,6 +337,7 @@ export default function RootLayout({
         <link href="${fontsUrl}" rel="stylesheet" />
         ${settings?.customHead || ''}
         ${trackingScript}
+        ${formCollectionScript}
       </head>
       <body>{children}</body>
     </html>
@@ -506,7 +543,7 @@ export type ElementAnimation = {
 };
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'gradient' | 'neon' | '3d' | 'glass' | 'pill' | 'icon' | 'underline' | 'bounce'
-  | 'animated-generate' | 'liquid' | 'flow' | 'ripple' | 'cartoon' | 'win98';
+  | 'animated-generate' | 'liquid' | 'flow' | 'ripple' | 'cartoon' | 'win98' | 'email-capture';
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
 export type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'gradient' | 'outline' | 'glow';
 export type IconVariant = 'circle' | 'square' | 'none' | 'glow' | 'shadow';
@@ -531,6 +568,9 @@ export type ElementContent = {
   buttonFontWeight?: FontWeight;
   buttonShadow?: ShadowSize;
   buttonWidth?: WidthMode;
+  emailCapturePlaceholder?: string;
+  emailCaptureSuccessText?: string;
+  emailCaptureButtonText?: string;
   imageUrl?: string;
   imageAlt?: string;
   imageWidth?: number;
@@ -981,7 +1021,8 @@ export function generateNextJsProject(
   page: LandingPage,
   settings?: ProjectSettings,
   siteUrl?: string,
-  tracking?: TrackingConfig
+  tracking?: TrackingConfig,
+  formCollection?: FormCollectionConfig
 ): Record<string, string> {
   // Get all shared component files
   const sharedFiles = getSharedComponentFiles();
@@ -998,7 +1039,7 @@ export function generateNextJsProject(
     "postcss.config.js": generatePostcssConfig(),
 
     // App structure
-    "app/layout.tsx": generateLayout(page, settings, tracking),
+    "app/layout.tsx": generateLayout(page, settings, tracking, formCollection),
     "app/page.tsx": generatePage(page),
     "app/globals.css": generateGlobalsCss(page.colorScheme, page.typography),
     "app/not-found.tsx": generate404Page(page.colorScheme, page.typography),

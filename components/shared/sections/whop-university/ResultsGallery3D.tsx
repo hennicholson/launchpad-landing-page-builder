@@ -39,7 +39,13 @@ export function ResultsGallery3D({
     <section
       ref={containerRef}
       className="relative py-20 md:py-32 overflow-hidden"
-      style={{ backgroundColor: bgColor }}
+      style={{
+        backgroundColor: bgColor,
+        paddingTop: content.paddingTop,
+        paddingBottom: content.paddingBottom,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
+      }}
     >
       {/* Background gradient */}
       <div

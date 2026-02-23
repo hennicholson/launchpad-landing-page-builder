@@ -738,6 +738,21 @@
   animation: meteor-effect 5s linear infinite;
 }
 
+/* Voice edit sparkle shimmer */
+@keyframes voice-sparkle-shimmer {
+  0% {
+    opacity: 0;
+    background-position: -200% center;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    background-position: 200% center;
+  }
+}
+
 /* Sparkle animation */
 @keyframes sparkle {
   0%, 100% {

@@ -181,6 +181,9 @@ export function useEditorTour(deps: EditorTourDeps) {
     const steps = buildTourSteps(deps);
     let driverObj: ReturnType<typeof driver>;
 
+    // Use smaller offset on narrow viewports to keep popover in view
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+
     driverObj = driver({
       steps,
       animate: false,
@@ -188,10 +191,10 @@ export function useEditorTour(deps: EditorTourDeps) {
       allowClose: true,
       allowKeyboardControl: true,
       overlayColor: "rgba(0, 0, 0, 0.80)",
-      stagePadding: 8,
+      stagePadding: isMobile ? 4 : 8,
       stageRadius: 12,
       popoverClass: "launchpad-tour-popover",
-      popoverOffset: 12,
+      popoverOffset: isMobile ? 8 : 12,
       showProgress: true,
       progressText: " ",
       nextBtnText: "Next",

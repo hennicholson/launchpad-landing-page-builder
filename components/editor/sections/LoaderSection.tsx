@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import type { PageSection } from "@/lib/page-schema";
 import { useEditorStoreOrPublished } from "@/lib/store";
 import { getSectionTypography } from "@/lib/section-overrides";
@@ -10,7 +11,7 @@ type Props = {
   section: PageSection;
 };
 
-export default function LoaderSection({ section }: Props) {
+export default React.memo(function LoaderSection({ section }: Props) {
   const { page } = useEditorStoreOrPublished();
 
   return (
@@ -30,4 +31,4 @@ export default function LoaderSection({ section }: Props) {
       )}
     />
   );
-}
+});

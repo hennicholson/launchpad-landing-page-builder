@@ -4,7 +4,7 @@ import React from "react";
 import type { PageSection, LandingPage } from "@/lib/page-schema";
 import { RangeSlider } from "../shared-controls";
 
-const FONT_CATEGORIES = [
+export const FONT_CATEGORIES = [
   {
     label: "Sans Serif",
     fonts: [

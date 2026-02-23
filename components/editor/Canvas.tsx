@@ -8,6 +8,7 @@ import RichTextEditorModal from "./RichTextEditorModal";
 import PaddingDragHandle from "./PaddingDragHandle";
 import ElementStylePanel from "./ElementStylePanel";
 import ElementsLayer from "./ElementsLayer";
+import PreviewIframe from "./PreviewIframe";
 import type { SectionType, PageSection, ElementType, Breakpoint } from "@/lib/page-schema";
 import { PREVIEW_VIEWPORTS, type PreviewViewport } from "@/lib/responsive-scaling";
 
@@ -134,16 +135,42 @@ function getSuggestedSection(sections: PageSection[]): SectionType {
   return "features";
 }
 
-export default function Canvas() {
-  const { page, selectedSectionId, selectSection, isPreviewMode, setPreviewMode, openAIEdit, updateSectionContent, addSection, addElement, currentEditingBreakpoint, setEditingBreakpoint, isResponsiveEditing, setResponsiveEditing, copyElement, pasteElement, duplicateElement, removeElement, moveElementAtBreakpoint, selectedElementIds, selectElement, toggleGrid, showGrid } = useEditorStore();
+type CanvasProps = {
+  projectId?: string;
+};
+
+export default function Canvas({ projectId }: CanvasProps) {
+  const page = useEditorStore(state => state.page);
+  const selectedSectionId = useEditorStore(state => state.selectedSectionId);
+  const selectSection = useEditorStore(state => state.selectSection);
+  const isPreviewMode = useEditorStore(state => state.isPreviewMode);
+  const setPreviewMode = useEditorStore(state => state.setPreviewMode);
+  const openAIEdit = useEditorStore(state => state.openAIEdit);
+  const updateSectionContent = useEditorStore(state => state.updateSectionContent);
+  const addSection = useEditorStore(state => state.addSection);
+  const addElement = useEditorStore(state => state.addElement);
+  const currentEditingBreakpoint = useEditorStore(state => state.currentEditingBreakpoint);
+  const setEditingBreakpoint = useEditorStore(state => state.setEditingBreakpoint);
+  const isResponsiveEditing = useEditorStore(state => state.isResponsiveEditing);
+  const setResponsiveEditing = useEditorStore(state => state.setResponsiveEditing);
+  const copyElement = useEditorStore(state => state.copyElement);
+  const pasteElement = useEditorStore(state => state.pasteElement);
+  const duplicateElement = useEditorStore(state => state.duplicateElement);
+  const removeElement = useEditorStore(state => state.removeElement);
+  const moveElementAtBreakpoint = useEditorStore(state => state.moveElementAtBreakpoint);
+  const selectedElementIds = useEditorStore(state => state.selectedElementIds);
+  const selectElement = useEditorStore(state => state.selectElement);
+  const toggleGrid = useEditorStore(state => state.toggleGrid);
+  const showGrid = useEditorStore(state => state.showGrid);
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   const [dragOverSectionId, setDragOverSectionId] = useState<string | null>(null);
   const [previewViewport, setPreviewViewport] = useState<PreviewViewport>('desktop');
   const [zoomLevel, setZoomLevel] = useState(100);
-  const ZOOM_LEVELS = [50, 75, 100, 125, 150];
+  const ZOOM_LEVELS = [25, 50, 75, 100, 125, 150];
   const [showShortcutHelp, setShowShortcutHelp] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const previewContainerRef = useRef<HTMLDivElement>(null);
 
   // Derive single selected element ID from the set
   const selectedElementId = selectedElementIds.size > 0 ? Array.from(selectedElementIds)[0] : null;
@@ -285,6 +312,7 @@ export default function Canvas() {
 
       if (dx !== 0 || dy !== 0) {
         e.preventDefault();
+        useEditorStore.getState().pushHistory();
         moveElementAtBreakpoint(selectedSectionId, selectedElementId, {
           x: Math.max(0, Math.min(100, el.position.x + dx)),
           y: Math.max(0, Math.min(100, el.position.y + dy)),
@@ -465,7 +493,7 @@ export default function Canvas() {
         )}
         {!isPreviewMode && isResponsiveEditing && (
           <p className="text-xs text-purple-300">
-            Editing {currentEditingBreakpoint} layout at {PREVIEW_VIEWPORTS[previewViewport].width}px
+            Editing {currentEditingBreakpoint} elements at {PREVIEW_VIEWPORTS[previewViewport].width}px — <button onClick={() => handleModeChange(true)} className="underline hover:text-purple-200">preview responsive layout</button>
           </p>
         )}
         {isPreviewMode && (
@@ -475,11 +503,27 @@ export default function Canvas() {
         )}
       </div>
 
-      <div className="flex-1 p-8 overflow-hidden relative">
-        {/* Preview Container - Scrollable container for template content */}
+      <div className="flex-1 p-8 overflow-clip relative" ref={previewContainerRef}>
+        {/* Preview mode: iframe-based rendering with device frames */}
+        {isPreviewMode ? (
+          <PreviewIframe
+            page={page}
+            viewport={previewViewport}
+            containerRef={previewContainerRef}
+          />
+        ) : (
+        /* Edit mode: Preview Container - Scrollable container for template content */
+        <div
+          className="w-full h-full flex justify-center"
+          style={{
+            // Zoom wrapper — transform here so the scroll container inside is unaffected
+            transform: zoomLevel !== 100 ? `scale(${zoomLevel / 100})` : undefined,
+            transformOrigin: 'top center',
+          }}
+        >
         <div
           className={`mx-auto rounded-2xl shadow-2xl ring-1 ring-white/10 transition-all duration-300 ${
-            !isPreviewMode && !isResponsiveEditing ? "ring-[#D6FC51]/20 max-w-4xl" : ""
+            !isResponsiveEditing ? "ring-[#D6FC51]/20 max-w-4xl w-full" : ""
           } ${
             isResponsiveEditing ? "ring-purple-500/30" : ""
           }`}
@@ -494,11 +538,8 @@ export default function Canvas() {
             height: 'calc(100vh - 180px)',
             // Smooth scroll when enabled
             scrollBehavior: page.smoothScroll ? 'smooth' : 'auto',
-            // Dynamic width in preview mode or responsive editing mode based on viewport selection
-            ...((isPreviewMode || isResponsiveEditing) ? { width: PREVIEW_VIEWPORTS[previewViewport].width, maxWidth: '100%' } : {}),
-            // Zoom transform
-            transform: zoomLevel !== 100 ? `scale(${zoomLevel / 100})` : undefined,
-            transformOrigin: 'top center',
+            // Dynamic width in responsive editing mode based on viewport selection
+            ...(isResponsiveEditing ? { width: PREVIEW_VIEWPORTS[previewViewport].width } : {}),
           }}
         >
           {/* Responsive editing banner */}
@@ -515,21 +556,36 @@ export default function Canvas() {
                   </svg>
                 )}
                 <span className="text-sm font-medium text-white">
-                  Editing {currentEditingBreakpoint} layout
+                  Editing {currentEditingBreakpoint} elements
                 </span>
                 <span className="text-xs text-white/70">
-                  ({PREVIEW_VIEWPORTS[previewViewport].width}px)
+                  ({PREVIEW_VIEWPORTS[previewViewport].width}px) — Section layouts preview in Preview mode
                 </span>
               </div>
-              <button
-                onClick={() => handleViewportChange('desktop')}
-                className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-purple-900 bg-white rounded-md hover:bg-white/90 transition-colors"
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                Back to Desktop
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    handleModeChange(true); // Enter preview mode
+                    // Viewport already set to mobile/tablet, so iframe will render correctly
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-white bg-purple-500/30 border border-purple-400/30 rounded-md hover:bg-purple-500/40 transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  Preview Layout
+                </button>
+                <button
+                  onClick={() => handleViewportChange('desktop')}
+                  className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-purple-900 bg-white rounded-md hover:bg-white/90 transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Back to Desktop
+                </button>
+              </div>
             </div>
           )}
 
@@ -673,7 +729,10 @@ export default function Canvas() {
                     // Apply section background color so padding area uses correct color
                     // Floating headers get transparent background so only the bar shows
                     backgroundColor: isFloatingHeader ? "transparent" : section.content.backgroundColor,
-                    // Padding is handled inside section components, not here
+                    // Elevate selected section so padding drag handles are never obscured by adjacent sections
+                    zIndex: !isPreviewMode && isSelected ? 30 : undefined,
+                    // Ensure padding handles that extend beyond section bounds are visible
+                    overflow: 'visible',
                   }}
                 >
                   {/* Drop indicator overlay */}
@@ -743,6 +802,8 @@ export default function Canvas() {
             })
           )}
         </div>
+        </div>
+        )}
 
         {/* Zoom controls - bottom right overlay */}
         {!isPreviewMode && (
@@ -750,6 +811,8 @@ export default function Canvas() {
             <button onClick={() => setZoomLevel(prev => ZOOM_LEVELS[Math.max(0, ZOOM_LEVELS.indexOf(prev) - 1)] || prev)} className="p-1 rounded hover:bg-white/10 text-white/50 text-xs">-</button>
             <span className="text-xs text-white/60 w-10 text-center">{zoomLevel}%</span>
             <button onClick={() => setZoomLevel(prev => ZOOM_LEVELS[Math.min(ZOOM_LEVELS.length - 1, ZOOM_LEVELS.indexOf(prev) + 1)] || prev)} className="p-1 rounded hover:bg-white/10 text-white/50 text-xs">+</button>
+            <div className="w-px h-4 bg-white/10 mx-0.5" />
+            <button onClick={() => setZoomLevel(100)} className="px-1.5 py-0.5 rounded hover:bg-white/10 text-white/50 text-[10px] font-medium">Fit</button>
           </div>
         )}
 

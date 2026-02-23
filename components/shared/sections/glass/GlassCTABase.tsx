@@ -51,6 +51,8 @@ export function GlassCTABase({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
       }}
     >
       <Card3DContainer className="rounded-3xl overflow-hidden">

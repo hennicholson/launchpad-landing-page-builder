@@ -121,6 +121,16 @@ type EditorState = {
   isResponsiveEditing: boolean;
   setResponsiveEditing: (enabled: boolean) => void;
 
+  // Voice agent state
+  voiceEnabled: boolean;
+  voicePanelOpen: boolean;
+  setVoiceEnabled: (enabled: boolean) => void;
+  setVoicePanelOpen: (open: boolean) => void;
+
+  // User plan (for feature gating)
+  userPlan: string;
+  setUserPlan: (plan: string) => void;
+
   // Actions
   setPage: (page: LandingPage) => void;
   updateSection: (sectionId: string, updates: Partial<PageSection>) => void;
@@ -133,7 +143,7 @@ type EditorState = {
   selectSection: (sectionId: string | null) => void;
   updateColorScheme: (colors: Partial<LandingPage["colorScheme"]>) => void;
   updateTypography: (typography: Partial<LandingPage["typography"]>) => void;
-  updatePageMeta: (meta: Partial<Pick<LandingPage, 'title' | 'description' | 'smoothScroll' | 'animationPreset' | 'contentWidth'>>) => void;
+  updatePageMeta: (meta: Partial<Pick<LandingPage, 'title' | 'description' | 'smoothScroll' | 'animationPreset' | 'contentWidth' | 'seo'>>) => void;
   applyThemePreset: (presetId: string) => void;
 
   // Item management (for features, testimonials, pricing, etc.)
@@ -293,7 +303,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   isFullScreen: false,
   currentEditingBreakpoint: 'desktop' as Breakpoint,
   isResponsiveEditing: false,
+  voiceEnabled: false,
+  voicePanelOpen: false,
+  userPlan: 'free',
 
+  setVoiceEnabled: (enabled) => set({ voiceEnabled: enabled }),
+  setVoicePanelOpen: (open) => set({ voicePanelOpen: open }),
+  setUserPlan: (plan) => set({ userPlan: plan }),
   setResponsiveEditing: (enabled) => set((state) => ({
     isResponsiveEditing: enabled,
     ...(enabled ? {} : { currentEditingBreakpoint: 'desktop' as Breakpoint }),
@@ -1003,6 +1019,17 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         styles: {},
       };
 
+      // When adding in responsive editing mode at a non-desktop breakpoint,
+      // auto-create a breakpoint override so the element appears at the drop position
+      if (state.isResponsiveEditing && state.currentEditingBreakpoint !== 'desktop') {
+        newElement.breakpointOverrides = {
+          [state.currentEditingBreakpoint]: {
+            position: { x: position.x, y: position.y },
+            visible: true,
+          }
+        };
+      }
+
       return {
         page: {
           ...state.page,
@@ -1567,6 +1594,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const cloned: PageElement = JSON.parse(JSON.stringify(state.elementClipboard));
     const newId = generateId();
     cloned.id = newId;
+    cloned.groupId = undefined;
     cloned.position = {
       ...cloned.position,
       x: Math.min(cloned.position.x + 3, 100),

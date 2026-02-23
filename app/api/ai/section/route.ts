@@ -228,8 +228,31 @@ Return ONLY the modified section with the new variant as valid JSON.
     });
   } catch (error) {
     console.error("[API /ai/section] Error:", error);
+    const message = error instanceof Error ? error.message : "";
+
+    if (message.includes("rate limit") || message.includes("429")) {
+      return NextResponse.json(
+        { error: "Rate limit reached, please wait a moment" },
+        { status: 429 }
+      );
+    }
+
+    if (message.includes("auth") || message.includes("401") || message.includes("API key")) {
+      return NextResponse.json(
+        { error: "AI service authentication failed" },
+        { status: 401 }
+      );
+    }
+
+    if (message.includes("timed out") || message.includes("timeout")) {
+      return NextResponse.json(
+        { error: "Generation timed out — try a simpler prompt" },
+        { status: 504 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: message || "Internal server error" },
       { status: 500 }
     );
   }

@@ -75,6 +75,43 @@ import {
   ChevronDown,
   ArrowUp,
   ArrowDown,
+  // Additional icons
+  BookOpen,
+  Palette,
+  Monitor,
+  Wifi,
+  Camera,
+  FileText,
+  Edit2,
+  Trash2,
+  RotateCcw,
+  ChevronUp,
+  ChevronLeft,
+  Activity,
+  Building,
+  Compass,
+  CreditCard,
+  DollarSign,
+  Package,
+  ShoppingCart,
+  Tag,
+  Truck,
+  Bell,
+  Coffee,
+  Crown,
+  Diamond,
+  Flag,
+  Flame,
+  Headphones,
+  Lightbulb,
+  Pen,
+  Scissors,
+  Sun,
+  Moon,
+  Smile,
+  ThumbsUp,
+  Trophy,
+  Umbrella,
   type LucideIcon,
 } from "lucide-react";
 
@@ -156,6 +193,43 @@ export const ICON_REGISTRY: Record<string, LucideIcon> = {
   "chevron-down": ChevronDown,
   "arrow-up": ArrowUp,
   "arrow-down": ArrowDown,
+  // Additional icons
+  "book-open": BookOpen,
+  palette: Palette,
+  monitor: Monitor,
+  wifi: Wifi,
+  camera: Camera,
+  "file-text": FileText,
+  "edit-2": Edit2,
+  "trash-2": Trash2,
+  "rotate-ccw": RotateCcw,
+  "chevron-up": ChevronUp,
+  "chevron-left": ChevronLeft,
+  activity: Activity,
+  building: Building,
+  compass: Compass,
+  "credit-card": CreditCard,
+  "dollar-sign": DollarSign,
+  package: Package,
+  "shopping-cart": ShoppingCart,
+  tag: Tag,
+  truck: Truck,
+  bell: Bell,
+  coffee: Coffee,
+  crown: Crown,
+  diamond: Diamond,
+  flag: Flag,
+  flame: Flame,
+  headphones: Headphones,
+  lightbulb: Lightbulb,
+  pen: Pen,
+  scissors: Scissors,
+  sun: Sun,
+  moon: Moon,
+  smile: Smile,
+  "thumbs-up": ThumbsUp,
+  trophy: Trophy,
+  umbrella: Umbrella,
 };
 
 // Organized by category for the icon picker
@@ -274,4 +348,9 @@ export function getIconComponent(name: string): LucideIcon | null {
 // Check if a string is a valid icon name
 export function isValidIcon(name: string): boolean {
   return name in ICON_REGISTRY;
+}
+
+// Get icon component by name, falling back to Star if not found
+export function getIconOrFallback(name: string): LucideIcon {
+  return ICON_REGISTRY[name] || Star;
 }

@@ -52,6 +52,8 @@ export default function CustomersTableBase({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
         '--section-body-font': `'${typography.bodyFont}', sans-serif`,
         fontFamily: `'${typography.bodyFont}', sans-serif`,
       } as React.CSSProperties}

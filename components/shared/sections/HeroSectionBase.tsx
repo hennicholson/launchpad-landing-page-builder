@@ -7,12 +7,14 @@ import HeroAnimatedPreview from "./hero-variants/HeroAnimatedPreview";
 import HeroEmailSignup from "./hero-variants/HeroEmailSignup";
 import HeroSalesFunnel from "./hero-variants/HeroSalesFunnel";
 import HeroGlassmorphismTrust from "./hero-variants/HeroGlassmorphismTrust";
+import HeroEmailGlass from "./hero-variants/HeroEmailGlass";
+import HeroFormMulti from "./hero-variants/HeroFormMulti";
 
 export default function HeroSectionBase(props: BaseSectionProps) {
-  const { section } = props;
+  const { section, previewMode } = props;
   const variant: HeroVariant = section.content.heroVariant || "default";
 
-  const sharedProps = { ...props };
+  const sharedProps = { ...props, previewMode };
 
   // Route to appropriate variant component
   if (variant === "sales-funnel") {
@@ -29,6 +31,12 @@ export default function HeroSectionBase(props: BaseSectionProps) {
   }
   if (variant === "glassmorphism-trust") {
     return <HeroGlassmorphismTrust {...sharedProps} />;
+  }
+  if (variant === "hero-email-glass") {
+    return <HeroEmailGlass {...sharedProps} />;
+  }
+  if (variant === "hero-form-multi") {
+    return <HeroFormMulti {...sharedProps} />;
   }
 
   // Fallback to default for unknown/unimplemented variants

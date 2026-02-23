@@ -8,6 +8,9 @@ type FormCaptureProps = {
   placeholder: React.ReactNode; // Can be renderText result or string
   buttonText: React.ReactNode;  // Can be renderText result or string
   onSubmit?: (email: string) => void;
+  apiEndpoint?: string;
+  projectId?: string;
+  sectionId?: string;
   accentColor?: string;
   className?: string;
 };
@@ -16,13 +19,16 @@ export function FormCapture({
   placeholder,
   buttonText,
   onSubmit,
+  apiEndpoint,
+  projectId,
+  sectionId,
   accentColor = "#D6FC51",
   className = "",
 }: FormCaptureProps) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Basic email validation
@@ -31,6 +37,25 @@ export function FormCapture({
       setStatus("error");
       setTimeout(() => setStatus("idle"), 2000);
       return;
+    }
+
+    // POST to API if endpoint provided
+    if (apiEndpoint) {
+      try {
+        await fetch(apiEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            sectionId,
+            sectionType: "form-capture",
+            sourceUrl: window.location.href,
+            referrer: document.referrer,
+          }),
+        });
+      } catch {
+        // Silently continue - show success to user regardless
+      }
     }
 
     // Call onSubmit callback if provided
@@ -47,7 +72,7 @@ export function FormCapture({
   };
 
   return (
-    <form onSubmit={handleSubmit} className={`mx-auto max-w-sm ${className}`}>
+    <form onSubmit={handleSubmit} data-lp-form className={`mx-auto max-w-sm ${className}`}>
       <div
         className={`relative grid grid-cols-[1fr_auto] pr-1.5 items-center rounded-[1rem] border shadow shadow-zinc-950/5 has-[input:focus]:ring-2 lg:pr-0 transition-colors ${
           status === "error"

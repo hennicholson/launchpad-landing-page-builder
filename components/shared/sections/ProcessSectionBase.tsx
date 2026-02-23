@@ -8,42 +8,42 @@ import SectionButton, { getButtonPropsFromContent } from "./SectionButton";
 import { SectionBackground } from "../SectionBackground";
 import { useEditorStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { getIconOrFallback } from "@/lib/icons";
 
 // Simple icon component for step numbers
 function StepIcon({ icon, accentColor }: { icon?: string; accentColor: string }) {
-  // If icon is a number or number string, just display it
   if (!icon) return null;
 
-  // Try to render as an icon from a common set
-  const iconMap: Record<string, React.ReactNode> = {
+  // Keep numbered steps as inline formatted text
+  const numberMap: Record<string, React.ReactNode> = {
     "1": <span>01</span>,
     "2": <span>02</span>,
     "3": <span>03</span>,
-    "star": (
-      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-      </svg>
-    ),
-    "check": (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-      </svg>
-    ),
-    "rocket": (
-      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-      </svg>
-    ),
   };
 
-  const iconContent = iconMap[icon.toLowerCase()] || <span style={{ color: accentColor }}>{icon}</span>;
+  const lowerIcon = icon.toLowerCase();
+  const numberContent = numberMap[lowerIcon];
+
+  if (numberContent) {
+    return (
+      <div
+        className="w-12 h-12 rounded-xl flex items-center justify-center"
+        style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
+      >
+        {numberContent}
+      </div>
+    );
+  }
+
+  // For all other icons, use getIconOrFallback to get a proper Lucide component
+  const IconComp = getIconOrFallback(lowerIcon);
 
   return (
     <div
       className="w-12 h-12 rounded-xl flex items-center justify-center"
       style={{ backgroundColor: `${accentColor}15`, color: accentColor }}
     >
-      {iconContent}
+      <IconComp className="w-6 h-6" />
     </div>
   );
 }
@@ -81,6 +81,8 @@ export default function ProcessSectionBase({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
         '--section-heading-font': `'${headingFont}', sans-serif`,
         '--section-body-font': `'${bodyFont}', sans-serif`,
         fontFamily: `'${bodyFont}', sans-serif`,

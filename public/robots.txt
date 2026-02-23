@@ -1,0 +1,38 @@
+User-agent: *
+Allow: /
+Allow: /s/
+Allow: /pricing
+
+Disallow: /api/
+Disallow: /editor/
+Disallow: /dashboard/
+Disallow: /billing/
+Disallow: /preview/
+
+# AI crawlers
+User-agent: GPTBot
+Allow: /
+Allow: /llms.txt
+Allow: /s/
+
+User-agent: ChatGPT-User
+Allow: /
+Allow: /llms.txt
+Allow: /s/
+
+User-agent: Google-Extended
+Allow: /
+Allow: /llms.txt
+Allow: /s/
+
+User-agent: PerplexityBot
+Allow: /
+Allow: /llms.txt
+Allow: /s/
+
+User-agent: ClaudeBot
+Allow: /
+Allow: /llms.txt
+Allow: /s/
+
+Sitemap: https://launchpad.build/sitemap.xml

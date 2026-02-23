@@ -143,3 +143,44 @@ export function getScaledElementStyles(
 
   return styles;
 }
+
+/**
+ * Detect if the current context is running inside an iframe.
+ * Useful for components to determine if they're in the preview iframe.
+ */
+export function isIframeContext(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window !== window.parent;
+}
+
+// Device frame padding — extra space the device chrome takes around the screen
+export const DEVICE_FRAME_PADDING = {
+  mobile: { x: 16, y: 80 },   // phone bezel
+  tablet: { x: 12, y: 40 },   // tablet bezel
+  desktop: { x: 20, y: 60 },  // monitor chrome + stand
+} as const;
+
+// Fixed viewport heights for preview iframe — prevents vh feedback loop
+export const PREVIEW_VIEWPORT_HEIGHTS = {
+  mobile: 812,    // iPhone standard viewport
+  tablet: 1024,   // iPad standard viewport
+  desktop: 900,   // typical browser viewport
+} as const;
+
+/**
+ * Calculate the optimal zoom level to fit a device frame within available space.
+ *
+ * Smart zoom algorithm:
+ * - Takes into account device width plus frame padding
+ * - Clamps between 0.25 (25%) and 1.5 (150%)
+ */
+export function calculateFitZoom(
+  availableWidth: number,
+  availableHeight: number,
+  deviceWidth: number,
+  framePadding: { x: number; y: number }
+): number {
+  const totalWidth = deviceWidth + framePadding.x * 2;
+  const fitZoom = availableWidth / totalWidth;
+  return Math.max(0.25, Math.min(fitZoom, 1.5));
+}

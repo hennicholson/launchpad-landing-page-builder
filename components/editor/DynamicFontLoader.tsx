@@ -28,7 +28,7 @@ export default function DynamicFontLoader() {
       if (section.content.sectionBodyFont) fontsInUse.add(section.content.sectionBodyFont);
     }
 
-    // Scan element fonts
+    // Scan element fonts (drag-and-drop elements)
     for (const section of page.sections || []) {
       for (const element of section.elements || []) {
         if (element.content.textFontFamily) fontsInUse.add(element.content.textFontFamily);
@@ -38,6 +38,24 @@ export default function DynamicFontLoader() {
         }
         if (element.breakpointOverrides?.tablet?.content?.textFontFamily) {
           fontsInUse.add(element.breakpointOverrides.tablet.content.textFontFamily);
+        }
+      }
+
+      // Scan inline text element style overrides (from right-click styling)
+      const elementStyles = section.content.elementStyles as Record<string, { fontFamily?: string }> | undefined;
+      if (elementStyles) {
+        for (const override of Object.values(elementStyles)) {
+          if (override?.fontFamily) fontsInUse.add(override.fontFamily);
+        }
+      }
+
+      // Scan item-level style overrides
+      for (const item of section.items || []) {
+        const itemOverrides = item.styleOverrides as Record<string, { fontFamily?: string }> | undefined;
+        if (itemOverrides) {
+          for (const override of Object.values(itemOverrides)) {
+            if (override?.fontFamily) fontsInUse.add(override.fontFamily);
+          }
         }
       }
     }
@@ -55,7 +73,7 @@ export default function DynamicFontLoader() {
 
     // Create Google Fonts link
     const fontParams = newFonts
-      .map((font) => `family=${font.replace(/\s+/g, "+")}:wght@300;400;500;600;700`)
+      .map((font) => `family=${font.replace(/\s+/g, "+")}:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700`)
       .join("&");
     const url = `https://fonts.googleapis.com/css2?${fontParams}&display=swap`;
 

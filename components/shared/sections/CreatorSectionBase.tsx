@@ -25,6 +25,8 @@ export default function CreatorSectionBase({
   // Extract padding
   const paddingTop = content.paddingTop ?? 16;
   const paddingBottom = content.paddingBottom ?? 16;
+  const paddingLeft = content.paddingLeft;
+  const paddingRight = content.paddingRight;
 
   // Parse bio into paragraphs (support both array and string with newlines)
   const bioParagraphs = Array.isArray(content.creatorBio)
@@ -44,6 +46,8 @@ export default function CreatorSectionBase({
         backgroundColor: bgColor,
         paddingTop: `${paddingTop * 4}px`,
         paddingBottom: `${paddingBottom * 4}px`,
+        paddingLeft,
+        paddingRight,
         '--section-heading-font': `'${headingFont}', sans-serif`,
         '--section-body-font': `'${bodyFont}', sans-serif`,
         fontFamily: `'${bodyFont}', sans-serif`,

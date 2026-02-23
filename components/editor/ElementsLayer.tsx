@@ -120,18 +120,50 @@ export default function ElementsLayer({ section, previewWidth: previewWidthProp 
       {/* Alignment guides overlay */}
       <AlignmentGuides />
 
-      {/* Grid overlay */}
+      {/* Grid overlay — minor lines at 2.5%, major lines at 10%, center crosshairs at 50% */}
       {showGrid && !isPreviewMode && (
-        <div
-          className="absolute inset-0 pointer-events-none z-0"
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(214, 252, 81, 0.05) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(214, 252, 81, 0.05) 1px, transparent 1px)
-            `,
-            backgroundSize: '5% 5%',
-          }}
-        />
+        <>
+          {/* Minor grid lines (2.5% intervals) */}
+          <div
+            className="absolute inset-0 pointer-events-none z-0"
+            style={{
+              backgroundImage: `
+                linear-gradient(rgba(214, 252, 81, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(214, 252, 81, 0.04) 1px, transparent 1px)
+              `,
+              backgroundSize: '2.5% 2.5%',
+            }}
+          />
+          {/* Major grid lines (10% intervals) */}
+          <div
+            className="absolute inset-0 pointer-events-none z-0"
+            style={{
+              backgroundImage: `
+                linear-gradient(rgba(214, 252, 81, 0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(214, 252, 81, 0.08) 1px, transparent 1px)
+              `,
+              backgroundSize: '10% 10%',
+            }}
+          />
+          {/* Center crosshair — vertical */}
+          <div
+            className="absolute top-0 bottom-0 pointer-events-none z-0"
+            style={{
+              left: '50%',
+              width: '1px',
+              background: 'rgba(214, 252, 81, 0.15)',
+            }}
+          />
+          {/* Center crosshair — horizontal */}
+          <div
+            className="absolute left-0 right-0 pointer-events-none z-0"
+            style={{
+              top: '50%',
+              height: '1px',
+              background: 'rgba(214, 252, 81, 0.15)',
+            }}
+          />
+        </>
       )}
 
       {/* Each element is interactive individually - no wrapper div that blocks section clicks */}

@@ -25,6 +25,8 @@ export default function ValuePropositionSectionBase({
   // Extract padding
   const paddingTop = content.paddingTop ?? 16;
   const paddingBottom = content.paddingBottom ?? 16;
+  const paddingLeft = content.paddingLeft;
+  const paddingRight = content.paddingRight;
 
   // Get body paragraphs
   const bodyParagraphs = content.bodyParagraphs || [
@@ -40,6 +42,8 @@ export default function ValuePropositionSectionBase({
         backgroundColor: bgColor,
         paddingTop: `${paddingTop * 4}px`,
         paddingBottom: `${paddingBottom * 4}px`,
+        paddingLeft,
+        paddingRight,
         '--section-heading-font': `'${headingFont}', sans-serif`,
         '--section-body-font': `'${bodyFont}', sans-serif`,
         fontFamily: `'${bodyFont}', sans-serif`,

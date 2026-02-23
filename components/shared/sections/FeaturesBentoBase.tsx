@@ -815,6 +815,8 @@ export default function FeaturesBentoBase({
         backgroundColor: bgColor,
         paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
         paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+        paddingLeft: content.paddingLeft,
+        paddingRight: content.paddingRight,
         '--section-heading-font': `'${typography.headingFont}', sans-serif`,
         '--section-body-font': `'${typography.bodyFont}', sans-serif`,
         fontFamily: `'${typography.bodyFont}', sans-serif`,

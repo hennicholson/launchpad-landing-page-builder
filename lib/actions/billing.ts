@@ -31,6 +31,14 @@ export type BillingInfo = {
     totalOutputTokens: number;
     totalCostCents: number;
   };
+  // Voice stats
+  voiceStats: {
+    monthlySpendCents: number;
+    monthlyBudgetCents: number;
+    totalCostCents: number;
+    totalSessions: number;
+    resetAt: Date | null;
+  };
   // Plan features
   features: {
     canPublish: boolean;
@@ -145,9 +153,16 @@ export async function getBillingInfo(): Promise<{ success: boolean; data?: Billi
           },
         },
         aiStats: {
-          totalInputTokens: (userData as any).aiTotalInputTokens || 0,
-          totalOutputTokens: (userData as any).aiTotalOutputTokens || 0,
-          totalCostCents: (userData as any).aiTotalCostCents || 0,
+          totalInputTokens: userData.aiTotalInputTokens || 0,
+          totalOutputTokens: userData.aiTotalOutputTokens || 0,
+          totalCostCents: userData.aiTotalCostCents || 0,
+        },
+        voiceStats: {
+          monthlySpendCents: userData.voiceMonthlySpendCents || 0,
+          monthlyBudgetCents: planLimits.voiceBudgetCents,
+          totalCostCents: userData.voiceTotalCostCents || 0,
+          totalSessions: userData.voiceTotalSessions || 0,
+          resetAt: userData.voiceSpendResetAt || null,
         },
         features: {
           canPublish: planLimits.canPublish,

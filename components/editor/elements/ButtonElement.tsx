@@ -47,6 +47,7 @@ const VARIANT_STYLES: Record<ButtonVariant, { bg: string; text: string; border?:
   ripple: { bg: "#D6FC51", text: "#000000", border: "#D6FC5180", extra: "hover:brightness-95" },
   cartoon: { bg: "#fb923c", text: "#262626", border: "#262626", extra: "shadow-[0_4px_0_#262626] hover:-translate-y-1" },
   win98: { bg: "#c0c0c0", text: "#000000", extra: "shadow-[inset_-1px_-1px_#0a0a0a,inset_1px_1px_#fff,inset_-2px_-2px_grey,inset_2px_2px_#dfdfdf]" },
+  "email-capture": { bg: "#D6FC51", text: "#000000", extra: "hover:brightness-95" },
 };
 
 // Size defaults (used when no custom padding/fontSize)

@@ -37,6 +37,8 @@ export default function HeroMinimal({
           backgroundColor: bgColor,
           paddingTop: content.paddingTop ?? 120,
           paddingBottom: content.paddingBottom ?? 160,
+          paddingLeft: content.paddingLeft,
+          paddingRight: content.paddingRight,
         }}
       >
         {/* User-configurable Background Effect */}

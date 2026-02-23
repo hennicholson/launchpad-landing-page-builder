@@ -144,10 +144,23 @@ export default function HeroEmailSignup({
 
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const apiUrl = `${window.location.origin}/api/forms/submit`;
+      await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          sectionId: section.id,
+          sectionType: "hero-email-signup",
+          sourceUrl: window.location.href,
+          referrer: document.referrer,
+        }),
+      });
+    } catch {
+      // Silently continue - show success to user regardless
+    }
 
-    console.log("Email submitted:", email);
     setIsSubmitted(true);
     setIsSubmitting(false);
   };
@@ -160,6 +173,8 @@ export default function HeroEmailSignup({
           backgroundColor: bgColor,
           paddingTop: content.paddingTop ?? DEFAULT_PADDING.top,
           paddingBottom: content.paddingBottom ?? DEFAULT_PADDING.bottom,
+          paddingLeft: content.paddingLeft,
+          paddingRight: content.paddingRight,
           '--section-heading-font': `'${headingFont}', sans-serif`,
           '--section-body-font': `'${bodyFont}', sans-serif`,
           fontFamily: `'${bodyFont}', sans-serif`,
@@ -313,6 +328,7 @@ export default function HeroEmailSignup({
               {/* Glass Morphism Form */}
               <motion.form
                 ref={formRef}
+                data-lp-form
                 className="relative mt-8 p-6 sm:p-8 rounded-2xl backdrop-blur-xl space-y-6"
                 style={{
                   backgroundColor: `${textColor}05`,

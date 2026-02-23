@@ -12,6 +12,7 @@ export default function FeaturesSectionBase({
   typography,
   renderText,
   renderImage,
+  previewMode,
 }: BaseSectionProps) {
   const { content } = section;
   const variant: FeaturesVariant = content.featuresVariant || "default";
@@ -23,6 +24,7 @@ export default function FeaturesSectionBase({
     typography,
     renderText,
     renderImage,
+    previewMode,
   };
 
   // Route to appropriate variant component
