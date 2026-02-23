@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useCallback } from "react";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import { usePublishedContext } from "@/lib/published-context";
+import { useEditorStore } from "@/lib/store";
 import { TypewriterText } from "../../primitives/text/TypewriterText";
 import { ParticleField } from "../../primitives/particles/ParticleField";
 import { MorphingBlobs } from "../../primitives/background/MorphingBlobs";
@@ -86,7 +87,8 @@ export default function HeroEmailSignup({
 }: BaseSectionProps) {
   const { content } = section;
   const publishedCtx = usePublishedContext();
-  const projectId = publishedCtx?.projectId;
+  const editorProjectId = useEditorStore((s) => s.projectId);
+  const projectId = publishedCtx?.projectId || editorProjectId;
 
   // Dynamic colors
   const bgColor = content.backgroundColor || colorScheme.background;

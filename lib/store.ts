@@ -39,6 +39,7 @@ type EditorState = {
   // Page data
   page: LandingPage;
   originalPage: LandingPage | null; // For tracking changes
+  projectId: string | null; // Project ID for API calls (form submissions, etc.)
 
   // Undo/Redo history
   history: HistoryEntry[];
@@ -132,6 +133,7 @@ type EditorState = {
   setUserPlan: (plan: string) => void;
 
   // Actions
+  setProjectId: (id: string | null) => void;
   setPage: (page: LandingPage) => void;
   updateSection: (sectionId: string, updates: Partial<PageSection>) => void;
   updateSectionContent: (sectionId: string, content: Partial<PageSection["content"]>) => void;
@@ -269,6 +271,7 @@ type EditorState = {
 export const useEditorStore = create<EditorState>((set, get) => ({
   page: defaultPage,
   originalPage: null,
+  projectId: null,
   history: [],
   historyIndex: -1,
   maxHistorySize: 50,
@@ -314,6 +317,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     isResponsiveEditing: enabled,
     ...(enabled ? {} : { currentEditingBreakpoint: 'desktop' as Breakpoint }),
   })),
+
+  setProjectId: (id) => set({ projectId: id }),
 
   setPage: (newPage) => {
     // Reconstruct element groups from elements' groupId properties

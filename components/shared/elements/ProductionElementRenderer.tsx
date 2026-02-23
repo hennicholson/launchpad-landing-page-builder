@@ -5,6 +5,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import type { PageElement, BadgeVariant, IconVariant, DividerVariant, ButtonVariant, ButtonSize, FontWeight, ShadowSize, Breakpoint } from "@/lib/page-schema";
 import { usePublishedContext } from "@/lib/published-context";
+import { useEditorStore } from "@/lib/store";
 import { DEFAULT_DESIGN_WIDTH, BREAKPOINT_WIDTHS } from "@/lib/page-schema";
 import { getElementAtBreakpoint, getCurrentBreakpoint } from "@/lib/breakpoint-utils";
 import {
@@ -911,7 +912,8 @@ function CountdownElement({ element, scaleFactor = 1 }: { element: PageElement; 
 function FormElement({ element, scaleFactor = 1 }: { element: PageElement; scaleFactor?: number }) {
   const content = element.content;
   const publishedCtx = usePublishedContext();
-  const projectId = publishedCtx?.projectId;
+  const editorProjectId = useEditorStore((s) => s.projectId);
+  const projectId = publishedCtx?.projectId || editorProjectId;
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "submitting" | "success">("idle");
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, SendHorizonal } from "lucide-react";
 import { usePublishedContext } from "@/lib/published-context";
+import { useEditorStore } from "@/lib/store";
 
 type FormCaptureProps = {
   placeholder: React.ReactNode; // Can be renderText result or string
@@ -29,7 +30,8 @@ export function FormCapture({
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const publishedCtx = usePublishedContext();
-  const projectId = projectIdProp || publishedCtx?.projectId;
+  const editorProjectId = useEditorStore((s) => s.projectId);
+  const projectId = projectIdProp || publishedCtx?.projectId || editorProjectId;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

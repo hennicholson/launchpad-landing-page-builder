@@ -55,6 +55,7 @@ export default function EditorClient({ project, userPlan }: Props) {
   const {
     page,
     setPage,
+    setProjectId,
     isDirty,
     markSaved,
     undo,
@@ -113,15 +114,16 @@ export default function EditorClient({ project, userPlan }: Props) {
     setUserPlan(userPlan);
   }, [userPlan, setUserPlan]);
 
-  // Initialize the page data from the project (only once), then auto-start tour
+  // Initialize the page data and project ID from the project (only once), then auto-start tour
   useEffect(() => {
     if (!initializedRef.current && project.pageData) {
       setPage(project.pageData as LandingPage);
+      setProjectId(project.id);
       initializedRef.current = true;
       // Auto-start tour for first-time users (has internal 1.5s delay + localStorage check)
       return autoStartTour();
     }
-  }, [project.pageData, setPage, autoStartTour]);
+  }, [project.pageData, setPage, setProjectId, autoStartTour]);
 
   // Fetch AI usage on mount
   useEffect(() => {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
 import { usePublishedContext } from "@/lib/published-context";
+import { useEditorStore } from "@/lib/store";
 import { SectionBackground } from "../../SectionBackground";
 
 type FormField = {
@@ -26,7 +27,8 @@ export default function HeroFormMulti({
 }: BaseSectionProps) {
   const { content } = section;
   const publishedCtx = usePublishedContext();
-  const projectId = publishedCtx?.projectId;
+  const editorProjectId = useEditorStore((s) => s.projectId);
+  const projectId = publishedCtx?.projectId || editorProjectId;
 
   // Dynamic colors
   const bgColor = content.backgroundColor || colorScheme.background;
