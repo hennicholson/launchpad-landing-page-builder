@@ -8,6 +8,7 @@ import { usePublishedContext } from "@/lib/published-context";
 import { useEditorStore } from "@/lib/store";
 import { DEFAULT_DESIGN_WIDTH, BREAKPOINT_WIDTHS } from "@/lib/page-schema";
 import { getElementAtBreakpoint, getCurrentBreakpoint } from "@/lib/breakpoint-utils";
+import { collectBrowserMeta } from "@/lib/form-utils";
 import {
   Star,
   Heart,
@@ -947,6 +948,7 @@ function FormElement({ element, scaleFactor = 1 }: { element: PageElement; scale
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email,
+            fields: collectBrowserMeta(),
             sectionId: "form-element",
             sectionType: "form-element",
             sourceUrl: window.location.href,

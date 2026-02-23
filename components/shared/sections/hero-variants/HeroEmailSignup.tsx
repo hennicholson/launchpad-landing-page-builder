@@ -14,6 +14,7 @@ import { InfiniteSlider } from "../../primitives/InfiniteSlider";
 import { ProgressiveBlur } from "../../primitives/ProgressiveBlur";
 import SectionButton, { getButtonPropsFromContent } from "../SectionButton";
 import { SectionBackground } from "../../SectionBackground";
+import { collectBrowserMeta } from "@/lib/form-utils";
 
 // Particle Burst Component for Input Focus Effect
 interface ParticleBurstProps {
@@ -158,6 +159,7 @@ export default function HeroEmailSignup({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email,
+            fields: collectBrowserMeta(),
             sectionId: section.id,
             sectionType: "hero-email-signup",
             sourceUrl: window.location.href,

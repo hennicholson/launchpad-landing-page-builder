@@ -9,6 +9,7 @@ import HeroSalesFunnel from "./hero-variants/HeroSalesFunnel";
 import HeroGlassmorphismTrust from "./hero-variants/HeroGlassmorphismTrust";
 import HeroEmailGlass from "./hero-variants/HeroEmailGlass";
 import HeroFormMulti from "./hero-variants/HeroFormMulti";
+import HeroSplitForm from "./hero-variants/HeroSplitForm";
 
 export default function HeroSectionBase(props: BaseSectionProps) {
   const { section, previewMode } = props;
@@ -37,6 +38,9 @@ export default function HeroSectionBase(props: BaseSectionProps) {
   }
   if (variant === "hero-form-multi") {
     return <HeroFormMulti {...sharedProps} />;
+  }
+  if (variant === "hero-split-form") {
+    return <HeroSplitForm {...sharedProps} />;
   }
 
   // Fallback to default for unknown/unimplemented variants

@@ -6,6 +6,7 @@ import type { BaseSectionProps } from "@/lib/shared-section-types";
 import { usePublishedContext } from "@/lib/published-context";
 import { useEditorStore } from "@/lib/store";
 import { SectionBackground } from "../../SectionBackground";
+import { collectBrowserMeta } from "@/lib/form-utils";
 
 type FormField = {
   label: string;
@@ -74,8 +75,8 @@ export default function HeroFormMulti({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ...formData,
             email: formData["Email"] || formData["email"] || "",
+            fields: { ...formData, ...collectBrowserMeta() },
             sectionId: section.id,
             sectionType: "hero-form-multi",
             sourceUrl: window.location.href,

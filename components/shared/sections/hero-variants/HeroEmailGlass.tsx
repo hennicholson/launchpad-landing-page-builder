@@ -6,6 +6,7 @@ import type { BaseSectionProps } from "@/lib/shared-section-types";
 import { usePublishedContext } from "@/lib/published-context";
 import { useEditorStore } from "@/lib/store";
 import { SectionBackground } from "../../SectionBackground";
+import { collectBrowserMeta } from "@/lib/form-utils";
 
 export default function HeroEmailGlass({
   section,
@@ -49,6 +50,7 @@ export default function HeroEmailGlass({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email,
+            fields: collectBrowserMeta(),
             sectionId: section.id,
             sectionType: "hero-email-glass",
             sourceUrl: window.location.href,

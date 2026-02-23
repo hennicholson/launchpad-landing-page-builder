@@ -1491,6 +1491,7 @@ export default function PropertyPanel() {
                 <option value="glassmorphism-trust">Glassmorphism Trust</option>
                 <option value="hero-email-glass">Email Glass</option>
                 <option value="hero-form-multi">Multi-Field Form</option>
+                <option value="hero-split-form">Split Form</option>
               </select>
             </div>
 
@@ -2442,6 +2443,72 @@ export default function PropertyPanel() {
                           </label>
                         ))}
                       </div>
+                    </CollapsibleSection>
+                  </>
+                );
+              }
+
+              // HERO-SPLIT-FORM VARIANT
+              if (variant === "hero-split-form") {
+                return (
+                  <>
+                    <CollapsibleSection title="Content" defaultOpen>
+                      <TextInput
+                        label="Badge"
+                        value={selectedSection.content.badge || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { badge: v })}
+                        placeholder="Early Access"
+                      />
+                      <TextInput
+                        label="Heading"
+                        value={selectedSection.content.heading || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { heading: v })}
+                        placeholder="Get Early Access"
+                      />
+                      <TextAreaInput
+                        label="Subheading"
+                        value={selectedSection.content.subheading || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { subheading: v })}
+                        rows={2}
+                      />
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Form Settings" defaultOpen>
+                      <div className="grid grid-cols-2 gap-3">
+                        <TextInput
+                          label="Placeholder"
+                          value={selectedSection.content.formPlaceholder || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { formPlaceholder: v })}
+                          placeholder="Enter your email"
+                        />
+                        <TextInput
+                          label="Button Text"
+                          value={selectedSection.content.formButtonText || ""}
+                          onChange={(v) => updateSectionContent(selectedSectionId, { formButtonText: v })}
+                          placeholder="Get Started"
+                        />
+                      </div>
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Image">
+                      <TextInput
+                        label="Hero Image URL"
+                        value={selectedSection.content.heroImageUrl || ""}
+                        onChange={(v) => updateSectionContent(selectedSectionId, { heroImageUrl: v })}
+                        placeholder="https://..."
+                      />
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Visibility" defaultOpen={false}>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedSection.content.showBadge !== false}
+                          onChange={(e) => updateSectionContent(selectedSectionId, { showBadge: e.target.checked })}
+                          className="rounded"
+                        />
+                        <span className="text-sm text-white/70">Show Badge</span>
+                      </label>
                     </CollapsibleSection>
                   </>
                 );

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Mail, SendHorizonal } from "lucide-react";
 import { usePublishedContext } from "@/lib/published-context";
 import { useEditorStore } from "@/lib/store";
+import { collectBrowserMeta } from "@/lib/form-utils";
 
 type FormCaptureProps = {
   placeholder: React.ReactNode; // Can be renderText result or string
@@ -55,6 +56,7 @@ export function FormCapture({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email,
+            fields: collectBrowserMeta(),
             sectionId,
             sectionType: "form-capture",
             sourceUrl: window.location.href,

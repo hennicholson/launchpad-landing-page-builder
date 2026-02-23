@@ -54,7 +54,7 @@ export type TestimonialVariant = "scrolling" | "twitter-cards" | "screenshots";
 export type VideoVariant = "centered" | "grid" | "side-by-side" | "fullscreen";
 export type GalleryVariant = "bento" | "focusrail";
 export type FeaturesVariant = "default" | "illustrated" | "hover" | "bento" | "table";
-export type HeroVariant = "default" | "animated-preview" | "email-signup" | "sales-funnel" | "glassmorphism-trust" | "hero-email-glass" | "hero-form-multi";
+export type HeroVariant = "default" | "animated-preview" | "email-signup" | "sales-funnel" | "glassmorphism-trust" | "hero-email-glass" | "hero-form-multi" | "hero-split-form";
 export type LogoSize = "small" | "medium" | "large" | "custom";
 export type TransitionAnimation = "fade" | "slide" | "zoom";
 
@@ -892,6 +892,21 @@ export function createSection(type: SectionType, options?: { ctaVariant?: CTAVar
           buttonText: "Start Free Trial",
           showBadge: true,
           badge: "Free Trial",
+          backgroundColor: "#0a0a0a",
+          textColor: "#ffffff",
+        };
+      } else if (heroVariant === "hero-split-form") {
+        baseSection.content = {
+          ...baseSection.content,
+          heroVariant,
+          heading: "Get Early Access",
+          subheading: "Be the first to experience our platform. Sign up now and get exclusive benefits.",
+          badge: "Early Access",
+          showBadge: true,
+          formPlaceholder: "Enter your email",
+          formButtonText: "Get Started",
+          buttonText: "Get Started",
+          heroImageUrl: "",
           backgroundColor: "#0a0a0a",
           textColor: "#ffffff",
         };
