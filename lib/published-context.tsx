@@ -10,6 +10,7 @@ import type { ActiveGuides, ElementStylePanelData } from "./store";
 type PublishedContextType = {
   // Page data
   page: LandingPage;
+  projectId: string | null;
 
   // UI state - always in preview mode
   isPreviewMode: true;
@@ -84,9 +85,11 @@ const noop = () => {};
 export function PublishedProvider({
   children,
   pageData,
+  projectId,
 }: {
   children: React.ReactNode;
   pageData: LandingPage;
+  projectId?: string | null;
 }) {
   // Track viewport width for responsive scaling
   const [viewportWidth, setViewportWidth] = useState<number>(
@@ -110,6 +113,7 @@ export function PublishedProvider({
   const value = useMemo<PublishedContextType>(() => ({
     // Page data
     page: pageData,
+    projectId: projectId ?? null,
 
     // UI state - always preview mode, nothing selected
     isPreviewMode: true as const,
@@ -175,7 +179,7 @@ export function PublishedProvider({
     moveElementAtBreakpoint: noop,
     updateElementContentAtBreakpoint: noop,
     clearElementBreakpointOverrides: noop,
-  }), [pageData, viewportWidth]);
+  }), [pageData, projectId, viewportWidth]);
 
   return (
     <PublishedContext.Provider value={value}>

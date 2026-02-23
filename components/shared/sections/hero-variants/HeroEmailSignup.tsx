@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useCallback } from "react";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import { usePublishedContext } from "@/lib/published-context";
 import { TypewriterText } from "../../primitives/text/TypewriterText";
 import { ParticleField } from "../../primitives/particles/ParticleField";
 import { MorphingBlobs } from "../../primitives/background/MorphingBlobs";
@@ -84,6 +85,8 @@ export default function HeroEmailSignup({
   renderImage,
 }: BaseSectionProps) {
   const { content } = section;
+  const publishedCtx = usePublishedContext();
+  const projectId = publishedCtx?.projectId;
 
   // Dynamic colors
   const bgColor = content.backgroundColor || colorScheme.background;
@@ -144,21 +147,23 @@ export default function HeroEmailSignup({
 
     setIsSubmitting(true);
 
-    try {
-      const apiUrl = `${window.location.origin}/api/forms/submit`;
-      await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          sectionId: section.id,
-          sectionType: "hero-email-signup",
-          sourceUrl: window.location.href,
-          referrer: document.referrer,
-        }),
-      });
-    } catch {
-      // Silently continue - show success to user regardless
+    if (projectId) {
+      try {
+        const apiUrl = `${window.location.origin}/api/forms/${projectId}/submit`;
+        await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            sectionId: section.id,
+            sectionType: "hero-email-signup",
+            sourceUrl: window.location.href,
+            referrer: document.referrer,
+          }),
+        });
+      } catch {
+        // Silently continue - show success to user regardless
+      }
     }
 
     setIsSubmitted(true);

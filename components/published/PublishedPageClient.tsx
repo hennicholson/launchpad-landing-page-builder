@@ -11,9 +11,10 @@ type Props = {
   pageData: LandingPage;
   settings?: ProjectSettings;
   isPublished?: boolean;
+  projectId?: string;
 };
 
-export default function PublishedPageClient({ pageData, settings, isPublished = true }: Props) {
+export default function PublishedPageClient({ pageData, settings, isPublished = true, projectId }: Props) {
   const { sections, colorScheme, typography, smoothScroll } = pageData;
 
   if (!isPublished) {
@@ -33,7 +34,7 @@ export default function PublishedPageClient({ pageData, settings, isPublished = 
   }
 
   return (
-    <PublishedProvider pageData={pageData}>
+    <PublishedProvider pageData={pageData} projectId={projectId}>
       <PublishedFontLoader pageData={pageData} />
 
       {/* Custom CSS from settings */}

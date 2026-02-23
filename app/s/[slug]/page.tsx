@@ -107,7 +107,7 @@ export default async function PublishedSitePage({ params }: Props) {
         <div dangerouslySetInnerHTML={{ __html: settings.customHead }} />
       )}
 
-      <PublishedPageClient pageData={pageData} settings={settings} isPublished={siteIsPublished} />
+      <PublishedPageClient pageData={pageData} settings={settings} isPublished={siteIsPublished} projectId={project.id} />
     </>
   );
 }

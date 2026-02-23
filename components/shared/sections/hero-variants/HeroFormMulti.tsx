@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { BaseSectionProps } from "@/lib/shared-section-types";
+import { usePublishedContext } from "@/lib/published-context";
 import { SectionBackground } from "../../SectionBackground";
 
 type FormField = {
@@ -24,6 +25,8 @@ export default function HeroFormMulti({
   renderText,
 }: BaseSectionProps) {
   const { content } = section;
+  const publishedCtx = usePublishedContext();
+  const projectId = publishedCtx?.projectId;
 
   // Dynamic colors
   const bgColor = content.backgroundColor || colorScheme.background;
@@ -61,22 +64,24 @@ export default function HeroFormMulti({
 
     setIsSubmitting(true);
 
-    try {
-      const apiUrl = `${window.location.origin}/api/forms/submit`;
-      await fetch(apiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          email: formData["Email"] || formData["email"] || "",
-          sectionId: section.id,
-          sectionType: "hero-form-multi",
-          sourceUrl: window.location.href,
-          referrer: document.referrer,
-        }),
-      });
-    } catch {
-      // Silently continue
+    if (projectId) {
+      try {
+        const apiUrl = `${window.location.origin}/api/forms/${projectId}/submit`;
+        await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...formData,
+            email: formData["Email"] || formData["email"] || "",
+            sectionId: section.id,
+            sectionType: "hero-form-multi",
+            sourceUrl: window.location.href,
+            referrer: document.referrer,
+          }),
+        });
+      } catch {
+        // Silently continue
+      }
     }
 
     setIsSubmitted(true);
