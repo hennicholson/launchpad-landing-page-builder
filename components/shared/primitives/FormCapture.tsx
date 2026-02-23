@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, SendHorizonal } from "lucide-react";
+import { usePublishedContext } from "@/lib/published-context";
 
 type FormCaptureProps = {
   placeholder: React.ReactNode; // Can be renderText result or string
@@ -20,13 +21,15 @@ export function FormCapture({
   buttonText,
   onSubmit,
   apiEndpoint,
-  projectId,
+  projectId: projectIdProp,
   sectionId,
   accentColor = "#D6FC51",
   className = "",
 }: FormCaptureProps) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const publishedCtx = usePublishedContext();
+  const projectId = projectIdProp || publishedCtx?.projectId;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,10 +42,12 @@ export function FormCapture({
       return;
     }
 
-    // POST to API if endpoint provided
-    if (apiEndpoint) {
+    // Determine endpoint: explicit prop, or auto-construct from projectId
+    const endpoint = apiEndpoint || (projectId ? `/api/forms/${projectId}/submit` : null);
+
+    if (endpoint) {
       try {
-        await fetch(apiEndpoint, {
+        await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

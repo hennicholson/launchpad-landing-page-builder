@@ -1,9 +1,10 @@
 "use client";
 
 import DOMPurify from "dompurify";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import type { PageElement, BadgeVariant, IconVariant, DividerVariant, ButtonVariant, ButtonSize, FontWeight, ShadowSize, Breakpoint } from "@/lib/page-schema";
+import { usePublishedContext } from "@/lib/published-context";
 import { DEFAULT_DESIGN_WIDTH, BREAKPOINT_WIDTHS } from "@/lib/page-schema";
 import { getElementAtBreakpoint, getCurrentBreakpoint } from "@/lib/breakpoint-utils";
 import {
@@ -909,6 +910,10 @@ function CountdownElement({ element, scaleFactor = 1 }: { element: PageElement; 
 // ===== FORM ELEMENT =====
 function FormElement({ element, scaleFactor = 1 }: { element: PageElement; scaleFactor?: number }) {
   const content = element.content;
+  const publishedCtx = usePublishedContext();
+  const projectId = publishedCtx?.projectId;
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "submitting" | "success">("idle");
 
   // Apply scale factor to dimensions
   const inputBgColor = content.formInputBgColor || 'rgba(255,255,255,0.05)';
@@ -923,12 +928,49 @@ function FormElement({ element, scaleFactor = 1 }: { element: PageElement; scale
   const minWidth = 200 * scaleFactor;
   const gap = 8 * scaleFactor;
 
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || status === "submitting" || status === "success") return;
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return;
+
+    setStatus("submitting");
+
+    if (projectId) {
+      try {
+        await fetch(`/api/forms/${projectId}/submit`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            sectionId: "form-element",
+            sectionType: "form-element",
+            sourceUrl: window.location.href,
+            referrer: document.referrer,
+          }),
+        });
+      } catch {
+        // Silently continue
+      }
+    }
+
+    setStatus("success");
+    setTimeout(() => {
+      setStatus("idle");
+      setEmail("");
+    }, 3000);
+  }, [email, status, projectId]);
+
   return (
-    <form className="flex" data-lp-form style={{ gap }} onSubmit={(e) => e.preventDefault()}>
+    <form className="flex" data-lp-form style={{ gap }} onSubmit={handleSubmit}>
       <input
         type="email"
-        placeholder={content.formPlaceholder || "Enter your email"}
+        placeholder={status === "success" ? "Submitted!" : (content.formPlaceholder || "Enter your email")}
         className="focus:outline-none"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        disabled={status === "success"}
         style={{
           backgroundColor: inputBgColor,
           color: inputTextColor,
@@ -942,15 +984,17 @@ function FormElement({ element, scaleFactor = 1 }: { element: PageElement; scale
       <button
         type="submit"
         className="font-semibold transition-colors whitespace-nowrap"
+        disabled={status === "submitting" || status === "success"}
         style={{
-          backgroundColor: buttonBgColor,
+          backgroundColor: status === "success" ? "#10b981" : buttonBgColor,
           color: buttonTextColor,
           borderRadius: `${borderRadius}px`,
           padding: buttonPadding,
           fontSize,
+          opacity: status === "submitting" ? 0.7 : 1,
         }}
       >
-        {content.formButtonText || "Subscribe"}
+        {status === "success" ? "✓ Sent!" : status === "submitting" ? "..." : (content.formButtonText || "Subscribe")}
       </button>
     </form>
   );
