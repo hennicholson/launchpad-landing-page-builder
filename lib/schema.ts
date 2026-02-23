@@ -372,6 +372,7 @@ export const formSubmissions = pgTable("form_submissions", {
   ipCountry: text("ip_country"),
   sessionId: text("session_id"),
   isRead: text("is_read").default("false"),
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

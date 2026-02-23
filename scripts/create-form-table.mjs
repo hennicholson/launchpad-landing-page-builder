@@ -34,6 +34,11 @@ async function main() {
 
   if (exists[0].exists) {
     console.log("form_submissions table already exists");
+
+    // Add notes column if it doesn't exist
+    await sql`ALTER TABLE form_submissions ADD COLUMN IF NOT EXISTS notes TEXT`;
+    console.log("Ensured notes column exists");
+
     return;
   }
 
@@ -52,6 +57,7 @@ async function main() {
       ip_country TEXT,
       session_id TEXT,
       is_read TEXT DEFAULT 'false',
+      notes TEXT,
       created_at TIMESTAMP DEFAULT now()
     )
   `;
