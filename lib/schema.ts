@@ -42,8 +42,8 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseCustomDomain: false,
     canUseSeo: false,
     trackingEnabled: true,  // We collect data on free funnels
-    canCollectForms: false,
-    canViewSubmissions: false,
+    canCollectForms: true,
+    canViewSubmissions: true,
   },
   starter: {
     projects: 5,
@@ -56,8 +56,8 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseCustomDomain: false,
     canUseSeo: false,
     trackingEnabled: true,
-    canCollectForms: false,
-    canViewSubmissions: false,
+    canCollectForms: true,
+    canViewSubmissions: true,
   },
   pro: {
     projects: 7,

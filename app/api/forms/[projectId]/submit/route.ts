@@ -94,7 +94,10 @@ export async function POST(
     return NextResponse.json({ success: true }, { headers: corsHeaders });
   } catch (error) {
     console.error("[Form Submit] Error:", error);
-    // Return success anyway to not break user experience on deployed pages
-    return NextResponse.json({ success: true }, { headers: corsHeaders });
+    // Return 500 so issues are visible - the frontend handles errors gracefully
+    return NextResponse.json(
+      { error: "Failed to save submission" },
+      { status: 500, headers: corsHeaders }
+    );
   }
 }
