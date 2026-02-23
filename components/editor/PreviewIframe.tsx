@@ -10,6 +10,7 @@ import {
   listenForIframeMessages,
 } from "@/lib/preview-messaging";
 import DeviceFrame from "./DeviceFrame";
+import { useEditorStore } from "@/lib/store";
 
 type Props = {
   page: LandingPage;
@@ -30,6 +31,7 @@ type Props = {
 export default function PreviewIframe({ page, viewport, containerRef }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeReady, setIframeReady] = useState(false);
+  const projectId = useEditorStore((s) => s.projectId);
   const [fitZoom, setFitZoom] = useState(1);
   const [manualZoom, setManualZoom] = useState<number | null>(null);
   const pendingDataRef = useRef<LandingPage | null>(null);
@@ -78,8 +80,9 @@ export default function PreviewIframe({ page, viewport, containerRef }: Props) {
     sendToIframe(iframe, {
       type: "PAGE_DATA_UPDATE",
       page,
+      projectId: projectId || undefined,
     });
-  }, [page, iframeReady]);
+  }, [page, iframeReady, projectId]);
 
   // Debounced page data sending
   useEffect(() => {
@@ -116,6 +119,7 @@ export default function PreviewIframe({ page, viewport, containerRef }: Props) {
             sendToIframe(iframe, {
               type: "PAGE_DATA_UPDATE",
               page: pendingDataRef.current ?? page,
+              projectId: projectId || undefined,
             });
             pendingDataRef.current = null;
           }
@@ -126,7 +130,7 @@ export default function PreviewIframe({ page, viewport, containerRef }: Props) {
     });
 
     return cleanup;
-  }, [page]);
+  }, [page, projectId]);
 
   return (
     <div

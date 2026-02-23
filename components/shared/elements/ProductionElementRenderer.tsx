@@ -941,7 +941,8 @@ function FormElement({ element, scaleFactor = 1 }: { element: PageElement; scale
 
     if (projectId) {
       try {
-        await fetch(`/api/forms/${projectId}/submit`, {
+        const apiBase = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+        await fetch(`${apiBase}/api/forms/${projectId}/submit`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

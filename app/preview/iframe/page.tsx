@@ -28,6 +28,7 @@ import {
  */
 export default function IframePreviewPage() {
   const [pageData, setPageData] = useState<LandingPage | null>(null);
+  const [projectId, setProjectId] = useState<string | null>(null);
   const contentRef = useRef<HTMLElement>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
@@ -36,6 +37,7 @@ export default function IframePreviewPage() {
     switch (message.type) {
       case "PAGE_DATA_UPDATE":
         setPageData(message.page);
+        if (message.projectId) setProjectId(message.projectId);
         break;
       case "VIEWPORT_CHANGE":
         // Viewport changes are handled by the iframe width set by the parent
@@ -96,7 +98,7 @@ export default function IframePreviewPage() {
   const { sections, colorScheme, typography, smoothScroll } = pageData;
 
   return (
-    <PublishedProvider pageData={pageData}>
+    <PublishedProvider pageData={pageData} projectId={projectId}>
       <PublishedFontLoader pageData={pageData} />
 
       {/* Main page content — mirrors PublishedPageClient.tsx */}

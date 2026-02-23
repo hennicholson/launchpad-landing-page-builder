@@ -45,7 +45,8 @@ export function FormCapture({
     }
 
     // Determine endpoint: explicit prop, or auto-construct from projectId
-    const endpoint = apiEndpoint || (projectId ? `/api/forms/${projectId}/submit` : null);
+    const apiBase = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const endpoint = apiEndpoint || (projectId ? `${apiBase}/api/forms/${projectId}/submit` : null);
 
     if (endpoint) {
       try {

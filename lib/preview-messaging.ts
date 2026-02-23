@@ -9,7 +9,7 @@ import type { LandingPage, ProjectSettings } from "./page-schema";
 
 // Messages sent from the parent editor to the iframe preview
 export type ParentToIframeMessage =
-  | { type: "PAGE_DATA_UPDATE"; page: LandingPage; settings?: ProjectSettings }
+  | { type: "PAGE_DATA_UPDATE"; page: LandingPage; settings?: ProjectSettings; projectId?: string }
   | { type: "VIEWPORT_CHANGE"; viewport: string };
 
 // Messages sent from the iframe preview back to the parent editor

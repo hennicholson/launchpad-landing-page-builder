@@ -151,7 +151,8 @@ export default function HeroEmailSignup({
 
     if (projectId) {
       try {
-        const apiUrl = `${window.location.origin}/api/forms/${projectId}/submit`;
+        const apiBase = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+        const apiUrl = `${apiBase}/api/forms/${projectId}/submit`;
         await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
