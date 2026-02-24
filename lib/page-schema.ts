@@ -653,6 +653,18 @@ export type ColorScheme = {
 export type Typography = {
   headingFont: string;
   bodyFont: string;
+  headingWeight?: 'normal' | 'medium' | 'semibold' | 'bold';
+  bodyWeight?: 'normal' | 'medium' | 'semibold' | 'bold';
+  headingSizeScale?: number;    // 0.75-1.5 multiplier
+  bodyLineHeight?: number;      // 1.2-2.0
+  headingLetterSpacing?: string; // e.g., '-0.02em', '0.05em'
+  bodyLetterSpacing?: string;
+};
+
+export type SmoothScrollConfig = {
+  lerp?: number;       // 0.05-0.2 (default 0.1)
+  duration?: number;   // 0.5-2.0 (default 1.2)
+  syncTouch?: boolean; // enable on touch devices
 };
 
 // Theme presets for quick color scheme switching
@@ -739,6 +751,7 @@ export type LandingPage = {
   typography: Typography;
   // Page-level settings
   smoothScroll?: boolean;
+  smoothScrollConfig?: SmoothScrollConfig;
   animationPreset?: AnimationPreset;
   // Responsive scaling reference (design canvas width in px)
   designCanvasWidth?: number; // Default: 896 (max-w-4xl)

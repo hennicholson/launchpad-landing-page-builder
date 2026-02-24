@@ -6,6 +6,7 @@ import { PublishedProvider } from "@/lib/published-context";
 import SectionRenderer from "@/components/editor/SectionRenderer";
 import ElementsLayer from "@/components/editor/ElementsLayer";
 import PublishedFontLoader from "@/components/published/PublishedFontLoader";
+import { useLenisScroll } from "@/hooks/use-lenis";
 
 type Props = {
   pageData: LandingPage;
@@ -15,7 +16,10 @@ type Props = {
 };
 
 export default function PublishedPageClient({ pageData, settings, isPublished = true, projectId }: Props) {
-  const { sections, colorScheme, typography, smoothScroll } = pageData;
+  const { sections, colorScheme, typography, smoothScroll, smoothScrollConfig } = pageData;
+
+  // Initialize Lenis smooth scroll when enabled
+  useLenisScroll(!!smoothScroll, smoothScrollConfig);
 
   if (!isPublished) {
     return (
@@ -49,7 +53,9 @@ export default function PublishedPageClient({ pageData, settings, isPublished = 
           backgroundColor: colorScheme.background,
           color: colorScheme.text,
           fontFamily: typography.bodyFont,
-          scrollBehavior: smoothScroll ? 'smooth' : 'auto',
+          fontWeight: typography.bodyWeight || undefined,
+          lineHeight: typography.bodyLineHeight || undefined,
+          letterSpacing: typography.bodyLetterSpacing || undefined,
         }}
       >
         {sections.map((section) => {

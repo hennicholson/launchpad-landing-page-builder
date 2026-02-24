@@ -12,6 +12,7 @@ import {
   sendToParent,
   type ParentToIframeMessage,
 } from "@/lib/preview-messaging";
+import { useLenisScroll } from "@/hooks/use-lenis";
 
 /**
  * Iframe Preview Page
@@ -75,6 +76,9 @@ export default function IframePreviewPage() {
     };
   }, [pageData]); // Re-attach when pageData changes since content ref may change
 
+  // Initialize Lenis smooth scroll when enabled (must be before any early return)
+  useLenisScroll(!!pageData?.smoothScroll, pageData?.smoothScrollConfig);
+
   // Show a loading state until we receive page data
   if (!pageData) {
     return (
@@ -95,7 +99,7 @@ export default function IframePreviewPage() {
     );
   }
 
-  const { sections, colorScheme, typography, smoothScroll } = pageData;
+  const { sections, colorScheme, typography } = pageData;
 
   return (
     <PublishedProvider pageData={pageData} projectId={projectId}>
@@ -109,7 +113,9 @@ export default function IframePreviewPage() {
           backgroundColor: colorScheme.background,
           color: colorScheme.text,
           fontFamily: typography.bodyFont,
-          scrollBehavior: smoothScroll ? "smooth" : "auto",
+          fontWeight: typography.bodyWeight || undefined,
+          lineHeight: typography.bodyLineHeight || undefined,
+          letterSpacing: typography.bodyLetterSpacing || undefined,
         }}
       >
         {sections.map((section) => {

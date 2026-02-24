@@ -145,7 +145,7 @@ type EditorState = {
   selectSection: (sectionId: string | null) => void;
   updateColorScheme: (colors: Partial<LandingPage["colorScheme"]>) => void;
   updateTypography: (typography: Partial<LandingPage["typography"]>) => void;
-  updatePageMeta: (meta: Partial<Pick<LandingPage, 'title' | 'description' | 'smoothScroll' | 'animationPreset' | 'contentWidth' | 'seo'>>) => void;
+  updatePageMeta: (meta: Partial<Pick<LandingPage, 'title' | 'description' | 'smoothScroll' | 'smoothScrollConfig' | 'animationPreset' | 'contentWidth' | 'seo'>>) => void;
   applyThemePreset: (presetId: string) => void;
 
   // Item management (for features, testimonials, pricing, etc.)

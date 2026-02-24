@@ -274,6 +274,131 @@ function SectionElementsList({
   );
 }
 
+// Dynamically load Google Fonts for preview in editor
+const loadedFontSets = new Set<string>();
+function ensureFontsLoaded(fonts: string[]) {
+  const toLoad = fonts.filter((f) => !loadedFontSets.has(f));
+  if (toLoad.length === 0) return;
+  toLoad.forEach((f) => loadedFontSets.add(f));
+  const params = toLoad
+    .map((f) => `family=${f.replace(/\s+/g, "+")}:wght@400;600;700`)
+    .join("&");
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = `https://fonts.googleapis.com/css2?${params}&display=swap`;
+  document.head.appendChild(link);
+}
+
+// Font picker with categorized dropdown and font preview
+function PageFontPicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (font: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load current font for button preview
+  useEffect(() => {
+    if (value) ensureFontsLoaded([value]);
+  }, [value]);
+
+  // Load all fonts when dropdown opens for preview
+  useEffect(() => {
+    if (isOpen) {
+      ensureFontsLoaded(ALL_AVAILABLE_FONTS);
+    }
+  }, [isOpen]);
+
+  // Close on click outside
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  const filteredCategories = useMemo(() => {
+    if (!search.trim()) return FONT_CATEGORIES;
+    const q = search.toLowerCase();
+    return FONT_CATEGORIES.map((cat) => ({
+      ...cat,
+      fonts: cat.fonts.filter((f) => f.toLowerCase().includes(q)),
+    })).filter((cat) => cat.fonts.length > 0);
+  }, [search]);
+
+  return (
+    <div className="space-y-1.5 relative" ref={dropdownRef}>
+      <label className="block text-[10px] font-medium text-white/40 uppercase tracking-wider">
+        {label}
+      </label>
+      <button
+        onClick={() => { setIsOpen(!isOpen); setSearch(""); }}
+        className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white hover:border-white/20 transition-colors"
+      >
+        <span style={{ fontFamily: value }}>{value}</span>
+        <svg className={`w-4 h-4 text-white/40 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 rounded-lg bg-[#1a1a1c] border border-white/10 shadow-2xl max-h-72 overflow-hidden flex flex-col">
+          {/* Search */}
+          <div className="p-2 border-b border-white/5">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search fonts..."
+              autoFocus
+              className="w-full px-2.5 py-1.5 rounded-md bg-white/5 border border-white/10 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-[#D6FC51]/50"
+            />
+          </div>
+
+          {/* Font list */}
+          <div className="overflow-y-auto flex-1">
+            {filteredCategories.map((category) => (
+              <div key={category.label}>
+                <div className="px-3 py-1.5 text-[10px] font-semibold text-white/30 uppercase tracking-wider sticky top-0 bg-[#1a1a1c]">
+                  {category.label}
+                </div>
+                {category.fonts.map((font) => (
+                  <button
+                    key={font}
+                    onClick={() => { onChange(font); setIsOpen(false); setSearch(""); }}
+                    className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
+                      value === font
+                        ? 'text-[#D6FC51] bg-[#D6FC51]/10'
+                        : 'text-white/70 hover:bg-white/5 hover:text-white'
+                    }`}
+                    style={{ fontFamily: font }}
+                  >
+                    {font}
+                  </button>
+                ))}
+              </div>
+            ))}
+            {filteredCategories.length === 0 && (
+              <p className="text-center text-xs text-white/30 py-4">No fonts found</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PropertyPanel() {
   const {
     page,
@@ -566,193 +691,297 @@ export default function PropertyPanel() {
           </h2>
         </div>
 
-        <div className="p-4 space-y-6">
-          {/* Page Meta */}
-          <div className="space-y-3">
-            <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
-              Page Title
-            </label>
-            <input
-              type="text"
-              value={page.title}
-              onChange={(e) => updatePageMeta({ title: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
-            />
-          </div>
-
-          <div className="space-y-3">
-            <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
-              Description
-            </label>
-            <textarea
-              value={page.description}
-              onChange={(e) => updatePageMeta({ description: e.target.value })}
-              rows={3}
-              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-amber-500/50 resize-none"
-            />
-          </div>
-
-          {/* SEO Builder (Pro feature) */}
-          <SEOBuilderPanel />
-
-          {/* Theme Presets */}
-          <div className="space-y-3">
-            <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
-              Theme Presets
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {Object.entries(THEME_PRESETS).map(([id, preset]) => (
-                <button
-                  key={id}
-                  onClick={() => applyThemePreset(id)}
-                  className="group relative flex flex-col items-center gap-1.5 p-2 rounded-lg border transition-all hover:border-white/20"
-                  style={{
-                    borderColor:
-                      page.colorScheme.background === preset.colorScheme.background &&
-                      page.colorScheme.primary === preset.colorScheme.primary
-                        ? preset.colorScheme.primary
-                        : "rgba(255,255,255,0.1)",
-                  }}
-                >
-                  <div className="flex gap-0.5">
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: preset.colorScheme.background }}
-                    />
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: preset.colorScheme.primary }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-white/60">{preset.name}</span>
-                </button>
-              ))}
+        <div className="divide-y divide-white/5">
+          {/* General */}
+          <CollapsibleSection title="General" defaultOpen>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                  Page Title
+                </label>
+                <input
+                  type="text"
+                  value={page.title}
+                  onChange={(e) => updatePageMeta({ title: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-[#D6FC51]/50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                  Description
+                </label>
+                <textarea
+                  value={page.description}
+                  onChange={(e) => updatePageMeta({ description: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-[#D6FC51]/50 resize-none"
+                />
+              </div>
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Color Scheme */}
-          <div className="space-y-3">
-            <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
-              Custom Colors
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <ColorInput
-                label="Primary"
-                value={page.colorScheme.primary}
-                onChange={(v) => updateColorScheme({ primary: v })}
-              />
-              <ColorInput
-                label="Secondary"
-                value={page.colorScheme.secondary}
-                onChange={(v) => updateColorScheme({ secondary: v })}
-              />
-              <ColorInput
-                label="Accent"
-                value={page.colorScheme.accent}
-                onChange={(v) => updateColorScheme({ accent: v })}
-              />
-              <ColorInput
-                label="Background"
-                value={page.colorScheme.background}
-                onChange={(v) => updateColorScheme({ background: v })}
-              />
-              <ColorInput
-                label="Text"
-                value={page.colorScheme.text}
-                onChange={(v) => updateColorScheme({ text: v })}
-              />
+          {/* Theme & Colors */}
+          <CollapsibleSection title="Theme & Colors" defaultOpen={false}>
+            <div className="space-y-4">
+              {/* Theme Presets */}
+              <div className="space-y-2">
+                <label className="block text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                  Presets
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {Object.entries(THEME_PRESETS).map(([id, preset]) => (
+                    <button
+                      key={id}
+                      onClick={() => applyThemePreset(id)}
+                      className="group relative flex flex-col items-center gap-1.5 p-2 rounded-lg border transition-all hover:border-white/20"
+                      style={{
+                        borderColor:
+                          page.colorScheme.background === preset.colorScheme.background &&
+                          page.colorScheme.primary === preset.colorScheme.primary
+                            ? preset.colorScheme.primary
+                            : "rgba(255,255,255,0.1)",
+                      }}
+                    >
+                      <div className="flex gap-0.5">
+                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: preset.colorScheme.background }} />
+                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: preset.colorScheme.primary }} />
+                      </div>
+                      <span className="text-[10px] text-white/60">{preset.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Colors */}
+              <div className="space-y-2">
+                <label className="block text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                  Custom Colors
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <ColorInput label="Primary" value={page.colorScheme.primary} onChange={(v) => updateColorScheme({ primary: v })} />
+                  <ColorInput label="Secondary" value={page.colorScheme.secondary} onChange={(v) => updateColorScheme({ secondary: v })} />
+                  <ColorInput label="Accent" value={page.colorScheme.accent} onChange={(v) => updateColorScheme({ accent: v })} />
+                  <ColorInput label="Background" value={page.colorScheme.background} onChange={(v) => updateColorScheme({ background: v })} />
+                  <ColorInput label="Text" value={page.colorScheme.text} onChange={(v) => updateColorScheme({ text: v })} />
+                </div>
+              </div>
             </div>
-          </div>
+          </CollapsibleSection>
 
           {/* Typography */}
-          <div className="space-y-3">
-            <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
-              Typography
-            </label>
-            <div className="space-y-2">
-              <select
+          <CollapsibleSection title="Typography" defaultOpen={false}>
+            <div className="space-y-4">
+              {/* Heading Font - categorized picker */}
+              <PageFontPicker
+                label="Heading Font"
                 value={page.typography.headingFont}
-                onChange={(e) => updateTypography({ headingFont: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
-              >
-                <option value="Anton">Anton</option>
-                <option value="Inter">Inter</option>
-                <option value="Poppins">Poppins</option>
-                <option value="Playfair Display">Playfair Display</option>
-                <option value="Sora">Sora</option>
-                <option value="DM Sans">DM Sans</option>
-              </select>
-              <select
-                value={page.typography.bodyFont}
-                onChange={(e) => updateTypography({ bodyFont: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
-              >
-                <option value="Inter">Inter (Body)</option>
-                <option value="Open Sans">Open Sans</option>
-                <option value="Roboto">Roboto</option>
-                <option value="DM Sans">DM Sans</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Animation Preset */}
-          <div className="space-y-3">
-            <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
-              Animation Style
-            </label>
-            <select
-              value={page.animationPreset || "moderate"}
-              onChange={(e) => updatePageMeta({ animationPreset: e.target.value as AnimationPreset })}
-              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
-            >
-              {(Object.keys(ANIMATION_PRESET_LABELS) as AnimationPreset[]).map((preset) => (
-                <option key={preset} value={preset}>
-                  {ANIMATION_PRESET_LABELS[preset]}
-                </option>
-              ))}
-            </select>
-            <p className="text-[10px] text-white/40">
-              {ANIMATION_PRESET_DESCRIPTIONS[page.animationPreset || "moderate"]}
-            </p>
-          </div>
-
-          {/* Content Width */}
-          <div className="space-y-3">
-            <label className="block text-xs font-medium text-white/50 uppercase tracking-wide">
-              Content Width
-            </label>
-            <select
-              value={page.contentWidth || "medium"}
-              onChange={(e) => updatePageMeta({ contentWidth: e.target.value as "narrow" | "medium" | "wide" })}
-              className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500/50"
-            >
-              <option value="narrow">Narrow (672px) - Sales funnel</option>
-              <option value="medium">Medium (896px) - Balanced</option>
-              <option value="wide">Wide (1152px) - SaaS style</option>
-            </select>
-            <p className="text-[10px] text-white/40">
-              Controls the max width of all section content for consistent alignment
-            </p>
-          </div>
-
-          {/* Smooth Scroll */}
-          <div className="space-y-3">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={page.smoothScroll || false}
-                onChange={(e) => updatePageMeta({ smoothScroll: e.target.checked })}
-                className="w-4 h-4 rounded border-white/20 bg-white/5 text-amber-500 focus:ring-amber-500/50 focus:ring-offset-0"
+                onChange={(font) => updateTypography({ headingFont: font })}
               />
-              <div>
-                <span className="text-xs font-medium text-white/70">Smooth Scroll</span>
-                <p className="text-[10px] text-white/40">Enable buttery-smooth scrolling effect</p>
+
+              {/* Body Font - categorized picker */}
+              <PageFontPicker
+                label="Body Font"
+                value={page.typography.bodyFont}
+                onChange={(font) => updateTypography({ bodyFont: font })}
+              />
+
+              {/* Heading Weight */}
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                  Heading Weight
+                </label>
+                <div className="flex gap-1">
+                  {(['normal', 'medium', 'semibold', 'bold'] as const).map((w) => (
+                    <button
+                      key={w}
+                      onClick={() => updateTypography({ headingWeight: w === 'bold' ? undefined : w })}
+                      className={`flex-1 py-1.5 text-[10px] rounded-md border transition-colors capitalize ${
+                        (page.typography.headingWeight || 'bold') === w
+                          ? 'bg-[#D6FC51]/20 border-[#D6FC51]/50 text-[#D6FC51]'
+                          : 'bg-white/5 border-white/10 text-white/50 hover:text-white/70'
+                      }`}
+                    >
+                      {w}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </label>
-          </div>
+
+              {/* Body Weight */}
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                  Body Weight
+                </label>
+                <div className="flex gap-1">
+                  {(['normal', 'medium', 'semibold', 'bold'] as const).map((w) => (
+                    <button
+                      key={w}
+                      onClick={() => updateTypography({ bodyWeight: w === 'normal' ? undefined : w })}
+                      className={`flex-1 py-1.5 text-[10px] rounded-md border transition-colors capitalize ${
+                        (page.typography.bodyWeight || 'normal') === w
+                          ? 'bg-[#D6FC51]/20 border-[#D6FC51]/50 text-[#D6FC51]'
+                          : 'bg-white/5 border-white/10 text-white/50 hover:text-white/70'
+                      }`}
+                    >
+                      {w}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Heading Size Scale */}
+              <RangeSlider
+                label="Heading Size Scale"
+                value={page.typography.headingSizeScale ?? 1}
+                onChange={(v) => updateTypography({ headingSizeScale: v === 1 ? undefined : v })}
+                min={0.75}
+                max={1.5}
+                step={0.05}
+                unit="x"
+              />
+
+              {/* Body Line Height */}
+              <RangeSlider
+                label="Body Line Height"
+                value={page.typography.bodyLineHeight ?? 1.6}
+                onChange={(v) => updateTypography({ bodyLineHeight: v === 1.6 ? undefined : v })}
+                min={1.2}
+                max={2.0}
+                step={0.1}
+                unit=""
+              />
+
+              {/* Heading Letter Spacing */}
+              <RangeSlider
+                label="Heading Letter Spacing"
+                value={parseFloat(page.typography.headingLetterSpacing || '0') * 100}
+                onChange={(v) => updateTypography({ headingLetterSpacing: v === 0 ? undefined : `${(v / 100).toFixed(2)}em` })}
+                min={-5}
+                max={10}
+                step={1}
+                unit="%"
+              />
+
+              {/* Body Letter Spacing */}
+              <RangeSlider
+                label="Body Letter Spacing"
+                value={parseFloat(page.typography.bodyLetterSpacing || '0') * 100}
+                onChange={(v) => updateTypography({ bodyLetterSpacing: v === 0 ? undefined : `${(v / 100).toFixed(2)}em` })}
+                min={-3}
+                max={8}
+                step={1}
+                unit="%"
+              />
+            </div>
+          </CollapsibleSection>
+
+          {/* Layout */}
+          <CollapsibleSection title="Layout" defaultOpen={false}>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                  Content Width
+                </label>
+                <select
+                  value={page.contentWidth || "medium"}
+                  onChange={(e) => updatePageMeta({ contentWidth: e.target.value as "narrow" | "medium" | "wide" })}
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#D6FC51]/50"
+                >
+                  <option value="narrow">Narrow (672px) - Sales funnel</option>
+                  <option value="medium">Medium (896px) - Balanced</option>
+                  <option value="wide">Wide (1152px) - SaaS style</option>
+                </select>
+                <p className="text-[10px] text-white/30">
+                  Max width of all section content
+                </p>
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* Effects */}
+          <CollapsibleSection title="Effects" defaultOpen={false}>
+            <div className="space-y-4">
+              {/* Animation Style */}
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-medium text-white/40 uppercase tracking-wider">
+                  Animation Style
+                </label>
+                <select
+                  value={page.animationPreset || "moderate"}
+                  onChange={(e) => updatePageMeta({ animationPreset: e.target.value as AnimationPreset })}
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#D6FC51]/50"
+                >
+                  {(Object.keys(ANIMATION_PRESET_LABELS) as AnimationPreset[]).map((preset) => (
+                    <option key={preset} value={preset}>
+                      {ANIMATION_PRESET_LABELS[preset]}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-white/30">
+                  {ANIMATION_PRESET_DESCRIPTIONS[page.animationPreset || "moderate"]}
+                </p>
+              </div>
+
+              {/* Smooth Scroll (Lenis) */}
+              <div className="space-y-3">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div>
+                    <span className="text-xs font-medium text-white/70">Smooth Scroll</span>
+                    <p className="text-[10px] text-white/30">Lenis smooth scrolling with inertia</p>
+                  </div>
+                  <Switch
+                    checked={page.smoothScroll || false}
+                    onCheckedChange={(checked) => updatePageMeta({ smoothScroll: checked })}
+                  />
+                </label>
+
+                {/* Lenis options - shown when smooth scroll is enabled */}
+                {page.smoothScroll && (
+                  <div className="space-y-3 pl-1 border-l-2 border-[#D6FC51]/20 ml-1">
+                    <RangeSlider
+                      label="Smoothness (Lerp)"
+                      value={page.smoothScrollConfig?.lerp ?? 0.1}
+                      onChange={(v) => updatePageMeta({
+                        smoothScrollConfig: { ...page.smoothScrollConfig, lerp: v === 0.1 ? undefined : v }
+                      })}
+                      min={0.03}
+                      max={0.2}
+                      step={0.01}
+                      unit=""
+                    />
+                    <RangeSlider
+                      label="Duration"
+                      value={page.smoothScrollConfig?.duration ?? 1.2}
+                      onChange={(v) => updatePageMeta({
+                        smoothScrollConfig: { ...page.smoothScrollConfig, duration: v === 1.2 ? undefined : v }
+                      })}
+                      min={0.5}
+                      max={2.0}
+                      step={0.1}
+                      unit="s"
+                    />
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <span className="text-[10px] font-medium text-white/50">Touch Device Support</span>
+                      <Switch
+                        checked={page.smoothScrollConfig?.syncTouch || false}
+                        onCheckedChange={(checked) => updatePageMeta({
+                          smoothScrollConfig: { ...page.smoothScrollConfig, syncTouch: checked || undefined }
+                        })}
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* SEO */}
+          <CollapsibleSection title="SEO" defaultOpen={false}>
+            <SEOBuilderPanel />
+          </CollapsibleSection>
 
           {/* Select a section hint */}
-          <div className="mt-6 pt-4 border-t border-white/5 flex flex-col items-center text-center px-2">
+          <div className="py-6 flex flex-col items-center text-center px-4">
             <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-3">
               <MousePointer2 className="w-5 h-5 text-white/20" />
             </div>

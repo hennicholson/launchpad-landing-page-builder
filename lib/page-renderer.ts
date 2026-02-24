@@ -52,6 +52,12 @@ function generateCssVariables(colorScheme: ColorScheme, typography: Typography):
       --color-text: ${colorScheme.text};
       --font-heading: '${typography.headingFont}', sans-serif;
       --font-body: '${typography.bodyFont}', sans-serif;
+      --heading-weight: ${typography.headingWeight || 'bold'};
+      --heading-size-scale: ${typography.headingSizeScale || 1};
+      --heading-letter-spacing: ${typography.headingLetterSpacing || 'normal'};
+      --body-weight: ${typography.bodyWeight || 'normal'};
+      --body-line-height: ${typography.bodyLineHeight || 1.6};
+      --body-letter-spacing: ${typography.bodyLetterSpacing || 'normal'};
     }
   `;
 }
@@ -1259,10 +1265,7 @@ export function renderLandingPage(page: LandingPage, settings?: ProjectSettings,
       box-sizing: border-box;
     }
 
-    /* Smooth scroll */
-    html {
-      scroll-behavior: ${page.smoothScroll ? "smooth" : "auto"};
-    }
+    /* Smooth scroll handled by Lenis JS below when enabled */
 
     /* ==================== ANIMATIONS ==================== */
 
@@ -1626,6 +1629,19 @@ export function renderLandingPage(page: LandingPage, settings?: ProjectSettings,
       });
     });
   </script>
+${page.smoothScroll ? `
+  <!-- Lenis Smooth Scroll -->
+  <script src="https://unpkg.com/lenis@1/dist/lenis.min.js"></script>
+  <script>
+    const lenis = new Lenis({
+      autoRaf: true,
+      lerp: ${page.smoothScrollConfig?.lerp ?? 0.1},
+      duration: ${page.smoothScrollConfig?.duration ?? 1.2},
+      smoothWheel: true,
+      syncTouch: ${page.smoothScrollConfig?.syncTouch ?? false}
+    });
+  </script>
+` : ''}
 </body>
 </html>`;
 }

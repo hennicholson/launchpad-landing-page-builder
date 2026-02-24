@@ -536,8 +536,7 @@ export default function Canvas({ projectId }: CanvasProps) {
             overflowY: 'auto',
             overflowX: 'hidden',
             height: 'calc(100vh - 180px)',
-            // Smooth scroll when enabled
-            scrollBehavior: page.smoothScroll ? 'smooth' : 'auto',
+            // Smooth scroll handled by Lenis in iframe preview
             // Dynamic width in responsive editing mode based on viewport selection
             ...(isResponsiveEditing ? { width: PREVIEW_VIEWPORTS[previewViewport].width } : {}),
           }}
